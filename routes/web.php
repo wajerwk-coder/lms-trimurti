@@ -17,8 +17,8 @@ use App\Http\Controllers\Admin\MaterialController as AdminMaterialController;
 use App\Http\Controllers\Admin\AssignmentController as AdminAssignmentController;
 use App\Http\Controllers\Admin\PracticalController as AdminPracticalController;
 use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
-use App\Http\Controllers\Admin\SettingController as AdminSettingController;
-use App\Http\Controllers\Admin\ReportController as AdminReportController;
+// use App\Http\Controllers\Admin\SettingController as AdminSettingController;   // belum dibuat
+// use App\Http\Controllers\Admin\ReportController as AdminReportController;     // belum dibuat
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\ExamScheduleController as AdminExamScheduleController;
 use App\Http\Controllers\NotificationController;
@@ -32,10 +32,10 @@ use App\Http\Controllers\Guru\MaterialController as GuruMaterialController;
 use App\Http\Controllers\Guru\AssignmentController as GuruAssignmentController;
 use App\Http\Controllers\Guru\AttendanceController as GuruAttendanceController;
 use App\Http\Controllers\Guru\AttendanceControllerNew;
-use App\Http\Controllers\Guru\ScoringController as GuruScoringController;
+// use App\Http\Controllers\Guru\ScoringController as GuruScoringController;    // belum dibuat
 use App\Http\Controllers\Guru\ReportController as GuruReportController;
 use App\Http\Controllers\Guru\ProfileController as GuruProfileController;
-use App\Http\Controllers\Guru\SubmissionController as GuruSubmissionController;
+// use App\Http\Controllers\Guru\SubmissionController as GuruSubmissionController; // belum dibuat (pakai SubmissionsController)
 use App\Http\Controllers\Guru\SubmissionsController;
 use App\Http\Controllers\Guru\PenilaianController as GuruPenilaianController;
 use App\Http\Controllers\Guru\PracticalController as GuruPracticalController;
@@ -93,10 +93,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/users/store/guru', [ModernUserController::class, 'storeGuru'])->name('users.store.guru');
     Route::post('/users/store/siswa', [ModernUserController::class, 'storeSiswa'])->name('users.store.siswa');
     
-    // Kelola Data User (RESOURCE ROUTE) - MUST BE AFTER SPECIFIC ROUTES
+    // Kelola Data User — CUSTOM ROUTES HARUS SEBELUM RESOURCE
+    Route::post('users/bulk-action', [AdminUserController::class, 'bulkAction'])->name('users.bulk-action');
     Route::resource('users', AdminUserController::class);
     Route::post('users/{user}/status', [AdminUserController::class, 'updateStatus'])->name('users.status');
-    Route::post('users/bulk-action', [AdminUserController::class, 'bulkAction'])->name('users.bulk-action');
     
     // Kelola Kelas
     Route::resource('kelas', KelasController::class);
@@ -104,38 +104,41 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Kelola Jurusan
     Route::resource('jurusan', JurusanController::class);
     
-    // Kelola Mata Pelajaran
+    // Kelola Mata Pelajaran — CUSTOM ROUTES HARUS SEBELUM RESOURCE
+    Route::post('mata-pelajaran/seed-default', [MataPelajaranController::class, 'seedDefault'])->name('mata-pelajaran.seed-default');
     Route::resource('mata-pelajaran', MataPelajaranController::class);
     Route::post('mata-pelajaran/{mata_pelajaran}/toggle-status', [MataPelajaranController::class, 'toggleStatus'])->name('mata-pelajaran.toggle-status');
-    Route::post('mata-pelajaran/seed-default', [MataPelajaranController::class, 'seedDefault'])->name('mata-pelajaran.seed-default');
     
-    // Kelola Kriteria Penilaian Praktik
-    // IMPORTANT: Place custom routes BEFORE the resource to avoid being shadowed by the '{kriteria-penilaian}' show route
-    // Combined create/store routes for Kriteria Penilaian (create all categories at once)
-    Route::get('kriteria-penilaian/create-combined', [KriteriaPenilaianController::class, 'createCombined'])->name('kriteria-penilaian.create-combined');
-    Route::post('kriteria-penilaian/store-combined', [KriteriaPenilaianController::class, 'storeCombined'])->name('kriteria-penilaian.store-combined');
+    // Kelola Kriteria Penilaian Praktik — CUSTOM ROUTES SEBELUM RESOURCE
+    Route::get('kriteria-penilaian/create-combined',  [KriteriaPenilaianController::class, 'createCombined'])->name('kriteria-penilaian.create-combined');
+    Route::post('kriteria-penilaian/store-combined',  [KriteriaPenilaianController::class, 'storeCombined'])->name('kriteria-penilaian.store-combined');
+    Route::post('kriteria-penilaian/seed-default',    [KriteriaPenilaianController::class, 'seedDefault'])->name('kriteria-penilaian.seed-default');
+    Route::get('kriteria-penilaian/get-by-mata',      [KriteriaPenilaianController::class, 'getKriteria'])->name('kriteria-penilaian.get-by-mata');
+    Route::post('kriteria-penilaian/{kriteriaPenilaian}/toggle-status', [KriteriaPenilaianController::class, 'toggleStatus'])->name('kriteria-penilaian.toggle-status');
+    Route::post('kriteria-penilaian/{kriteriaPenilaian}/duplicate',     [KriteriaPenilaianController::class, 'duplicate'])->name('kriteria-penilaian.duplicate');
+    Route::get('kriteria-penilaian/export-template',  [KriteriaPenilaianController::class, 'exportTemplate'])->name('kriteria-penilaian.export-template');
     Route::resource('kriteria-penilaian', KriteriaPenilaianController::class);
 
-    // Kelola Materi
+    // Kelola Materi — BULK ROUTES SEBELUM RESOURCE
+    Route::delete('materials/bulk-delete', [AdminMaterialController::class, 'bulkDelete'])->name('materials.bulk-delete');
+    Route::post('materials/bulk-delete',   [AdminMaterialController::class, 'bulkDelete'])->name('materials.bulk-delete.post');
     Route::resource('materials', AdminMaterialController::class);
     Route::post('materials/{material}/toggle-publish', [AdminMaterialController::class, 'togglePublish'])->name('materials.toggle-publish');
-    Route::post('materials/{material}/publish', [AdminMaterialController::class, 'togglePublish'])->name('materials.publish');
-    Route::delete('materials/bulk-delete', [AdminMaterialController::class, 'bulkDelete'])->name('materials.bulk-delete');
-    Route::post('materials/bulk-delete', [AdminMaterialController::class, 'bulkDelete'])->name('materials.bulk-delete.post');
+    Route::post('materials/{material}/publish',        [AdminMaterialController::class, 'togglePublish'])->name('materials.publish');
 
-    // Kelola Tugas
+    // Kelola Tugas — BULK ROUTES SEBELUM RESOURCE
+    Route::delete('assignments/bulk-delete', [AdminAssignmentController::class, 'bulkDelete'])->name('assignments.bulk-delete');
+    Route::post('assignments/bulk-delete',   [AdminAssignmentController::class, 'bulkDelete'])->name('assignments.bulk-delete.post');
     Route::resource('assignments', AdminAssignmentController::class);
     Route::post('assignments/{assignment}/toggle-publish', [AdminAssignmentController::class, 'togglePublish'])->name('assignments.toggle-publish');
-    Route::post('assignments/{assignment}/publish', [AdminAssignmentController::class, 'togglePublish'])->name('assignments.publish');
-    Route::delete('assignments/bulk-delete', [AdminAssignmentController::class, 'bulkDelete'])->name('assignments.bulk-delete');
-    Route::post('assignments/bulk-delete', [AdminAssignmentController::class, 'bulkDelete'])->name('assignments.bulk-delete.post');
+    Route::post('assignments/{assignment}/publish',        [AdminAssignmentController::class, 'togglePublish'])->name('assignments.publish');
 
-    // Kelola Praktikum
+    // Kelola Praktikum — BULK ROUTES SEBELUM RESOURCE
+    Route::delete('practicals/bulk-delete', [AdminPracticalController::class, 'bulkDelete'])->name('practicals.bulk-delete');
+    Route::post('practicals/bulk-delete',   [AdminPracticalController::class, 'bulkDelete'])->name('practicals.bulk-delete.post');
     Route::resource('practicals', AdminPracticalController::class);
     Route::post('practicals/{practical}/toggle-publish', [AdminPracticalController::class, 'togglePublish'])->name('practicals.toggle-publish');
-    Route::post('practicals/{practical}/publish', [AdminPracticalController::class, 'togglePublish'])->name('practicals.publish');
-    Route::delete('practicals/bulk-delete', [AdminPracticalController::class, 'bulkDelete'])->name('practicals.bulk-delete');
-    Route::post('practicals/bulk-delete', [AdminPracticalController::class, 'bulkDelete'])->name('practicals.bulk-delete.post');
+    Route::post('practicals/{practical}/publish',        [AdminPracticalController::class, 'togglePublish'])->name('practicals.publish');
 
     // Kelola Absensi
     Route::resource('attendance', AdminAttendanceController::class);
@@ -161,15 +164,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 Route::prefix('guru')->name('guru.')->middleware(['auth', 'guru'])->group(function () {
     Route::get('/dashboard', [GuruDashboardController::class, 'index'])->name('dashboard');
     
-    // Materials Management
-    Route::resource('materials', GuruMaterialController::class);
-    Route::get('materials/{material}/download', [GuruMaterialController::class, 'download'])->name('materials.download');
-    Route::post('materials/{material}/publish', [GuruMaterialController::class, 'publish'])->name('materials.publish');
-    Route::post('materials/{material}/unpublish', [GuruMaterialController::class, 'unpublish'])->name('materials.unpublish');
-    Route::post('materials/{material}/toggle-publish', [GuruMaterialController::class, 'togglePublish'])->name('materials.toggle-publish');
-    Route::post('materials/bulk-delete', [GuruMaterialController::class, 'bulkDelete'])->name('materials.bulk-delete');
-    Route::post('materials/bulk-publish', [GuruMaterialController::class, 'bulkPublish'])->name('materials.bulk-publish');
+    // Materials Management — BULK ROUTES MUST BE BEFORE RESOURCE
+    Route::post('materials/bulk-delete',    [GuruMaterialController::class, 'bulkDelete'])->name('materials.bulk-delete');
+    Route::post('materials/bulk-publish',   [GuruMaterialController::class, 'bulkPublish'])->name('materials.bulk-publish');
     Route::post('materials/bulk-unpublish', [GuruMaterialController::class, 'bulkUnpublish'])->name('materials.bulk-unpublish');
+    Route::resource('materials', GuruMaterialController::class);
+    Route::get('materials/{material}/download',       [GuruMaterialController::class, 'download'])->name('materials.download');
+    Route::post('materials/{material}/toggle-publish',[GuruMaterialController::class, 'togglePublish'])->name('materials.toggle-publish');
     
     // Assignments Management
     Route::resource('assignments', GuruAssignmentController::class);
@@ -177,6 +178,7 @@ Route::prefix('guru')->name('guru.')->middleware(['auth', 'guru'])->group(functi
     Route::post('assignments/{assignment}/submissions/{submission}/grade', [GuruAssignmentController::class, 'grade'])->name('assignments.grade');
     
     // Praktikum Management
+    Route::post('praktikum/{praktikum}/toggle-publish', [GuruPracticalController::class, 'togglePublish'])->name('praktikum.toggle-publish');
     Route::resource('praktikum', GuruPracticalController::class);
     // Praktikums (English alias) - to support legacy route('guru.practicals.*') usage in views
     Route::resource('practicals', GuruPracticalController::class)->names([
@@ -196,22 +198,22 @@ Route::prefix('guru')->name('guru.')->middleware(['auth', 'guru'])->group(functi
         abort(404);
     })->name('attendance.report');
     
-    // Absensi Management (Alias routes for backward compatibility)
-    Route::resource('absensi', GuruAttendanceController::class)->names([
-        'index' => 'absensi.index',
-        'create' => 'absensi.create', 
-        'store' => 'absensi.store',
-        'show' => 'absensi.show',
-        'edit' => 'absensi.edit',
-        'update' => 'absensi.update',
-        'destroy' => 'absensi.destroy'
-    ]);
+    // Absensi Management — CUSTOM ROUTES SEBELUM RESOURCE
+    Route::get('absensi/bulk-create', [GuruAttendanceController::class, 'bulkCreate'])->name('absensi.bulk-create');
+    Route::get('absensi/siswa-by-kelas', [GuruAttendanceController::class, 'siswaByKelas'])->name('absensi.siswa-by-kelas');
     Route::post('absensi/bulk', [GuruAttendanceController::class, 'bulkStore'])->name('absensi.bulk');
-    Route::get('absensi/report', function () {
-        abort(404);
-    })->name('absensi.report');
-    // Praktik attendance
     Route::get('absensi/praktik', [GuruAttendanceController::class, 'praktikAttendance'])->name('absensi.praktik');
+    Route::get('absensi/report', function () { abort(404); })->name('absensi.report');
+
+    Route::resource('absensi', GuruAttendanceController::class)->names([
+        'index'   => 'absensi.index',
+        'create'  => 'absensi.create',
+        'store'   => 'absensi.store',
+        'show'    => 'absensi.show',
+        'edit'    => 'absensi.edit',
+        'update'  => 'absensi.update',
+        'destroy' => 'absensi.destroy',
+    ]);
     
     // Praktik attendance routes removed
     
@@ -231,6 +233,14 @@ Route::prefix('guru')->name('guru.')->middleware(['auth', 'guru'])->group(functi
     Route::post('submissions/{submission}/grade', [SubmissionsController::class, 'grade'])->name('submissions.grade');
     
     // Penilaian (Grading) Management
+    // ── SISTEM BARU berbasis kriteria admin ── HARUS SEBELUM resource/wildcard
+    Route::get('penilaian/nilai-kriteria', [GuruPenilaianController::class, 'nilaiKriteria'])->name('penilaian.nilai-kriteria');
+    Route::post('penilaian/nilai-kriteria', [GuruPenilaianController::class, 'storeNilaiKriteria'])->name('penilaian.nilai-kriteria.store');
+    Route::get('penilaian/kriteria-by-practical', [GuruPenilaianController::class, 'getKriteriaByPractical'])->name('penilaian.kriteria-by-practical');
+
+    // ── Halaman khusus Penilaian Praktik ────────────────────────────────────
+    Route::get('penilaian-praktik', [GuruPenilaianController::class, 'penilaianPraktik'])->name('penilaian-praktik.index');
+
     Route::get('penilaian', [GuruPenilaianController::class, 'index'])->name('penilaian.index');
     Route::get('penilaian/create', [GuruPenilaianController::class, 'create'])->name('penilaian.create');
     Route::post('penilaian', [GuruPenilaianController::class, 'store'])->name('penilaian.store');
@@ -273,7 +283,8 @@ Route::prefix('guru')->name('guru.')->middleware(['auth', 'guru'])->group(functi
     Route::get('laporan/absensi/bulanan', [GuruReportController::class, 'absensi'])->name('laporan.absensi.bulanan');
     Route::get('laporan/absensi/semester', [GuruReportController::class, 'absensi'])->name('laporan.absensi.semester');
     
-    // Praktik reports removed
+    // Praktik reports
+    Route::get('laporan/praktik', [GuruReportController::class, 'praktik'])->name('laporan.praktik');
     
     // Tugas (Assignment) Reports
     Route::get('laporan/tugas', [GuruReportController::class, 'tugas'])->name('laporan.tugas');
@@ -281,14 +292,14 @@ Route::prefix('guru')->name('guru.')->middleware(['auth', 'guru'])->group(functi
     Route::get('laporan/tugas/terlambat', [GuruReportController::class, 'tugas'])->name('laporan.tugas.terlambat');
     
     // Nilai (Grade) Reports
-    Route::get('laporan/nilai', [GuruReportController::class, 'absensi'])->name('laporan.nilai');
-    Route::get('laporan/nilai/mid', [GuruReportController::class, 'absensi'])->name('laporan.nilai.mid');
-    Route::get('laporan/nilai/semester', [GuruReportController::class, 'absensi'])->name('laporan.nilai.semester');
+    Route::get('laporan/nilai',          [GuruReportController::class, 'nilai'])->name('laporan.nilai');
+    Route::get('laporan/nilai/mid',      [GuruReportController::class, 'nilai'])->name('laporan.nilai.mid');
+    Route::get('laporan/nilai/semester', [GuruReportController::class, 'nilai'])->name('laporan.nilai.semester');
     
     // Siswa (Student) Reports
-    Route::get('laporan/siswa', [GuruReportController::class, 'absensi'])->name('laporan.siswa');
-    Route::get('laporan/siswa/detail', [GuruReportController::class, 'absensi'])->name('laporan.siswa.detail');
-    Route::get('laporan/siswa/prestasi', [GuruReportController::class, 'absensi'])->name('laporan.siswa.prestasi');
+    Route::get('laporan/siswa',          [GuruReportController::class, 'siswa'])->name('laporan.siswa');
+    Route::get('laporan/siswa/detail',   [GuruReportController::class, 'siswa'])->name('laporan.siswa.detail');
+    Route::get('laporan/siswa/prestasi', [GuruReportController::class, 'siswa'])->name('laporan.siswa.prestasi');
     
     // Material Reports
     Route::get('laporan/materi', [GuruReportController::class, 'materi'])->name('laporan.materi');
@@ -301,6 +312,11 @@ Route::prefix('guru')->name('guru.')->middleware(['auth', 'guru'])->group(functi
     Route::put('profile', [GuruProfileController::class, 'update'])->name('profile.update');
     Route::post('profile/photo', [GuruProfileController::class, 'updatePhoto'])->name('profile.update-photo');
     Route::post('profile/remove-photo', [GuruProfileController::class, 'removePhoto'])->name('profile.remove-photo');
+    Route::get('profile/change-password', [GuruProfileController::class, 'changePassword'])->name('profile.change-password');
+    Route::post('profile/change-password', [GuruProfileController::class, 'updatePassword'])->name('profile.change-password.post');
+
+    // Jadwal Ujian (read-only)
+    Route::get('jadwal-ujian', [\App\Http\Controllers\Guru\JadwalUjianController::class, 'index'])->name('jadwal-ujian.index');
 });
 
 // ✅ SISWA ROUTES - middleware digabung dalam array
@@ -309,51 +325,67 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'siswa'])->group(fun
     Route::get('/dashboard', [SiswaDashboardController::class, 'index'])->name('dashboard');
     
     // Pelajaran - Daftar mata pelajaran
-    Route::get('/pelajaran', [SiswaPelajaranController::class, 'index'])->name('pelajaran.index');
-    Route::get('/pelajaran/{id}', [SiswaPelajaranController::class, 'show'])->name('pelajaran.show');
+    Route::get('/pelajaran', [\App\Http\Controllers\Siswa\PelajaranController::class, 'index'])->name('pelajaran.index');
+    Route::get('/pelajaran/{id}', [\App\Http\Controllers\Siswa\PelajaranController::class, 'show'])->name('pelajaran.show');
     
-    // Materi - Siswa dapat melihat dan mengunduh materi
-    Route::get('materials', [SiswaMaterialController::class, 'index'])->name('materials.index');
-    Route::get('materials/{material}', [SiswaMaterialController::class, 'show'])->name('materials.show');
-    Route::get('materials/{material}/download', [SiswaMaterialController::class, 'download'])->name('materials.download');
+    // Materi — CUSTOM ROUTES SEBELUM {material}
+    Route::get('materials',                         [SiswaMaterialController::class, 'index'])->name('materials.index');
+    Route::get('materials/search',                  [SiswaMaterialController::class, 'search'])->name('materials.search');
+    Route::get('materials/history',                 [\App\Http\Controllers\Siswa\MaterialController::class, 'history'])->name('materials.history');
+    Route::get('materials/health',                  [\App\Http\Controllers\Siswa\MaterialController::class, 'healthMaterials'])->name('materials.health');
+    Route::get('materials/{material}',              [SiswaMaterialController::class, 'show'])->name('materials.show');
+    Route::get('materials/{material}/download',     [SiswaMaterialController::class, 'download'])->name('materials.download');
     Route::post('materials/{material}/track-download', [SiswaMaterialController::class, 'trackDownload'])->name('materials.track-download');
-    Route::get('materials/search', [SiswaMaterialController::class, 'search'])->name('materials.search');
-    
-    // Soal/Quiz - Siswa dapat mengakses, mengunduh, dan mengirimkan tugas
-    Route::get('assignments', [SiswaAssignmentController::class, 'index'])->name('assignments.index');
-    Route::get('assignments/export', [SiswaAssignmentController::class, 'export'])->name('assignments.export');
-    Route::get('assignments/{assignment}', [SiswaAssignmentController::class, 'show'])->name('assignments.show');
-    Route::post('assignments/{assignment}/submit', [SiswaAssignmentController::class, 'submit'])->name('assignments.submit');
-    Route::get('assignments/{assignment}/submission', [SiswaAssignmentController::class, 'submission'])->name('assignments.submission');
-    
-    // Praktikum - Siswa dapat melihat dan mengikuti praktikum
-    Route::get('praktikum', [SiswaPracticalController::class, 'index'])->name('praktikum.index');
-    Route::get('praktikum/export', function () {
-        abort(404);
-    })->name('praktikum.export');
-    Route::get('praktikum/{practical}', [SiswaPracticalController::class, 'show'])->name('praktikum.show');
 
-    // Practicals (alias) - backward compatibility for route('siswa.practicals.index') usage
+    // Tugas — CUSTOM ROUTES SEBELUM {assignment}
+    Route::get('assignments',                                                         [SiswaAssignmentController::class, 'index'])->name('assignments.index');
+    Route::get('assignments/export',                                                  [SiswaAssignmentController::class, 'export'])->name('assignments.export');
+    Route::get('assignments/history',                                                 [\App\Http\Controllers\Siswa\AssignmentController::class, 'history'])->name('assignments.history');
+    Route::get('assignments/archived',                                                [\App\Http\Controllers\Siswa\AssignmentController::class, 'archived'])->name('assignments.archived');
+    Route::get('assignments/{assignment}',                                            [SiswaAssignmentController::class, 'show'])->name('assignments.show');
+    Route::post('assignments/{assignment}/submit',                                    [SiswaAssignmentController::class, 'submit'])->name('assignments.submit');
+    Route::get('assignments/{assignment}/submission',                                 [SiswaAssignmentController::class, 'submission'])->name('assignments.submission');
+    Route::get('assignments/{assignment}/submission/download/{submission}',           [SiswaAssignmentController::class, 'downloadFile'])->name('assignments.download');
+
+    // Praktikum — CUSTOM ROUTES SEBELUM {practical}
+    Route::get('praktikum',          [SiswaPracticalController::class, 'index'])->name('praktikum.index');
+    Route::get('praktikum/history',  [\App\Http\Controllers\Siswa\PracticalController::class, 'history'])->name('praktikum.history');
+    Route::get('praktikum/progress', [\App\Http\Controllers\Siswa\PracticalController::class, 'getProgress'])->name('praktikum.progress');
+    Route::get('praktikum/upcoming', [\App\Http\Controllers\Siswa\PracticalController::class, 'upcoming'])->name('praktikum.upcoming');
+    Route::get('praktikum/export',   function () { abort(404); })->name('praktikum.export');
+    Route::get('praktikum/{practical}',         [SiswaPracticalController::class, 'show'])->name('praktikum.show');
+    Route::get('praktikum/{id}/scores',         [\App\Http\Controllers\Siswa\PracticalController::class, 'getScores'])->name('praktikum.scores');
+
+    // Alias backward compat
     Route::get('practicals', [SiswaPracticalController::class, 'index'])->name('practicals.index');
     
     // Laporan Nilai - Siswa dapat melihat nilai praktikum dan absen
-    Route::get('reports', [SiswaScoreController::class, 'index'])->name('reports.index');
-    Route::get('reports/praktikum', [SiswaScoreController::class, 'practical'])->name('reports.practical');
-    Route::get('reports/assignments', [SiswaScoreController::class, 'assignment'])->name('reports.assignment');
-    Route::get('reports/attendance', [SiswaAttendanceController::class, 'index'])->name('reports.attendance');
-    // Nilai (alias) - to support route('siswa.nilai.index') usage in views
-    Route::get('nilai', [SiswaScoreController::class, 'index'])->name('nilai.index');
-    Route::get('nilai/export', [SiswaScoreController::class, 'exportScores'])->name('nilai.export');
+    Route::get('reports',              [SiswaScoreController::class, 'index'])->name('reports.index');
+    Route::get('reports/praktikum',    [SiswaScoreController::class, 'practical'])->name('reports.practical');
+    Route::get('reports/assignments',  [SiswaScoreController::class, 'assignment'])->name('reports.assignment');
+    Route::get('reports/attendance',   [SiswaAttendanceController::class, 'index'])->name('reports.attendance');
+
+    // Attendance — CUSTOM ROUTES SEBELUM {attendance}
+    Route::get('attendance',           [SiswaAttendanceController::class, 'index'])->name('attendance.index');
+    Route::get('absensi',              [SiswaAttendanceController::class, 'index'])->name('absensi.index');
+    Route::get('absensi/export',       [SiswaAttendanceController::class, 'export'])->name('absensi.export');
+    Route::get('absensi/{attendance}', [SiswaAttendanceController::class, 'show'])->name('absensi.show');
     
-    // Attendance (index) - to support route('siswa.attendance.index') usage
-    Route::get('attendance', [SiswaAttendanceController::class, 'index'])->name('attendance.index');
-    // Absensi (alias) - to support legacy route('siswa.absensi.index') usage in views
-    Route::get('absensi', [SiswaAttendanceController::class, 'index'])->name('absensi.index');
-    Route::get('absensi/export', [SiswaAttendanceController::class, 'export'])->name('absensi.export');
-    
-    // Kelola Profil Siswa
-    Route::get('profile', [SiswaProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('profile', [SiswaProfileController::class, 'update'])->name('profile.update');
+    // Kelola Profil Siswa — CUSTOM ROUTES SEBELUM {profile}
+    Route::get('profile',          [\App\Http\Controllers\Siswa\ProfileController::class, 'index'])->name('profile.index');
+    Route::get('profile/edit',     [SiswaProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('profile',          [SiswaProfileController::class, 'update'])->name('profile.update');
+    Route::get('profile/medical',  [\App\Http\Controllers\Siswa\ProfileController::class, 'medicalInfo'])->name('profile.medical');
+    Route::post('profile/medical', [\App\Http\Controllers\Siswa\ProfileController::class, 'updateMedicalInfo'])->name('profile.medical.update');
+    Route::post('profile/password',[SiswaProfileController::class, 'updatePassword'])->name('profile.password');
+
+    // Nilai — CUSTOM ROUTES SEBELUM wildcard
+    Route::get('nilai',            [SiswaScoreController::class, 'index'])->name('nilai.index');
+    Route::get('nilai/export',     [SiswaScoreController::class, 'exportScores'])->name('nilai.export');
+    Route::get('nilai/chart-data', [SiswaScoreController::class, 'getChartData'])->name('nilai.chart-data');
+
+    // Jadwal Ujian (read-only, filtered by kelas siswa)
+    Route::get('jadwal-ujian', [\App\Http\Controllers\Siswa\JadwalUjianController::class, 'index'])->name('jadwal-ujian.index');
 });
 
 // File Download Routes
@@ -371,10 +403,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('notifications/{notification}', [NotificationController::class, 'delete'])->name('notifications.delete');
 });
 
-// Exam Schedule Routes (for all authenticated users)
+// Exam Schedule Public Route (untuk guru dan siswa lihat detail jadwal)
 Route::middleware('auth')->group(function () {
     Route::get('exam-schedules/{examSchedule}', function ($examSchedule) {
-        return view('exam-schedules.show', compact('examSchedule'));
+        $schedule = \App\Models\ExamSchedule::with(['subject', 'kelas'])->find($examSchedule);
+        if (!$schedule) abort(404);
+        return view('shared.jadwal-ujian.show', compact('schedule'));
     })->name('exam-schedules.show');
 });
 

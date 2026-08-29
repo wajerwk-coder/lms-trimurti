@@ -1,148 +1,230 @@
-@extends('layouts.base')
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="@yield('description', 'Portal Siswa - LMS SMK Kesehatan Trimurti Husada')">
+    <title>@yield('title', 'Siswa - LMS Trimurti Husada')</title>
 
-@section('title', 'Siswa - LMS Trimurti Husada')
-@section('description', 'Dashboard Siswa - LMS SMK Kesehatan Trimurti Husada')
-@section('body-class', 'siswa-layout')
+    <link rel="icon" type="image/x-icon" href="{{ asset('uploads/logo/favicon.ico') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
-@push('css')
-    <link href="{{ asset('css/components/dashboard.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/components/table.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/components/form.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/siswa.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/siswa-custom.css') }}" rel="stylesheet">
-@endpush
+    @stack('css')
+    @stack('styles')
 
-@push('css')
-<style>
-:root{--sidebar-width:280px;--sidebar-collapsed-width:70px;--header-height:70px;--primary-color:#3b82f6;--secondary-color:#64748b;--success-color:#10b981;--warning-color:#f59e0b;--danger-color:#ef4444;--dark-color:#1e293b;--light-color:#f8fafc;--border-color:#e2e8f0}
-body{font-family:'Inter',sans-serif;background-color:var(--light-color);font-size:14px;line-height:1.6}
-.main-wrapper{display:flex;min-height:100vh;position:relative;overflow-x:hidden;flex-direction:column}
-.sidebar{width:var(--sidebar-width);background:linear-gradient(135deg,var(--dark-color) 0%,#334155 100%);color:#fff;position:fixed;top:0;left:0;height:100vh;z-index:1000;transition:all .3s ease;overflow-y:auto;box-shadow:4px 0 10px rgba(0,0,0,.1)}
-.sidebar.collapsed{width:var(--sidebar-collapsed-width)}
-.main-content{margin-left:var(--sidebar-width);flex:1;transition:all .3s ease;min-height:100vh;display:flex;flex-direction:column;width:calc(100% - var(--sidebar-width))}
-.main-content.expanded{margin-left:var(--sidebar-collapsed-width);width:calc(100% - var(--sidebar-collapsed-width))}
-.top-header{background:#fff;height:var(--header-height);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;box-shadow:0 2px 10px rgba(0,0,0,.08);position:sticky;top:0;z-index:999;border-bottom:1px solid var(--border-color)}
-.btn-ghost{background:transparent;border:none;color:inherit;transition:all .3s ease}
-.btn-ghost:hover{background:rgba(13,110,253,.1);color:var(--primary-color);transform:translateY(-1px)}
-.content-area{flex:1;padding:1.5rem;padding-bottom:2rem;min-height:calc(100vh - var(--header-height) - 200px)}
-.stats-card{background:#fff;border-radius:12px;padding:1.5rem;border:1px solid var(--border-color);transition:all .3s ease;height:100%}
-.stats-card:hover{transform:translateY(-4px);box-shadow:0 8px 25px rgba(0,0,0,.1)}
-.card{border:1px solid var(--border-color);border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.btn{border-radius:8px;font-weight:500;padding:.5rem 1rem;transition:all .3s ease}
-.btn-primary{background:var(--primary-color);border-color:var(--primary-color)}
-.btn-primary:hover{background:#2563eb;border-color:#2563eb;transform:translateY(-1px)}
-@media (max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.show{transform:translateX(0)}.main-content{margin-left:0;width:100%}.content-area{padding:1rem;padding-bottom:1rem}}
-</style>
-@endpush
+    <style>
+    /* ============================================================
+       SISWA LAYOUT — Modern Purple-Pink Theme
+       ============================================================ */
+    :root {
+        --sb-width:      280px;
+        --sb-collapsed:  68px;
+        --hdr-height:    64px;
+        --bg-page:       #f0f4f8;
+        --transition:    .25s cubic-bezier(.4,0,.2,1);
+        --primary-color: #8b5cf6;
+        --secondary-color: #64748b;
+        --border-color: #e2e8f0;
+        --dark-color: #1e293b;
+        --light-color: #f8fafc;
+    }
 
-@section('sidebar')
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+        margin: 0; padding: 0; height: 100%;
+        font-family: 'Inter', sans-serif;
+        background: var(--bg-page);
+        font-size: 14px; line-height: 1.6;
+    }
+
+    .lms-wrapper { display: flex; min-height: 100vh; }
+
+    body .main-content, body #main-content {
+        margin-left: 0 !important; width: auto !important;
+        min-height: unset !important; padding: 0 !important;
+    }
+
+    .lms-main {
+        flex: 1; margin-left: var(--sb-width); min-width: 0;
+        display: flex; flex-direction: column; min-height: 100vh;
+        transition: margin-left var(--transition);
+    }
+    .lms-main.sb-collapsed { margin-left: var(--sb-collapsed); }
+
+    .lms-header { position: sticky; top: 0; z-index: 100; flex-shrink: 0; }
+
+    .lms-body { flex: 1; padding: 1.5rem; min-width: 0; }
+
+    /* ── Page header — Siswa purple-pink gradient ────────── */
+    .lms-page-header {
+        display: flex; align-items: flex-start;
+        justify-content: space-between; gap: 1rem;
+        margin-bottom: 1.5rem; flex-wrap: wrap;
+        background: linear-gradient(135deg, #7c3aed 0%, #a21caf 50%, #db2777 100%);
+        border-radius: 14px; padding: 1.25rem 1.5rem;
+        box-shadow: 0 4px 20px rgba(124,58,237,.2);
+        position: relative; overflow: hidden;
+    }
+    .lms-page-header::before {
+        content:''; position:absolute; top:-40px; right:-40px;
+        width:160px; height:160px; background:rgba(255,255,255,.06); border-radius:50%;
+    }
+    .lms-page-title {
+        font-size: 1.2rem; font-weight: 700; color: #fff;
+        margin: 0; line-height: 1.3; position: relative; z-index: 1;
+    }
+    .lms-page-subtitle {
+        font-size: .78rem; color: rgba(255,255,255,.8);
+        margin: .15rem 0 0; position: relative; z-index: 1;
+    }
+    .lms-page-header .flex-shrink-0 { position: relative; z-index: 1; }
+    .lms-page-header .btn {
+        font-size: .82rem; border-radius: 8px; font-weight: 500;
+    }
+    .lms-page-header .btn-primary,
+    .lms-page-header .btn-success,
+    .lms-page-header .btn-warning,
+    .lms-page-header .btn-danger {
+        background: rgba(255,255,255,.95) !important;
+        color: #7c3aed !important; border: none !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    }
+    .lms-page-header .btn-outline-secondary {
+        background: rgba(255,255,255,.15) !important;
+        color: #fff !important;
+        border: 1.5px solid rgba(255,255,255,.4) !important;
+    }
+
+    /* ── Cards ───────────────────────────────────────────── */
+    .card { border: 1px solid var(--border-color); border-radius: 12px !important; box-shadow: 0 2px 8px rgba(0,0,0,.06); transition: box-shadow .2s; }
+    .card.shadow-sm:hover { box-shadow: 0 6px 20px rgba(124,58,237,.1) !important; }
+    .stats-card { background:#fff; border-radius:12px; border:1px solid var(--border-color); height:100%; transition:all .3s; }
+    .stats-card:hover { transform:translateY(-4px); box-shadow:0 8px 25px rgba(124,58,237,.12); }
+
+    /* ── Scrollbar purple ─────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #ddd6fe; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #7c3aed; }
+
+    .lms-footer { flex-shrink: 0; }
+
+    @media (max-width: 768px) {
+        .lms-main { margin-left: 0 !important; }
+        .lms-body { padding: 1rem; }
+        .lms-page-header { padding: 1rem; }
+    }
+    </style>
+</head>
+<body>
+<div class="lms-wrapper">
+
+    {{-- SIDEBAR --}}
     @include('partials.sidebar-siswa')
-@endsection
 
-@section('header')
-    @include('partials.header-siswa')
-@endsection
+    {{-- MAIN COLUMN --}}
+    <div class="lms-main" id="lms-main">
 
-@section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('siswa.dashboard') }}">Dashboard</a></li>
-    @yield('siswa-breadcrumb')
-@endsection
+        {{-- STICKY HEADER --}}
+        <div class="lms-header">
+            @include('partials.header-siswa')
+        </div>
 
-@section('page-title')
-    @yield('siswa-page-title', 'Dashboard Siswa')
-@endsection
+        {{-- CONTENT --}}
+        <div class="lms-body">
 
-@push('js')
-    <script src="{{ asset('js/siswa.js') }}" defer></script>
-    <script src="{{ asset('js/components/Chart.js') }}" defer></script>
-    <script src="{{ asset('js/components/Modal.js') }}" defer></script>
-    <script src="{{ asset('js/components/FileUpload.js') }}" defer></script>
-    <script src="{{ asset('js/notifications.js') }}" defer></script>
-    <script>
-    document.addEventListener('DOMContentLoaded',function(){
-        // Bootstrap notification data for student header
-        window.__notifData = {
-            notifications: @json($notifications ?? []),
-            unreadCount: {{ isset($notifications) ? count($notifications) : 0 }}
-        };
+            {{-- Flash alerts --}}
+            @foreach(['success'=>'check-circle','error'=>'exclamation-circle','warning'=>'exclamation-triangle','info'=>'info-circle'] as $ftype => $ficon)
+                @if(session($ftype))
+                    <div class="alert alert-{{ $ftype === 'error' ? 'danger' : $ftype }} alert-dismissible fade show mb-3" role="alert">
+                        <i class="fas fa-{{ $ficon }} me-2"></i>{{ session($ftype) }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+            @endforeach
 
-        var toggle=document.getElementById('sidebarToggle');
-        if(toggle){
-            toggle.addEventListener('click',function(e){
-                e.preventDefault();
-                var sidebar=document.querySelector('.sidebar');
-                var main=document.querySelector('.main-content');
-                if(sidebar&&main){
-                    sidebar.classList.toggle('collapsed');
-                    main.classList.toggle('expanded');
-                    var isCollapsed=sidebar.classList.contains('collapsed');
-                    try{localStorage.setItem('sidebarCollapsed',isCollapsed);}catch(err){}
-                }
-            });
-        }
-        try{var saved=localStorage.getItem('sidebarCollapsed')==='true';if(saved){var s=document.querySelector('.sidebar');var m=document.querySelector('.main-content');if(s&&m){s.classList.add('collapsed');m.classList.add('expanded');}}}catch(err){}
-        document.querySelectorAll('.alert').forEach(function(el){setTimeout(function(){el.style.display='none';},5000);});
+            {{-- Breadcrumb --}}
+            @if(!request()->routeIs('siswa.dashboard'))
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb bg-transparent p-0 mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="{{ route('siswa.dashboard') }}" class="text-decoration-none">Beranda</a>
+                    </li>
+                    @yield('siswa-breadcrumb')
+                </ol>
+            </nav>
+            @endif
 
-        // Render notifications into header dropdown
-        (function renderNotifications(){
-            var data = window.__notifData || { notifications: [], unreadCount: 0 };
-            var btn = document.getElementById('notificationDropdown');
-            if(!btn) return;
+            {{-- Page header (title + actions) --}}
+            @if(View::hasSection('siswa-page-title') || View::hasSection('page-title') || View::hasSection('page-actions'))
+            <div class="lms-page-header">
+                <div>
+                    @hasSection('siswa-page-title')
+                        <h1 class="lms-page-title">@yield('siswa-page-title')</h1>
+                    @elsehasSection('page-title')
+                        <h1 class="lms-page-title">@yield('page-title')</h1>
+                    @endif
+                    @hasSection('page-subtitle')
+                        <p class="lms-page-subtitle">@yield('page-subtitle')</p>
+                    @endif
+                </div>
+                @hasSection('page-actions')
+                    <div class="flex-shrink-0">@yield('page-actions')</div>
+                @endif
+            </div>
+            @endif
 
-            // Badge
-            var existing = btn.querySelector('.badge.rounded-pill');
-            if(data.unreadCount > 0){
-                if(!existing){
-                    var b = document.createElement('span');
-                    b.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
-                    b.style.fontSize = '0.6rem';
-                    b.textContent = data.unreadCount;
-                    btn.appendChild(b);
-                } else {
-                    existing.textContent = data.unreadCount;
-                    existing.style.display = '';
-                }
-            } else if(existing){
-                existing.remove();
-            }
+            {{-- Main page content --}}
+            @yield('content')
+        </div>
 
-            // Menu
-            var dropdown = btn.closest('.dropdown');
-            if(!dropdown) return;
-            var menu = dropdown.querySelector('.dropdown-menu');
-            if(!menu) return;
+        {{-- FOOTER --}}
+        <div class="lms-footer">
+            @include('partials.footer')
+        </div>
 
-            var html = '';
-            html += '<li class="dropdown-header d-flex justify-content-between align-items-center py-3">';
-            html += '  <div><span class="fw-bold text-dark">Notifikasi</span><div><small class="text-muted">' + (data.unreadCount || 0) + ' notifikasi baru</small></div></div>';
-            html += '</li><li><hr class="dropdown-divider m-0"></li>';
+    </div>{{-- .lms-main --}}
 
-            if(data.notifications && data.notifications.length){
-                data.notifications.forEach(function(n){
-                    var title = n.title || n.judul || 'Notifikasi';
-                    var content = n.content || n.pesan || '';
-                    var time = n.created_at_human || '';
-                    html += '<li>';
-                    html += '  <a class="dropdown-item py-3" href="#">';
-                    html += '    <div class="d-flex">';
-                    html += '      <div class="flex-shrink-0">';
-                    html += '        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;"><i class="fas fa-bell text-white"></i></div>';
-                    html += '      </div>';
-                    html += '      <div class="flex-grow-1 ms-3">';
-                    html += '        <div class="fw-medium">' + title.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
-                    html += '        <small class="text-muted d-block">' + String(content).replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</small>';
-                    html += '        <small class="text-muted d-block">' + String(time).replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</small>';
-                    html += '      </div>';
-                    html += '    </div>';
-                    html += '  </a>';
-                    html += '</li>';
-                });
-            } else {
-                html += '<li><div class="px-3 py-4 text-center text-muted"><i class="fas fa-bell-slash fa-lg mb-2"></i><div>Tidak ada notifikasi</div></div></li>';
-            }
+</div>{{-- .lms-wrapper --}}
 
-            menu.innerHTML = html;
-        })();
+{{-- JS --}}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+@stack('js')
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ── Sync sidebar collapse → main column margin ────────────
+    var sidebar = document.getElementById('sidebar');
+    var lmsMain = document.getElementById('lms-main');
+    if (sidebar && lmsMain) {
+        var obs = new MutationObserver(function() {
+            lmsMain.classList.toggle('sb-collapsed', sidebar.classList.contains('collapsed'));
+        });
+        obs.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+        lmsMain.classList.toggle('sb-collapsed', sidebar.classList.contains('collapsed'));
+    }
+
+    // Auto-hide alerts
+    document.querySelectorAll('.alert').forEach(function(a) {
+        setTimeout(function() { try { bootstrap.Alert.getOrCreateInstance(a)?.close(); } catch(e) {} }, 5000);
     });
-    </script>
-@endpush
+
+    // DataTables
+    if (typeof $ !== 'undefined' && $.fn.DataTable) {
+        $('.data-table').DataTable({ responsive: true, language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json' } });
+    }
+});
+</script>
+</body>
+</html>

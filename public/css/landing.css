@@ -1,0 +1,233 @@
+/* ============================================================
+   LANDING PAGE — LMS Trimurti Husada
+   Tema: Biru-Ungu gradient (#3b82f6 → #6d28d9)
+   ============================================================ */
+
+/* ── Variables ───────────────────────────────────────────── */
+:root {
+    --lp-primary:   #3b82f6;
+    --lp-purple:    #6d28d9;
+    --lp-gradient:  linear-gradient(135deg, #1e3a8a 0%, #4f46e5 50%, #7c3aed 100%);
+    --lp-cta-grad:  linear-gradient(135deg, #4f46e5 0%, #7c3aed 60%, #a21caf 100%);
+    --lp-text:      #1e293b;
+    --lp-muted:     #64748b;
+    --lp-bg:        #f8fafc;
+    --lp-radius:    14px;
+    --lp-shadow:    0 4px 20px rgba(79,70,229,.12);
+}
+
+body {
+    font-family: 'Nunito', 'Inter', sans-serif;
+    color: var(--lp-text);
+    background: #fff;
+}
+
+/* ── Hero Section ────────────────────────────────────────── */
+.lp-hero {
+    background: var(--lp-gradient);
+    min-height: 85vh;
+    display: flex;
+    align-items: center;
+}
+.lp-hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 70% 20%, rgba(139,92,246,.25) 0%, transparent 60%),
+        radial-gradient(ellipse at 20% 80%, rgba(59,130,246,.2) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+/* ── Pill badge ───────────────────────────────────────────── */
+.lp-pill {
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.25);
+    backdrop-filter: blur(4px);
+}
+
+/* ── Animated underline ──────────────────────────────────── */
+.lp-underline {
+    position: relative;
+    display: inline-block;
+    color: #fde68a;
+}
+.lp-underline::after {
+    content: '';
+    position: absolute;
+    bottom: -4px; left: 0; right: 0;
+    height: 3px;
+    background: rgba(253,230,138,.6);
+    border-radius: 2px;
+}
+
+/* ── Hero mini cards ─────────────────────────────────────── */
+.lp-hero-card {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: var(--lp-radius);
+    padding: 1.25rem;
+    backdrop-filter: blur(8px);
+}
+.lp-mini-card {
+    background: rgba(255,255,255,.9);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    transition: transform .2s;
+}
+.lp-mini-card:hover { transform: translateY(-3px); }
+.lp-mini-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .9rem;
+}
+
+/* ── Stats section ───────────────────────────────────────── */
+.lp-counter {
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+/* ── Letter spacing util ─────────────────────────────────── */
+.letter-spacing { letter-spacing: .06em; }
+
+/* ── Feature cards ───────────────────────────────────────── */
+.lp-feature-card {
+    border-radius: var(--lp-radius) !important;
+    transition: all .3s;
+}
+.lp-feature-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--lp-shadow) !important;
+}
+.lp-feature-icon {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+}
+
+/* ── Step cards ──────────────────────────────────────────── */
+.lp-step-card {
+    background: #fff;
+    border-radius: var(--lp-radius);
+    border: 1px solid #e2e8f0;
+    transition: box-shadow .2s, transform .2s;
+}
+.lp-step-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--lp-shadow);
+}
+.lp-step-num {
+    width: 40px; height: 40px;
+    background: var(--lp-gradient);
+    color: #fff;
+    font-weight: 700;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+}
+.lp-step-icon {
+    color: var(--lp-primary);
+    font-size: 1.6rem;
+}
+
+/* ── Program Keahlian icons ──────────────────────────────── */
+.lp-prog-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+/* ── FAQ accordion ───────────────────────────────────────── */
+.accordion-button:not(.collapsed) {
+    background: linear-gradient(135deg, #ede9fe, #dbeafe);
+    color: #4f46e5;
+    box-shadow: none;
+}
+.accordion-button:focus { box-shadow: none; }
+.accordion-item { border-radius: 12px !important; }
+
+/* ── CTA Section ─────────────────────────────────────────── */
+.lp-cta {
+    background: var(--lp-cta-grad);
+    position: relative;
+    overflow: hidden;
+}
+.lp-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 80% 50%, rgba(255,255,255,.08) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+/* ── Navbar landing ──────────────────────────────────────── */
+.lp-navbar {
+    background: rgba(255,255,255,.95);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 2px 12px rgba(79,70,229,.08);
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+}
+.lp-navbar .navbar-brand {
+    font-weight: 800;
+    font-size: 1.1rem;
+    background: var(--lp-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.lp-navbar .nav-link {
+    color: var(--lp-muted) !important;
+    font-weight: 600;
+    padding: .4rem .8rem !important;
+    border-radius: 8px;
+    transition: color .2s, background .2s;
+}
+.lp-navbar .nav-link:hover {
+    color: #4f46e5 !important;
+    background: #ede9fe;
+}
+.lp-navbar .btn-masuk {
+    background: var(--lp-gradient);
+    color: #fff !important;
+    border-radius: 10px;
+    padding: .4rem 1.2rem !important;
+    font-weight: 700;
+    border: none;
+}
+.lp-navbar .btn-masuk:hover {
+    opacity: .9;
+    transform: translateY(-1px);
+}
+
+/* ── Counter animation ───────────────────────────────────── */
+.lp-counter { transition: all .3s; }
+
+/* ── Footer landing ──────────────────────────────────────── */
+.lp-footer {
+    background: #0f172a;
+    color: rgba(255,255,255,.7);
+}
+.lp-footer a {
+    color: rgba(255,255,255,.6);
+    text-decoration: none;
+    transition: color .2s;
+}
+.lp-footer a:hover { color: #818cf8; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .lp-hero { min-height: 60vh; padding-top: 2rem; }
+    .lp-hero h1 { font-size: 1.8rem; }
+    .lp-feature-icon { width: 52px; height: 52px; }
+}
+
+/* ── Remove default main padding on landing ──────────────── */
+body.landing-page main.py-4 {
+    padding: 0 !important;
+}

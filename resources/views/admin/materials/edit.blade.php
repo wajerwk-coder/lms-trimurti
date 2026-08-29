@@ -1,305 +1,165 @@
 @extends('layouts.admin')
 
-@section('title', 'Edit Materi Pembelajaran')
+@section('title', 'Edit Materi')
+@section('page-title', 'Edit Materi Pembelajaran')
+@section('page-subtitle', 'Perbarui informasi materi.')
+
+@section('page-actions')
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.materials.show', $material) }}" class="btn btn-outline-info btn-sm">
+            <i class="fas fa-eye me-1"></i>Lihat
+        </a>
+        <a href="{{ route('admin.materials.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Kembali
+        </a>
+    </div>
+@endsection
 
 @section('content')
-<div class="mb-6">
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800">Edit Materi Pembelajaran</h1>
-            <p class="text-gray-600">Ubah informasi materi pembelajaran</p>
+
+@if($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        <strong>{{ $errors->count() }} kesalahan:</strong>
+        <ul class="mb-0 mt-1 small ps-3">
+            @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+<form action="{{ route('admin.materials.update', $material) }}" method="POST" enctype="multipart/form-data">
+    @csrf @method('PUT')
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-book me-2"></i>Informasi Materi</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label fw-bold">Judul Materi <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control @error('title') is-invalid @enderror"
+                               id="title" name="title" value="{{ old('title', $material->title) }}" required>
+                        @error('title')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="content" class="form-label fw-bold">Konten</label>
+                        <textarea class="form-control @error('content') is-invalid @enderror"
+                                  id="content" name="content" rows="5">{{ old('content', $material->content) }}</textarea>
+                        @error('content')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="video_url" class="form-label fw-bold">URL Video</label>
+                        <input type="url" class="form-control @error('video_url') is-invalid @enderror"
+                               id="video_url" name="video_url"
+                               value="{{ old('video_url', $material->video_url) }}"
+                               placeholder="https://youtube.com/...">
+                        @error('video_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="file" class="form-label fw-bold">Ganti File Materi</label>
+                        @if($material->file_url)
+                            <div class="d-flex align-items-center mb-2 p-2 bg-light rounded-3">
+                                <i class="fas fa-file-alt text-success me-2"></i>
+                                <span class="small">{{ $material->file_url }}</span>
+                            </div>
+                        @endif
+                        <input type="file" class="form-control @error('file') is-invalid @enderror"
+                               id="file" name="file"
+                               accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar">
+                        <div class="form-text">Kosongkan jika tidak ingin mengubah file. Maks 40 MB.</div>
+                        @error('file')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="flex space-x-3">
-            <a href="{{ route('admin.materials.show', $material) }}" class="btn-secondary">
-                <i class="fas fa-eye mr-2"></i>
-                Lihat Detail
-            </a>
-            <a href="{{ route('admin.materials.index') }}" class="btn-secondary">
-                <i class="fas fa-arrow-left mr-2"></i>
-                Kembali
-            </a>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-cog me-2"></i>Pengaturan</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="guru_id" class="form-label fw-bold">Guru <span class="text-danger">*</span></label>
+                        <select class="form-select @error('guru_id') is-invalid @enderror"
+                                id="guru_id" name="guru_id" required>
+                            <option value="">— Pilih Guru —</option>
+                            @foreach($teachers as $guru)
+                                <option value="{{ $guru->id }}" {{ old('guru_id', $material->guru_id) == $guru->id ? 'selected' : '' }}>{{ $guru->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('guru_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="subject_id" class="form-label fw-bold">Mata Pelajaran <span class="text-danger">*</span></label>
+                        <select class="form-select @error('subject_id') is-invalid @enderror"
+                                id="subject_id" name="subject_id" required>
+                            <option value="">— Pilih Mapel —</option>
+                            @foreach($subjects as $subject)
+                                <option value="{{ $subject->id }}" {{ old('subject_id', $material->subject_id) == $subject->id ? 'selected' : '' }}>{{ $subject->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('subject_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="kelas_id" class="form-label fw-bold">Kelas</label>
+                        <select class="form-select @error('kelas_id') is-invalid @enderror"
+                                id="kelas_id" name="kelas_id">
+                            <option value="">— Semua Kelas —</option>
+                            @foreach($kelas ?? [] as $k)
+                                <option value="{{ $k->id }}" {{ old('kelas_id', $material->kelas_id) == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('kelas_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <hr class="my-2">
+                    {{-- Status publikasi --}}
+                    @if($material->published_at)
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-success">Dipublikasikan</span>
+                            <small class="text-muted">{{ $material->published_at->format('d M Y H:i') }}</small>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="unpublish"
+                                   value="1" id="unpublish">
+                            <label class="form-check-label text-warning fw-semibold" for="unpublish">
+                                Sembunyikan (jadikan draft)
+                            </label>
+                        </div>
+                    @else
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="badge bg-secondary">Draft</span>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="publish_now"
+                                   value="1" id="publish_now"
+                                   {{ old('publish_now') ? 'checked' : '' }}>
+                            <label class="form-check-label fw-semibold" for="publish_now">
+                                Publikasikan Sekarang
+                            </label>
+                        </div>
+                    @endif
+                </div>
+            </div>
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-warning fw-semibold text-dark">
+                    <i class="fas fa-save me-1"></i>Simpan Perubahan
+                </button>
+                <a href="{{ route('admin.materials.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Batal
+                </a>
+            </div>
         </div>
     </div>
-</div>
+</form>
 
-<div class="bg-white rounded-lg shadow">
-    <form action="{{ route('admin.materials.update', $material) }}" method="POST" enctype="multipart/form-data" class="p-6">
-        @csrf
-        @method('PUT')
-        
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Left Column -->
-            <div class="space-y-6">
-                <!-- Judul Materi -->
-                <div>
-                    <label for="judul" class="block text-sm font-medium text-gray-700 mb-2">
-                        Judul Materi <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" 
-                           id="judul" 
-                           name="judul" 
-                           value="{{ old('judul', $material->judul) }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('judul') border-red-500 @enderror"
-                           placeholder="Masukkan judul materi"
-                           required>
-                    @error('judul')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Guru -->
-                <div>
-                    <label for="guru_id" class="block text-sm font-medium text-gray-700 mb-2">
-                        Guru <span class="text-red-500">*</span>
-                    </label>
-                    <select id="guru_id" 
-                            name="guru_id" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('guru_id') border-red-500 @enderror"
-                            required>
-                        <option value="">Pilih Guru</option>
-                        @foreach($teachers as $teacher)
-                            <option value="{{ $teacher->id }}" {{ old('guru_id', $material->guru_id) == $teacher->id ? 'selected' : '' }}>
-                                {{ $teacher->name }} ({{ $teacher->email }})
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('guru_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Mata Pelajaran -->
-                <div>
-                    <label for="subject_id" class="block text-sm font-medium text-gray-700 mb-2">
-                        Mata Pelajaran <span class="text-red-500">*</span>
-                    </label>
-                    <select id="subject_id" 
-                            name="subject_id" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('subject_id') border-red-500 @enderror"
-                            required>
-                        <option value="">Pilih Mata Pelajaran</option>
-                        @foreach($subjects as $subject)
-                            <option value="{{ $subject->id }}" {{ old('subject_id', $material->subject_id) == $subject->id ? 'selected' : '' }}>
-                                {{ $subject->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('subject_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Kategori -->
-                <div>
-                    <label for="category" class="block text-sm font-medium text-gray-700 mb-2">
-                        Kategori <span class="text-red-500">*</span>
-                    </label>
-                    <select id="category" 
-                            name="category" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('category') border-red-500 @enderror"
-                            required>
-                        <option value="">Pilih Kategori</option>
-                        @foreach($categories as $key => $value)
-                            <option value="{{ $key }}" {{ old('category', $material->category) == $key ? 'selected' : '' }}>
-                                {{ $value }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('category')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
-
-            <!-- Right Column -->
-            <div class="space-y-6">
-                <!-- Current File Info -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">File Saat Ini</label>
-                    <div class="border border-gray-300 rounded-lg p-4 bg-gray-50">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <i class="fas fa-file-{{ $material->file_type === 'pdf' ? 'pdf' : ($material->file_type === 'doc' || $material->file_type === 'docx' ? 'word' : 'alt') }} text-2xl text-gray-400"></i>
-                            </div>
-                            <div class="ml-3 flex-1">
-                                <p class="text-sm font-medium text-gray-900">{{ $material->file }}</p>
-                                <p class="text-sm text-gray-500">{{ number_format($material->file_size / 1024, 1) }} KB • {{ strtoupper($material->file_type) }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- File Upload -->
-                <div>
-                    <label for="file" class="block text-sm font-medium text-gray-700 mb-2">
-                        Ganti File (Opsional)
-                    </label>
-                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-gray-400 transition-colors">
-                        <div class="space-y-1 text-center">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            <div class="flex text-sm text-gray-600">
-                                <label for="file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                                    <span>Upload file baru</span>
-                                    <input id="file" 
-                                           name="file" 
-                                           type="file" 
-                                           class="sr-only" 
-                                           accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar,.mp4,.avi,.mov,.jpg,.jpeg,.png">
-                                </label>
-                                <p class="pl-1">atau drag and drop</p>
-                            </div>
-                            <p class="text-xs text-gray-500">
-                                PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, ZIP, RAR, MP4, AVI, MOV, JPG, JPEG, PNG (Max 50MB)
-                            </p>
-                        </div>
-                    </div>
-                    @error('file')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Status Publikasi -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Status Publikasi</label>
-                    <div class="flex items-center">
-                        <input type="checkbox" 
-                               id="is_published" 
-                               name="is_published" 
-                               value="1"
-                               {{ old('is_published', $material->is_published) ? 'checked' : '' }}
-                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                        <label for="is_published" class="ml-2 block text-sm text-gray-900">
-                            Publikasikan materi ini
-                        </label>
-                    </div>
-                    <p class="mt-1 text-xs text-gray-500">
-                        Jika dicentang, materi akan langsung dapat diakses oleh siswa
-                    </p>
-                </div>
-
-                <!-- File Preview -->
-                <div id="filePreview" class="hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Preview File Baru</label>
-                    <div class="border border-gray-300 rounded-lg p-4 bg-gray-50">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <i id="fileIcon" class="fas fa-file text-2xl text-gray-400"></i>
-                            </div>
-                            <div class="ml-3">
-                                <p id="fileName" class="text-sm font-medium text-gray-900"></p>
-                                <p id="fileSize" class="text-sm text-gray-500"></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Deskripsi -->
-        <div class="mt-6">
-            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
-                Deskripsi Materi
-            </label>
-            <textarea id="description" 
-                      name="description" 
-                      rows="4"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('description') border-red-500 @enderror"
-                      placeholder="Masukkan deskripsi materi (opsional)">{{ old('description', $material->description) }}</textarea>
-            @error('description')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-
-        <!-- Submit Buttons -->
-        <div class="mt-8 flex justify-end space-x-3">
-            <a href="{{ route('admin.materials.show', $material) }}" class="btn-secondary">
-                Batal
-            </a>
-            <button type="submit" class="btn-primary">
-                <i class="fas fa-save mr-2"></i>
-                Update Materi
-            </button>
-        </div>
-    </form>
-</div>
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const fileInput = document.getElementById('file');
-    const filePreview = document.getElementById('filePreview');
-    const fileIcon = document.getElementById('fileIcon');
-    const fileName = document.getElementById('fileName');
-    const fileSize = document.getElementById('fileSize');
-
-    fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            // Show preview
-            filePreview.classList.remove('hidden');
-            
-            // Set file name
-            fileName.textContent = file.name;
-            
-            // Set file size
-            const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
-            fileSize.textContent = sizeInMB + ' MB';
-            
-            // Set file icon based on type
-            const extension = file.name.split('.').pop().toLowerCase();
-            const iconMap = {
-                'pdf': 'fa-file-pdf',
-                'doc': 'fa-file-word',
-                'docx': 'fa-file-word',
-                'ppt': 'fa-file-powerpoint',
-                'pptx': 'fa-file-powerpoint',
-                'xls': 'fa-file-excel',
-                'xlsx': 'fa-file-excel',
-                'txt': 'fa-file-alt',
-                'zip': 'fa-file-archive',
-                'rar': 'fa-file-archive',
-                'mp4': 'fa-file-video',
-                'avi': 'fa-file-video',
-                'mov': 'fa-file-video',
-                'jpg': 'fa-file-image',
-                'jpeg': 'fa-file-image',
-                'png': 'fa-file-image'
-            };
-            
-            const iconClass = iconMap[extension] || 'fa-file';
-            fileIcon.className = `fas ${iconClass} text-2xl text-gray-400`;
-        } else {
-            filePreview.classList.add('hidden');
-        }
-    });
-
-    // Form validation
-    const form = document.querySelector('form');
-    form.addEventListener('submit', function(e) {
-        const file = fileInput.files[0];
-        
-        // If new file is selected, validate it
-        if (file) {
-            // Check file size (50MB limit)
-            if (file.size > 50 * 1024 * 1024) {
-                e.preventDefault();
-                alert('Ukuran file terlalu besar. Maksimal 50MB');
-                return;
-            }
-
-            // Check file type
-            const allowedTypes = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'zip', 'rar', 'mp4', 'avi', 'mov', 'jpg', 'jpeg', 'png'];
-            const extension = file.name.split('.').pop().toLowerCase();
-            if (!allowedTypes.includes(extension)) {
-                e.preventDefault();
-                alert('Tipe file tidak didukung. Silakan pilih file yang sesuai');
-                return;
-            }
-        }
-    });
-});
-</script>
-@endpush
 @endsection

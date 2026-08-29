@@ -27,28 +27,43 @@
     <link href="{{ asset('css/components/universal.css') }}" rel="stylesheet">
     <link href="{{ asset('css/base-layout.css') }}" rel="stylesheet">
     @stack('css')
+    <style>
+    :root {
+        --sb-width: 280px;
+        --sb-collapsed: 68px;
+    }
+    .lms-main.sb-collapsed {
+        margin-left: var(--sb-collapsed) !important;
+    }
+    @media (max-width: 768px) {
+        .lms-main { margin-left: 0 !important; }
+    }
+    </style>
 </head>
 <body class="@yield('body-class', 'lms-layout')">
-    <div class="main-wrapper">
+    <div class="lms-wrapper" style="display:flex;min-height:100vh;">
         <!-- Sidebar -->
         @yield('sidebar')
 
         <!-- Main Content Wrapper -->
-        <div class="main-content" id="main-content">
+        <div class="lms-main" id="lms-main"
+             style="flex:1;margin-left:var(--sb-width,280px);min-width:0;display:flex;flex-direction:column;min-height:100vh;transition:margin-left .25s;">
             <!-- Header -->
-            @yield('header')
+            <div style="position:sticky;top:0;z-index:100;flex-shrink:0;">
+                @yield('header')
+            </div>
 
             <!-- Content Area -->
-            <div class="content-area" style="padding: 1.5rem;">
+            <div class="lms-body" style="flex:1;padding:1.5rem;min-width:0;">
                 <!-- Page Header -->
-                <div class="d-flex align-items-center justify-content-between mb-4">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap;">
                     <div>
-                        <h1 class="h3 mb-0 fw-bold">@yield('page-title', 'Dashboard')</h1>
-                        <p class="text-muted mb-0">@yield('page-subtitle', '')</p>
+                        <h1 style="font-size:1.25rem;font-weight:700;color:#1e293b;margin:0;line-height:1.3;">
+                            @yield('page-title', '')
+                        </h1>
+                        <p style="font-size:.8rem;color:#64748b;margin:.15rem 0 0;">@yield('page-subtitle', '')</p>
                     </div>
-                    <div>
-                        @yield('page-actions')
-                    </div>
+                    <div>@yield('page-actions')</div>
                 </div>
 
                 <!-- Flash Messages -->
@@ -57,10 +72,12 @@
                 <!-- Main Content -->
                 @yield('content')
             </div>
-        </div>
 
-        <!-- Footer (Outside main-content for consistency) -->
-        @include('partials.footer')
+            <!-- Footer -->
+            <div style="flex-shrink:0;">
+                @include('partials.footer')
+            </div>
+        </div>
     </div>
 
     <!-- jQuery -->
@@ -83,94 +100,30 @@
     @stack('js')
 
     <script>
-        // Setup CSRF token for all AJAX requests
-        $.ajaxSetup({
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            }
+    document.addEventListener('DOMContentLoaded', function() {
+        // ── Sync sidebar → main column ─────────────────────────
+        var sidebar = document.getElementById('sidebar');
+        var lmsMain = document.getElementById('lms-main') || document.getElementById('main-content');
+        if (sidebar && lmsMain) {
+            var obs = new MutationObserver(function() {
+                lmsMain.classList.toggle('sb-collapsed', sidebar.classList.contains('collapsed'));
+            });
+            obs.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+            lmsMain.classList.toggle('sb-collapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        // Auto-hide alerts
+        document.querySelectorAll('.alert').forEach(function(a) {
+            setTimeout(function() {
+                try { bootstrap.Alert.getOrCreateInstance(a)?.close(); } catch(e) {}
+            }, 5000);
         });
 
-        $(document).ready(function() {
-            // Enhanced Sidebar toggle functionality for new admin sidebar
-            $('#sidebarToggle, .sidebar-toggle, #sidebarCollapse, #mobileSidebarToggle').on('click', function(e) {
-                e.preventDefault();
-
-                // Handle new sidebar structure
-                if ($('.sidebar-wrapper').length) {
-                    $('.sidebar-wrapper').toggleClass('collapsed');
-                    $('#main-content, .main-content').toggleClass('sidebar-collapsed');
-
-                    // Update toggle icon for new structure
-                    const icon = $(this).find('i');
-                    const isCollapsed = $('.sidebar-wrapper').hasClass('collapsed');
-                    if (isCollapsed) {
-                        icon.removeClass('fa-bars').addClass('fa-arrow-right');
-                    } else {
-                        icon.removeClass('fa-arrow-right').addClass('fa-bars');
-                    }
-
-                    localStorage.setItem('admin-sidebar-collapsed', isCollapsed);
-                } else {
-                    // Fallback for old sidebar structure
-                    $('.sidebar').toggleClass('collapsed');
-                    $('.main-content').toggleClass('expanded');
-
-                    const isCollapsed = $('.sidebar').hasClass('collapsed');
-                    localStorage.setItem('sidebarCollapsed', isCollapsed);
-                }
-
-                // Animate toggle button
-                $(this).find('i').addClass('fa-spin');
-                setTimeout(() => {
-                    $(this).find('i').removeClass('fa-spin');
-                }, 300);
-
-                // Trigger resize for charts
-                setTimeout(() => {
-                    window.dispatchEvent(new Event('resize'));
-                }, 300);
-            });
-
-            // Restore sidebar state from localStorage
-            if ($('.sidebar-wrapper').length) {
-                const sidebarCollapsed = localStorage.getItem('admin-sidebar-collapsed') === 'true';
-                if (sidebarCollapsed) {
-                    $('.sidebar-wrapper').addClass('collapsed');
-                    $('#main-content, .main-content').addClass('sidebar-collapsed');
-                    $('#sidebarToggle i, .sidebar-toggle i').removeClass('fa-bars').addClass('fa-arrow-right');
-                }
-            } else {
-                const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-                if (sidebarCollapsed) {
-                    $('.sidebar').addClass('collapsed');
-                    $('.main-content').addClass('expanded');
-                }
-            }
-
-            // Close mobile sidebar when clicking outside
-            $(document).on('click', function(e) {
-                if (window.innerWidth <= 768) {
-                    if (!$(e.target).closest('.sidebar, .sidebar-wrapper, #mobileSidebarToggle, .sidebar-toggle').length) {
-                        $('.sidebar, .sidebar-wrapper').removeClass('show mobile-visible');
-                        $('.sidebar-overlay').removeClass('active');
-                        $('body').removeClass('sidebar-open');
-                    }
-                }
-            });
-
-            // Auto-hide alerts after 5 seconds
-            $('.alert').delay(5000).fadeOut(300);
-
-            // DataTables initialization
-            if ($.fn.DataTable) {
-                $('.data-table').DataTable({
-                    responsive: true,
-                    language: {
-                        url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json'
-                    }
-                });
-            }
-        });
+        // DataTables
+        if (typeof $ !== 'undefined' && $.fn.DataTable) {
+            $('.data-table').DataTable({ responsive: true, language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json' } });
+        }
+    });
     </script>
 </body>
 </html>

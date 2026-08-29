@@ -2,558 +2,483 @@
 
 @section('title', 'Materi Pembelajaran')
 @section('page-title', 'Materi Pembelajaran')
-@section('page-subtitle', 'Kelola dan upload materi pembelajaran untuk siswa')
+@section('page-subtitle', 'Kelola dan bagikan materi pembelajaran untuk siswa.')
 
 @section('breadcrumb')
-    <li class="breadcrumb-item active" aria-current="page">Materi Pembelajaran</li>
+    <li class="breadcrumb-item active" aria-current="page">Materi</li>
 @endsection
 
 @section('page-actions')
-    <div class="d-flex gap-2">
-        <button id="bulkActionButton" class="btn btn-outline-secondary" onclick="showBulkActionModal()" style="display: none;">
-            <i class="fas fa-layer-group me-2"></i>
-            Aksi Massal
-        </button>
-        <a href="{{ route('guru.materials.create') }}" class="btn btn-primary shadow-sm">
-            <i class="fas fa-plus-circle me-2"></i>
-            Tambah Materi Baru
-        </a>
-    </div>
+    <a href="{{ route('guru.materials.create') }}" class="btn btn-primary shadow-sm">
+        <i class="fas fa-plus me-2"></i>Tambah Materi
+    </a>
 @endsection
 
+@push('css')
+<style>
+/* ── Stats ─────────────────────────────────────────────── */
+.stat-card-mat {
+    border: none;
+    border-radius: 14px;
+    transition: transform .2s, box-shadow .2s;
+    overflow: hidden;
+}
+.stat-card-mat:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(0,0,0,.10) !important;
+}
+.stat-icon-mat {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    color: #fff;
+    flex-shrink: 0;
+}
+.stat-val-mat {
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.5px;
+}
+
+/* ── Material cards ────────────────────────────────────── */
+.mat-card {
+    border: 1px solid #e8edf2 !important;
+    border-radius: 14px !important;
+    transition: transform .18s, box-shadow .18s, border-color .18s;
+}
+.mat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(8,145,178,.12) !important;
+    border-color: #bae6fd !important;
+}
+.mat-file-icon {
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+.mat-card .card-header {
+    border-radius: 14px 14px 0 0 !important;
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e8edf2 !important;
+    padding: .75rem 1rem;
+}
+.mat-card .card-footer {
+    border-radius: 0 0 14px 14px !important;
+    background: #f8fafc !important;
+    border-top: 1px solid #f1f5f9 !important;
+    padding: .6rem 1rem;
+}
+.mat-badge-pub {
+    background: #dcfce7; color: #16a34a;
+    border-radius: 20px; font-size: .7rem; font-weight: 600;
+    padding: .2rem .65rem;
+}
+.mat-badge-draft {
+    background: #fef9c3; color: #a16207;
+    border-radius: 20px; font-size: .7rem; font-weight: 600;
+    padding: .2rem .65rem;
+}
+
+/* ── Filter bar ────────────────────────────────────────── */
+.filter-bar {
+    background: #fff;
+    border: 1px solid #e8edf2;
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+.filter-bar .form-control,
+.filter-bar .form-select {
+    border-radius: 8px;
+    font-size: .85rem;
+}
+
+/* ── Empty state ───────────────────────────────────────── */
+.empty-state-icon {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1rem;
+}
+</style>
+@endpush
+
 @section('content')
-<!-- Modern Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-xl-3 col-lg-6 mb-3">
-        <div class="card border-0 shadow-sm modern-stats-card">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="modern-icon bg-primary bg-gradient-primary">
-                            <i class="fas fa-book-open"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="text-muted mb-1">Total Materi</h6>
-                        <h3 class="mb-0 fw-bold text-primary">{{ $materials->total() }}</h3>
-                        <div class="progress mt-2" style="height: 4px;">
-                            <div class="progress-bar bg-primary" style="width: 75%;"></div>
-                        </div>
-                    </div>
+
+{{-- Flash --}}
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show mb-4 border-0 shadow-sm" style="border-radius:12px;">
+        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show mb-4 border-0 shadow-sm" style="border-radius:12px;">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+{{-- ══ STATS ═══════════════════════════════════════════════════════ --}}
+<div class="row g-3 mb-4">
+    @foreach([
+        ['from'=>'#0891b2','to'=>'#0e7490','icon'=>'fa-book-open',    'val'=>$materials->total(), 'label'=>'Total Materi',    'sub'=>'Semua materi'],
+        ['from'=>'#16a34a','to'=>'#15803d','icon'=>'fa-check-circle', 'val'=>$totalPublished,     'label'=>'Diterbitkan',     'sub'=>'Terlihat siswa'],
+        ['from'=>'#ca8a04','to'=>'#a16207','icon'=>'fa-clock',        'val'=>$totalDraft,         'label'=>'Draft',           'sub'=>'Belum diterbitkan'],
+        ['from'=>'#7c3aed','to'=>'#6d28d9','icon'=>'fa-download',     'val'=>$totalDownloads,     'label'=>'Total Unduhan',   'sub'=>'Oleh siswa'],
+    ] as $s)
+    <div class="col-6 col-md-3">
+        <div class="card stat-card-mat shadow-sm h-100">
+            <div class="card-body p-3 d-flex align-items-center gap-3">
+                <div class="stat-icon-mat"
+                     style="background:linear-gradient(135deg,{{ $s['from'] }},{{ $s['to'] }});">
+                    <i class="fas {{ $s['icon'] }}"></i>
+                </div>
+                <div>
+                    <div class="stat-val-mat text-dark">{{ number_format($s['val']) }}</div>
+                    <div class="fw-semibold text-dark" style="font-size:.8rem;">{{ $s['label'] }}</div>
+                    <div class="text-muted" style="font-size:.7rem;">{{ $s['sub'] }}</div>
                 </div>
             </div>
+            <div style="height:3px;background:linear-gradient(90deg,{{ $s['from'] }},{{ $s['to'] }});"></div>
         </div>
     </div>
-    
-    <div class="col-xl-3 col-lg-6 mb-3">
-        <div class="card border-0 shadow-sm modern-stats-card">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="modern-icon bg-success bg-gradient-success">
-                            <i class="fas fa-check-double"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="text-muted mb-1">Diterbitkan</h6>
-                        <h3 class="mb-0 fw-bold text-success">{{ $materials->where('published_at', '!=', null)->count() }}</h3>
-                        <div class="progress mt-2" style="height: 4px;">
-                            <div class="progress-bar bg-success" style="width: 60%;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-xl-3 col-lg-6 mb-3">
-        <div class="card border-0 shadow-sm modern-stats-card">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="modern-icon bg-info bg-gradient-info">
-                            <i class="fas fa-download"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="text-muted mb-1">Total Download</h6>
-                        <h3 class="mb-0 fw-bold text-info">{{ $materials->sum('downloads_count') ?? 0 }}</h3>
-                        <div class="progress mt-2" style="height: 4px;">
-                            <div class="progress-bar bg-info" style="width: 45%;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-xl-3 col-lg-6 mb-3">
-        <div class="card border-0 shadow-sm modern-stats-card">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="modern-icon bg-warning bg-gradient-warning">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="text-muted mb-1">Draft</h6>
-                        <h3 class="mb-0 fw-bold text-warning">{{ $materials->where('published_at', null)->count() }}</h3>
-                        <div class="progress mt-2" style="height: 4px;">
-                            <div class="progress-bar bg-warning" style="width: 25%;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    @endforeach
 </div>
 
-<!-- Modern Filter Section -->
-@if($materials->count() > 0)
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white border-bottom">
-        <div class="d-flex align-items-center justify-content-between">
-            <h5 class="mb-0 fw-semibold">
-                <i class="fas fa-filter me-2 text-primary"></i>
-                Filter & Pencarian
-            </h5>
-            <button class="btn btn-sm btn-outline-secondary" onclick="toggleAdvancedFilters()">
-                <i class="fas fa-chevron-down me-1"></i>
-                Lanjutan
+{{-- ══ FILTER BAR ══════════════════════════════════════════════════ --}}
+<div class="filter-bar">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label small fw-semibold mb-1">
+                <i class="fas fa-search me-1 text-muted"></i>Cari Materi
+            </label>
+            <input type="text" id="searchInput" class="form-control"
+                   placeholder="Cari judul atau deskripsi...">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold mb-1">
+                <i class="fas fa-book me-1 text-muted"></i>Mata Pelajaran
+            </label>
+            <select id="subjectFilter" class="form-select">
+                <option value="">Semua Mata Pelajaran</option>
+                @foreach($subjects as $subject)
+                    <option value="{{ $subject->id }}">{{ $subject->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-semibold mb-1">
+                <i class="fas fa-toggle-on me-1 text-muted"></i>Status
+            </label>
+            <select id="statusFilter" class="form-select">
+                <option value="">Semua</option>
+                <option value="published">Diterbitkan</option>
+                <option value="draft">Draft</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary flex-fill" id="resetFilter">
+                <i class="fas fa-times me-1"></i>Reset
+            </button>
+            <button type="button" class="btn btn-danger d-none" id="bulkDeleteBtn"
+                    onclick="doBulkDelete()">
+                <i class="fas fa-trash me-1"></i>
+                Hapus (<span id="bulkCount">0</span>)
             </button>
         </div>
     </div>
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-lg-4">
-                <label for="searchInput" class="form-label fw-semibold">
-                    <i class="fas fa-search me-1 text-muted"></i>
-                    Cari Materi
-                </label>
-                <div class="input-group input-group-lg">
-                    <span class="input-group-text bg-light border-end-0">
-                        <i class="fas fa-search text-muted"></i>
-                    </span>
-                    <input type="text" id="searchInput" class="form-control border-start-0" 
-                           placeholder="Cari judul atau deskripsi materi...">
-                </div>
-            </div>
-            
-            <div class="col-lg-3">
-                <label for="subjectFilter" class="form-label fw-semibold">
-                    <i class="fas fa-book me-1 text-muted"></i>
-                    Mata Pelajaran
-                </label>
-                <select id="subjectFilter" class="form-select form-select-lg">
-                    <option value="">Semua Mata Pelajaran</option>
-                    @foreach($subjects as $subject)
-                    <option value="{{ $subject->id }}">{{ $subject->nama ?? $subject->name ?? 'Subject' }}</option>
-                    @endforeach
-                </select>
-            </div>
-            
-            <div class="col-lg-2">
-                <label for="statusFilter" class="form-label fw-semibold">
-                    <i class="fas fa-toggle-on me-1 text-muted"></i>
-                    Status
-                </label>
-                <select id="statusFilter" class="form-select form-select-lg">
-                    <option value="">Semua Status</option>
-                    <option value="published">Diterbitkan</option>
-                    <option value="draft">Draft</option>
-                </select>
-            </div>
-            
-            <div class="col-lg-3">
-                <label class="form-label fw-semibold">
-                    <i class="fas fa-tasks me-1 text-muted"></i>
-                    Aksi Cepat
-                </label>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-secondary flex-fill" onclick="clearFilters()">
-                        <i class="fas fa-times me-1"></i>
-                        Reset
-                    </button>
-                    <div class="form-check form-switch d-flex align-items-center">
-                        <input type="checkbox" id="selectAllCheckbox" class="form-check-input" onchange="selectAllMaterials()">
-                        <label class="form-check-label ms-2" for="selectAllCheckbox" title="Pilih/Batal pilih semua">
-                            Pilih Semua
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Advanced Filters (Hidden by default) -->
-        <div id="advancedFilters" class="row g-3 mt-3" style="display: none;">
-            <div class="col-lg-3">
-                <label for="dateFromFilter" class="form-label fw-semibold">
-                    <i class="fas fa-calendar-alt me-1 text-muted"></i>
-                    Dari Tanggal
-                </label>
-                <input type="date" id="dateFromFilter" class="form-control">
-            </div>
-            <div class="col-lg-3">
-                <label for="dateToFilter" class="form-label fw-semibold">
-                    <i class="fas fa-calendar-alt me-1 text-muted"></i>
-                    Sampai Tanggal
-                </label>
-                <input type="date" id="dateToFilter" class="form-control">
-            </div>
-            <div class="col-lg-3">
-                <label for="fileTypeFilter" class="form-label fw-semibold">
-                    <i class="fas fa-file me-1 text-muted"></i>
-                    Tipe File
-                </label>
-                <select id="fileTypeFilter" class="form-select">
-                    <option value="">Semua Tipe</option>
-                    <option value="pdf">PDF</option>
-                    <option value="doc">Document</option>
-                    <option value="ppt">Presentation</option>
-                    <option value="video">Video</option>
-                    <option value="audio">Audio</option>
-                </select>
-            </div>
-            <div class="col-lg-3">
-                <label for="sortBy" class="form-label fw-semibold">
-                    <i class="fas fa-sort me-1 text-muted"></i>
-                    Urutkan
-                </label>
-                <select id="sortBy" class="form-select">
-                    <option value="newest">Terbaru</option>
-                    <option value="oldest">Terlama</option>
-                    <option value="name">Nama A-Z</option>
-                    <option value="downloads">Terbanyak Diunduh</option>
-                </select>
-            </div>
-        </div>
-    </div>
 </div>
-@endif
 
-<!-- Modern Materials Grid -->
-<div class="row g-4" id="materialsContainer">
+{{-- ══ SELECT ALL BAR ══════════════════════════════════════════════ --}}
+<div class="d-flex align-items-center gap-3 mb-3">
+    <div class="form-check">
+        <input type="checkbox" id="selectAll" class="form-check-input">
+        <label class="form-check-label small fw-semibold" for="selectAll">Pilih Semua</label>
+    </div>
+    <small id="resultCount" class="text-muted"></small>
+</div>
+
+{{-- ══ MATERIALS GRID ══════════════════════════════════════════════ --}}
+<div class="row g-3" id="materialsContainer">
     @forelse($materials as $material)
-    <div class="col-xl-4 col-lg-6 col-md-6">
-        <div class="card h-100 border-0 shadow-sm modern-material-card" data-subject-id="{{ $material->subject_id }}">
-            <!-- Card Header with Status Badge -->
-            <div class="card-header bg-white border-bottom">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <div class="file-icon me-2">
-                            @switch($material->file_type ?? 'pdf')
-                                @case('pdf')
-                                    <i class="fas fa-file-pdf text-danger"></i>
-                                @break
-                                @case('doc')
-                                    <i class="fas fa-file-word text-primary"></i>
-                                @break
-                                @case('ppt')
-                                    <i class="fas fa-file-powerpoint text-warning"></i>
-                                @break
-                                @case('video')
-                                    <i class="fas fa-file-video text-info"></i>
-                                @break
-                                @case('audio')
-                                    <i class="fas fa-file-audio text-success"></i>
-                                @break
-                                @default
-                                    <i class="fas fa-file text-secondary"></i>
-                            @endswitch
-                        </div>
-                        <div>
-                            <h6 class="mb-1 fw-semibold text-truncate" title="{{ $material->judul }}">
-                                {{ $material->judul }}
-                            </h6>
-                            <small class="text-muted">
-                                <i class="fas fa-book me-1"></i>
-                                {{ $material->subject->name ?? 'Unknown Subject' }}
-                            </small>
-                        </div>
-                    </div>
-                    <div>
-                        @if($material->published_at)
-                            <span class="badge bg-success bg-gradient-success">
-                                <i class="fas fa-check-circle me-1"></i>
-                                Diterbitkan
-                            </span>
-                        @else
-                            <span class="badge bg-warning bg-gradient-warning">
-                                <i class="fas fa-clock me-1"></i>
-                                Draft
-                            </span>
-                        @endif
+    @php
+        $ext = strtolower(pathinfo($material->file_url ?? '', PATHINFO_EXTENSION));
+        [$fileIcon, $fileBg, $fileColor] = match(true) {
+            in_array($ext, ['pdf'])                     => ['fa-file-pdf',        '#fee2e2', '#dc2626'],
+            in_array($ext, ['doc','docx'])              => ['fa-file-word',       '#dbeafe', '#3b82f6'],
+            in_array($ext, ['ppt','pptx'])              => ['fa-file-powerpoint', '#fff7ed', '#ea580c'],
+            in_array($ext, ['xls','xlsx'])              => ['fa-file-excel',      '#dcfce7', '#16a34a'],
+            in_array($ext, ['zip','rar'])               => ['fa-file-archive',    '#f3e8ff', '#7c3aed'],
+            in_array($ext, ['mp4','avi','mov','mkv'])   => ['fa-file-video',      '#e0f2fe', '#0891b2'],
+            !empty($material->video_url)                => ['fa-play-circle',     '#e0f2fe', '#0891b2'],
+            default                                     => ['fa-file-alt',        '#f1f5f9', '#64748b'],
+        };
+        $isPublished = !is_null($material->published_at);
+    @endphp
+
+    <div class="col-xl-4 col-lg-6 mat-col"
+         data-subject="{{ $material->subject_id }}"
+         data-status="{{ $isPublished ? 'published' : 'draft' }}"
+         data-title="{{ strtolower($material->title) }}">
+        <div class="card mat-card h-100 shadow-sm">
+
+            {{-- Header --}}
+            <div class="card-header d-flex align-items-start gap-3">
+                <div class="mat-file-icon flex-shrink-0"
+                     style="background:{{ $fileBg }};">
+                    <i class="fas {{ $fileIcon }}" style="color:{{ $fileColor }};"></i>
+                </div>
+                <div class="flex-grow-1" style="min-width:0;">
+                    <h6 class="mb-1 fw-semibold text-dark text-truncate"
+                        title="{{ $material->title }}" style="font-size:.88rem;">
+                        {{ $material->title }}
+                    </h6>
+                    <div class="text-muted" style="font-size:.75rem;">
+                        <i class="fas fa-book me-1"></i>
+                        {{ $material->subject?->name ?? '—' }}
                     </div>
                 </div>
+                <span class="{{ $isPublished ? 'mat-badge-pub' : 'mat-badge-draft' }} flex-shrink-0">
+                    {{ $isPublished ? 'Terbit' : 'Draft' }}
+                </span>
             </div>
-            
-            <!-- Card Body with Preview -->
-            <div class="card-body">
-                <p class="card-text text-muted small mb-3" style="height: 60px; overflow: hidden;">
-                    {{ Str::limit(strip_tags($material->content ?? ''), 100) }}
+
+            {{-- Body --}}
+            <div class="card-body py-3 px-3">
+                {{-- Deskripsi --}}
+                <p class="text-muted mb-3"
+                   style="font-size:.8rem;line-height:1.55;height:52px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">
+                    {{ strip_tags($material->content ?? 'Tidak ada deskripsi.') }}
                 </p>
-                
-                <!-- File Info -->
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div class="d-flex gap-3">
-                        <span class="text-muted small">
-                            <i class="fas fa-download me-1 text-primary"></i>
-                            {{ $material->downloads_count ?? 0 }}
-                        </span>
-                        <span class="text-muted small">
-                            <i class="fas fa-hdd me-1 text-info"></i>
-                            {{ $material->file_size_formatted ?? 'Unknown' }}
-                        </span>
+
+                {{-- Meta info --}}
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="d-flex align-items-center gap-1">
+                            <div class="rounded-2 bg-primary bg-opacity-10 d-flex align-items-center justify-content-center"
+                                 style="width:26px;height:26px;">
+                                <i class="fas fa-download text-primary" style="font-size:.65rem;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold text-dark" style="font-size:.78rem;">
+                                    {{ number_format($material->downloads_count ?? 0) }}
+                                </div>
+                                <div class="text-muted" style="font-size:.65rem;">Unduhan</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="text-muted small">
-                        <i class="fas fa-calendar me-1"></i>
-                        {{ $material->created_at->format('d M Y') }}
+                    <div class="col-6">
+                        <div class="d-flex align-items-center gap-1">
+                            <div class="rounded-2 bg-info bg-opacity-10 d-flex align-items-center justify-content-center"
+                                 style="width:26px;height:26px;">
+                                <i class="fas fa-calendar text-info" style="font-size:.65rem;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold text-dark" style="font-size:.78rem;">
+                                    {{ $material->created_at->format('d M Y') }}
+                                </div>
+                                <div class="text-muted" style="font-size:.65rem;">Ditambahkan</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Action Buttons -->
+
+                {{-- Action buttons --}}
                 <div class="d-flex gap-2">
-                    <button class="btn btn-primary btn-sm flex-fill" onclick="viewMaterial({{ $material->id }})">
-                        <i class="fas fa-eye me-1"></i>
-                        Lihat
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="editMaterial({{ $material->id }})">
+                    <a href="{{ route('guru.materials.show', $material->id) }}"
+                       class="btn btn-sm btn-primary flex-fill" style="border-radius:8px;">
+                        <i class="fas fa-eye me-1"></i>Lihat
+                    </a>
+                    <a href="{{ route('guru.materials.edit', $material->id) }}"
+                       class="btn btn-sm btn-outline-secondary" style="border-radius:8px;"
+                       title="Edit">
                         <i class="fas fa-edit"></i>
-                    </button>
-                    @if($material->file)
-                    <button class="btn btn-success btn-sm" onclick="downloadMaterial({{ $material->id }})">
+                    </a>
+                    @if($material->file_url)
+                    <a href="{{ route('guru.materials.download', $material->id) }}"
+                       class="btn btn-sm btn-outline-success" style="border-radius:8px;"
+                       title="Unduh">
                         <i class="fas fa-download"></i>
-                    </button>
+                    </a>
                     @endif
                 </div>
             </div>
-            
-            <!-- Card Footer with Actions -->
-            <div class="card-footer bg-light border-top">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input material-checkbox" 
-                               value="{{ $material->id }}" onchange="updateBulkAction()">
-                        <label class="form-check-label small" for="material{{ $material->id }}">
-                            Pilih
-                        </label>
-                    </div>
-                    
-                    <div class="btn-group btn-group-sm">
-                        <form method="POST" action="{{ route('guru.materials.toggle-publish', $material->id) }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn {{ $material->published_at ? 'btn-warning' : 'btn-success' }}" 
-                                    title="{{ $material->published_at ? 'Sembunyikan materi dari siswa' : 'Terbitkan materi untuk siswa' }}">
-                                <i class="fas {{ $material->published_at ? 'fa-eye-slash' : 'fa-eye' }}"></i>
-                            </button>
-                        </form>
-                        <form method="POST" action="{{ route('guru.materials.destroy', $material->id) }}" class="d-inline" 
-                              onsubmit="return confirm('Apakah Anda yakin ingin menghapus materi \"{{ addslashes($material->judul) }}\"?\n\nTindakan ini tidak dapat dibatalkan.')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger" title="Hapus materi ini">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </form>
-                    </div>
+
+            {{-- Footer --}}
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <div class="form-check mb-0">
+                    <input type="checkbox" class="form-check-input mat-check"
+                           value="{{ $material->id }}" id="mc{{ $material->id }}">
+                    <label class="form-check-label small text-muted" for="mc{{ $material->id }}">
+                        Pilih
+                    </label>
+                </div>
+
+                <div class="d-flex gap-1">
+                    {{-- Toggle publish --}}
+                    <form method="POST"
+                          action="{{ route('guru.materials.toggle-publish', $material->id) }}"
+                          class="d-inline">
+                        @csrf
+                        <button type="submit"
+                                class="btn btn-sm {{ $isPublished ? 'btn-outline-warning' : 'btn-outline-success' }}"
+                                style="border-radius:7px;"
+                                title="{{ $isPublished ? 'Sembunyikan' : 'Terbitkan' }}">
+                            <i class="fas {{ $isPublished ? 'fa-eye-slash' : 'fa-eye' }}" style="font-size:.72rem;"></i>
+                        </button>
+                    </form>
+                    {{-- Hapus --}}
+                    <form method="POST"
+                          action="{{ route('guru.materials.destroy', $material->id) }}"
+                          class="d-inline"
+                          onsubmit="return confirm('Hapus materi \'{{ addslashes($material->title) }}\'?')">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                style="border-radius:7px;" title="Hapus">
+                            <i class="fas fa-trash" style="font-size:.72rem;"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
     @empty
-        <div class="col-12">
-            <div class="text-center py-5">
-                <div class="mb-4">
-                    <i class="fas fa-folder-open fa-4x text-muted"></i>
-                </div>
-                <h4 class="text-muted mb-3">Belum Ada Materi</h4>
-                <p class="text-muted mb-4">Mulai dengan menambahkan materi pembelajaran pertama Anda.</p>
-                <a href="{{ route('guru.materials.create') }}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-plus-circle me-2"></i>
-                    Tambah Materi Baru
-                </a>
+    <div class="col-12">
+        <div class="text-center py-5">
+            <div class="empty-state-icon">
+                <i class="fas fa-book-open fa-2x text-info opacity-75"></i>
             </div>
+            <h5 class="text-muted mb-2">Belum Ada Materi</h5>
+            <p class="text-muted small mb-4">Mulai dengan menambahkan materi pembelajaran pertama untuk siswa.</p>
+            <a href="{{ route('guru.materials.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Tambah Materi
+            </a>
         </div>
+    </div>
     @endforelse
 </div>
 
-<!-- Modern Pagination -->
+{{-- Pagination --}}
 @if($materials->hasPages())
-<div class="d-flex justify-content-between align-items-center mt-4">
-    <div class="text-muted">
-        Menampilkan {{ $materials->firstItem() }} - {{ $materials->lastItem() }} dari {{ $materials->total() }} materi
-    </div>
+<div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2 mt-4">
+    <small class="text-muted">
+        Menampilkan {{ $materials->firstItem() }}–{{ $materials->lastItem() }}
+        dari {{ number_format($materials->total()) }} materi
+    </small>
     {{ $materials->links() }}
 </div>
 @endif
 
 @endsection
 
-@push('styles')
-<style>
-.modern-stats-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.modern-stats-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
-}
-
-.modern-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.bg-gradient-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.bg-gradient-success { background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%); }
-.bg-gradient-info { background: linear-gradient(135deg, #0093E9 0%, #80D0C7 100%); }
-.bg-gradient-warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-
-.modern-material-card {
-    transition: all 0.3s ease;
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.modern-material-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
-}
-
-.file-icon {
-    font-size: 1.5rem;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    background: rgba(0,0,0,0.05);
-}
-
-.progress {
-    border-radius: 10px;
-}
-
-.card-header {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-}
-
-.btn-group-sm .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-}
-
-.form-control:focus, .form-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-.badge {
-    font-size: 0.7rem;
-    padding: 0.35rem 0.65rem;
-    border-radius: 6px;
-}
-</style>
-@endpush
-
-@push('scripts')
+@push('js')
 <script>
-function toggleAdvancedFilters() {
-    const filters = document.getElementById('advancedFilters');
-    const button = event.target.closest('button');
-    
-    if (filters.style.display === 'none') {
-        filters.style.display = 'flex';
-        button.innerHTML = '<i class="fas fa-chevron-up me-1"></i>Sederhana';
-    } else {
-        filters.style.display = 'none';
-        button.innerHTML = '<i class="fas fa-chevron-down me-1"></i>Lanjutan';
+document.addEventListener('DOMContentLoaded', function () {
+
+    const searchInput  = document.getElementById('searchInput');
+    const subjectFil   = document.getElementById('subjectFilter');
+    const statusFil    = document.getElementById('statusFilter');
+    const resetBtn     = document.getElementById('resetFilter');
+    const selectAll    = document.getElementById('selectAll');
+    const bulkDeleteBtn= document.getElementById('bulkDeleteBtn');
+    const bulkCount    = document.getElementById('bulkCount');
+    const resultCount  = document.getElementById('resultCount');
+    const cols         = document.querySelectorAll('.mat-col');
+
+    // ── Filter ─────────────────────────────────────────
+    function filterCards() {
+        const q  = (searchInput?.value ?? '').toLowerCase().trim();
+        const sj = subjectFil?.value  ?? '';
+        const st = statusFil?.value   ?? '';
+        let visible = 0;
+
+        cols.forEach(function (col) {
+            const title   = col.dataset.title   ?? '';
+            const subject = col.dataset.subject ?? '';
+            const status  = col.dataset.status  ?? '';
+            const text    = col.textContent.toLowerCase();
+
+            const ok = (!q  || text.includes(q))
+                    && (!sj || subject === sj)
+                    && (!st || status  === st);
+
+            col.style.display = ok ? '' : 'none';
+            if (ok) visible++;
+        });
+
+        if (resultCount) {
+            resultCount.textContent = visible < cols.length
+                ? `Menampilkan ${visible} dari ${cols.length} materi`
+                : '';
+        }
     }
-}
 
-function clearFilters() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('subjectFilter').value = '';
-    document.getElementById('statusFilter').value = '';
-    document.getElementById('dateFromFilter').value = '';
-    document.getElementById('dateToFilter').value = '';
-    document.getElementById('fileTypeFilter').value = '';
-    document.getElementById('sortBy').value = 'newest';
-    
-    // Trigger search to reset results
-    filterMaterials();
-}
+    if (searchInput) searchInput.addEventListener('input',  filterCards);
+    if (subjectFil)  subjectFil.addEventListener('change',  filterCards);
+    if (statusFil)   statusFil.addEventListener('change',   filterCards);
 
-function viewMaterial(id) {
-    window.location.href = `/guru/materials/${id}`;
-}
-
-function editMaterial(id) {
-    window.location.href = `/guru/materials/${id}/edit`;
-}
-
-function downloadMaterial(id) {
-    window.location.href = `/guru/materials/${id}/download`;
-}
-
-// Enhanced search and filter functionality
-function filterMaterials() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const subjectFilter = document.getElementById('subjectFilter').value;
-    const statusFilter = document.getElementById('statusFilter').value;
-    
-    const cards = document.querySelectorAll('.modern-material-card');
-    
-    cards.forEach(card => {
-        const title = card.querySelector('h6').textContent.toLowerCase();
-        const subjectId = card.dataset.subjectId;
-        const statusBadge = card.querySelector('.badge');
-        const isPublished = statusBadge.textContent.includes('Diterbitkan');
-        
-        let show = true;
-        
-        // Search filter
-        if (searchTerm && !title.includes(searchTerm)) {
-            show = false;
-        }
-        
-        // Subject filter
-        if (subjectFilter && subjectId !== subjectFilter) {
-            show = false;
-        }
-        
-        // Status filter
-        if (statusFilter === 'published' && !isPublished) {
-            show = false;
-        } else if (statusFilter === 'draft' && isPublished) {
-            show = false;
-        }
-        
-        card.parentElement.style.display = show ? 'block' : 'none';
+    if (resetBtn) resetBtn.addEventListener('click', function () {
+        if (searchInput) searchInput.value = '';
+        if (subjectFil)  subjectFil.value  = '';
+        if (statusFil)   statusFil.value   = '';
+        filterCards();
     });
-}
 
-// Add event listeners
-document.getElementById('searchInput')?.addEventListener('input', filterMaterials);
-document.getElementById('subjectFilter')?.addEventListener('change', filterMaterials);
-document.getElementById('statusFilter')?.addEventListener('change', filterMaterials);
+    // ── Checkboxes ─────────────────────────────────────
+    function updateBulk() {
+        const checked = document.querySelectorAll('.mat-check:checked').length;
+        if (bulkCount)    bulkCount.textContent = checked;
+        if (bulkDeleteBtn) bulkDeleteBtn.classList.toggle('d-none', checked === 0);
+        if (selectAll) {
+            const all = document.querySelectorAll('.mat-check').length;
+            selectAll.indeterminate = checked > 0 && checked < all;
+            selectAll.checked       = checked === all && all > 0;
+        }
+    }
 
-// Initialize tooltips
-document.addEventListener('DOMContentLoaded', function() {
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+    document.querySelectorAll('.mat-check').forEach(cb => {
+        cb.addEventListener('change', updateBulk);
     });
+
+    if (selectAll) selectAll.addEventListener('change', function () {
+        document.querySelectorAll('.mat-check').forEach(cb => cb.checked = this.checked);
+        updateBulk();
+    });
+
+    // ── Bulk Delete ─────────────────────────────────────
+    window.doBulkDelete = function () {
+        const ids = Array.from(document.querySelectorAll('.mat-check:checked')).map(cb => cb.value);
+        if (!ids.length) return;
+        if (!confirm(`Hapus ${ids.length} materi yang dipilih? Tindakan ini tidak dapat dibatalkan.`)) return;
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route("guru.materials.bulk-delete") }}';
+
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden'; csrf.name = '_token';
+        csrf.value = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+        form.appendChild(csrf);
+
+        ids.forEach(id => {
+            const inp = document.createElement('input');
+            inp.type = 'hidden'; inp.name = 'ids[]'; inp.value = id;
+            form.appendChild(inp);
+        });
+        document.body.appendChild(form);
+        form.submit();
+    };
+
+    // Init count
+    updateBulk();
+    filterCards();
 });
 </script>
 @endpush

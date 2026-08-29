@@ -1,144 +1,80 @@
 @extends('layouts.guru')
 
-@section('title', 'Dashboard Laporan')
+@section('title', 'Laporan')
+@section('page-title', 'Laporan Mengajar')
+@section('page-subtitle', 'Analitik dan laporan mengajar yang komprehensif.')
+
+@section('page-actions')
+    <button class="btn btn-outline-secondary btn-sm me-1" onclick="window.location.reload()">
+        <i class="fas fa-sync-alt me-1"></i>Perbarui
+    </button>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#exportModal">
+        <i class="fas fa-download me-1"></i>Ekspor
+    </button>
+@endsection
+
+@push('css')
+<style>
+.report-card { transition: all .2s; }
+.report-card:hover { border-color: var(--bs-primary) !important; transform: translateY(-2px); }
+.stats-card { position: relative; overflow: hidden; }
+.stats-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background: linear-gradient(90deg, var(--bs-primary), var(--bs-info));
+}
+</style>
+@endpush
 
 @section('content')
-<!-- Page Header -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="h2 mb-1 text-dark fw-bold">
-            <i class="fas fa-chart-line text-primary me-2"></i>
-            Dashboard Laporan
-        </h1>
-        <p class="text-muted mb-0">Analitik dan laporan mengajar yang komprehensif</p>
-    </div>
-    <div class="d-flex gap-2">
-        <button class="btn btn-outline-primary btn-sm" onclick="refreshData()">
-            <i class="fas fa-sync-alt me-1"></i> Perbarui
-        </button>
-        <button class="btn btn-primary btn-sm" onclick="showExportModal()">
-            <i class="fas fa-download me-1"></i> Ekspor
-        </button>
-    </div>
-</div>
-
-<!-- Filter Rentang Tanggal -->
-<div class="card mb-4 border-0 shadow-sm">
-    <div class="card-header bg-gradient bg-primary text-white border-0">
-        <h5 class="card-title mb-0">
-            <i class="fas fa-calendar-range me-2"></i>
-            Periode Laporan
-        </h5>
+{{-- Filter Periode --}}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom py-3">
+        <h6 class="mb-0 fw-semibold"><i class="fas fa-calendar-alt me-2 text-primary"></i>Periode Laporan</h6>
     </div>
     <div class="card-body">
         <form method="GET" action="{{ route('guru.reports.index') }}" class="row g-3 align-items-end">
             <div class="col-md-4">
-                <label for="start_date" class="form-label fw-medium">
-                    <i class="fas fa-calendar-alt text-primary me-1"></i>
-                    Tanggal Mulai
-                </label>
-                <input type="date" id="start_date" name="start_date" value="{{ $startDate }}" 
-                       class="form-control form-control-lg border-2" required>
+                <label class="form-label small fw-semibold">Tanggal Mulai</label>
+                <input type="date" name="start_date" value="{{ $startDate }}" class="form-control" required>
             </div>
             <div class="col-md-4">
-                <label for="end_date" class="form-label fw-medium">
-                    <i class="fas fa-calendar-alt text-primary me-1"></i>
-                    Tanggal Akhir
-                </label>
-                <input type="date" id="end_date" name="end_date" value="{{ $endDate }}" 
-                       class="form-control form-control-lg border-2" required>
+                <label class="form-label small fw-semibold">Tanggal Akhir</label>
+                <input type="date" name="end_date" value="{{ $endDate }}" class="form-control" required>
             </div>
             <div class="col-md-4">
-                <button type="submit" class="btn btn-primary btn-lg w-100">
-                    <i class="fas fa-search me-2"></i>
-                    Perbarui Periode
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-1"></i>Perbarui Periode
                 </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Ringkasan Statistik -->
-<div class="row mb-4">
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
-        <div class="stats-card hover-lift">
-            <div class="d-flex align-items-center">
-                <div class="flex-shrink-0">
-                    <div class="avatar avatar-lg bg-primary bg-gradient rounded-circle">
-                        <i class="fas fa-book-open text-white fs-4"></i>
+{{-- Stats Cards --}}
+<div class="row g-3 mb-4">
+    @foreach([
+        ['primary', 'fa-book-open',   $stats['total_materials']    ?? 0, 'Materi',   'Sumber aktif'],
+        ['success', 'fa-tasks',       $stats['total_assignments']  ?? 0, 'Tugas',    'Total dibuat'],
+        ['warning', 'fa-flask',       $stats['total_practicals']   ?? 0, 'Praktikum','Kegiatan lab'],
+        ['info',    'fa-user-check',  $stats['total_attendance']   ?? 0, 'Absensi',  'Rekaman terlacak'],
+    ] as [$c, $ic, $v, $l, $sub])
+    <div class="col-6 col-md-3">
+        <div class="card stats-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 p-3 bg-{{ $c }} bg-opacity-10 flex-shrink-0">
+                        <i class="fas {{ $ic }} text-{{ $c }} fa-lg"></i>
                     </div>
-                </div>
-                <div class="flex-grow-1 ms-3">
-                    <div class="text-muted text-uppercase fs-7 fw-medium mb-1">Materi</div>
-                    <div class="h3 mb-0 text-primary fw-bold">{{ number_format($stats['total_materials'] ?? 0) }}</div>
-                    <small class="text-success">
-                        <i class="fas fa-arrow-up me-1"></i>
-                        Sumber aktif
-                    </small>
+                    <div>
+                        <div class="h3 fw-bold mb-0 text-{{ $c }}">{{ number_format($v) }}</div>
+                        <div class="small fw-semibold text-dark">{{ $l }}</div>
+                        <div class="text-muted" style="font-size:.72rem;">{{ $sub }}</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
-        <div class="stats-card hover-lift">
-            <div class="d-flex align-items-center">
-                <div class="flex-shrink-0">
-                    <div class="avatar avatar-lg bg-success bg-gradient rounded-circle">
-                        <i class="fas fa-tasks text-white fs-4"></i>
-                    </div>
-                </div>
-                <div class="flex-grow-1 ms-3">
-                    <div class="text-muted text-uppercase fs-7 fw-medium mb-1">Tugas</div>
-                    <div class="h3 mb-0 text-success fw-bold">{{ number_format($stats['total_assignments'] ?? 0) }}</div>
-                    <small class="text-info">
-                        <i class="fas fa-clock me-1"></i>
-                        Total dibuat
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
-        <div class="stats-card hover-lift">
-            <div class="d-flex align-items-center">
-                <div class="flex-shrink-0">
-                    <div class="avatar avatar-lg bg-warning bg-gradient rounded-circle">
-                        <i class="fas fa-flask text-white fs-4"></i>
-                    </div>
-                </div>
-                <div class="flex-grow-1 ms-3">
-                    <div class="text-muted text-uppercase fs-7 fw-medium mb-1">Praktikum</div>
-                    <div class="h3 mb-0 text-warning fw-bold">{{ number_format($stats['total_practicals'] ?? 0) }}</div>
-                    <small class="text-warning">
-                        <i class="fas fa-beaker me-1"></i>
-                        Kegiatan lab
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
-        <div class="stats-card hover-lift">
-            <div class="d-flex align-items-center">
-                <div class="flex-shrink-0">
-                    <div class="avatar avatar-lg bg-info bg-gradient rounded-circle">
-                        <i class="fas fa-user-check text-white fs-4"></i>
-                    </div>
-                </div>
-                <div class="flex-grow-1 ms-3">
-                    <div class="text-muted text-uppercase fs-7 fw-medium mb-1">Absensi</div>
-                    <div class="h3 mb-0 text-info fw-bold">{{ number_format($stats['total_attendance'] ?? 0) }}</div>
-                    <small class="text-primary">
-                        <i class="fas fa-calendar me-1"></i>
-                        Rekaman terlacak
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
+    @endforeach
 </div>
 
 <!-- Kategori Laporan -->
@@ -203,7 +139,7 @@
                 </div>
                 <p class="text-muted mb-3">Ekspor laporan dalam berbagai format (PDF, Excel, CSV). Buat laporan khusus dengan opsi filter lanjutan.</p>
                 <div class="d-flex justify-content-between align-items-center">
-                    <button class="btn btn-info btn-sm" onclick="showExportModal()">
+                    <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#exportModal">
                         <i class="fas fa-file-export me-1"></i> Ekspor Data
                     </button>
                     <span class="badge bg-info bg-opacity-10 text-info">Multi-format</span>
@@ -345,175 +281,29 @@
     </div>
 </div>
 
+@push('js')
 <script>
-// Initialize Bootstrap components
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
-    // Add loading animation to stats cards
-    setTimeout(() => {
-        document.querySelectorAll('.stats-card').forEach((card, index) => {
+document.addEventListener('DOMContentLoaded', function () {
+    // Export form loading state
+    const exportForm = document.getElementById('exportForm');
+    if (exportForm) {
+        exportForm.addEventListener('submit', function () {
+            const btn    = document.getElementById('exportBtn');
+            const bText  = btn.querySelector('.btn-text');
+            const spin   = btn.querySelector('.spinner-border');
+            bText.textContent = 'Membuat...';
+            spin.classList.remove('d-none');
+            btn.disabled = true;
             setTimeout(() => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                card.style.transition = 'all 0.5s ease';
-                setTimeout(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, 100);
-            }, index * 100);
+                bText.textContent = 'Ekspor PDF';
+                spin.classList.add('d-none');
+                btn.disabled = false;
+                bootstrap.Modal.getInstance(document.getElementById('exportModal'))?.hide();
+            }, 3000);
         });
-    }, 100);
-});
-
-function showExportModal() {
-    const modal = new bootstrap.Modal(document.getElementById('exportModal'));
-    modal.show();
-}
-
-function refreshData() {
-    // Show loading state
-    const refreshBtn = event.target;
-    const originalText = refreshBtn.innerHTML;
-    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Memuat...';
-    refreshBtn.disabled = true;
-    
-    // Reload the page after a short delay
-    setTimeout(() => {
-        window.location.reload();
-    }, 1000);
-}
-
-// Handle export form submission
-document.getElementById('exportForm').addEventListener('submit', function() {
-    const btn = document.getElementById('exportBtn');
-    const btnText = btn.querySelector('.btn-text');
-    const spinner = btn.querySelector('.spinner-border');
-    
-    // Show loading state
-    btnText.textContent = 'Membuat...';
-    spinner.classList.remove('d-none');
-    btn.disabled = true;
-    
-    // Reset after 3 seconds (assuming download starts)
-    setTimeout(() => {
-        btnText.textContent = 'Ekspor PDF';
-        spinner.classList.add('d-none');
-        btn.disabled = false;
-        bootstrap.Modal.getInstance(document.getElementById('exportModal')).hide();
-    }, 3000);
+    }
 });
 </script>
+@endpush
 
-<style>
-/* Custom CSS for enhanced styling */
-.hover-lift {
-    transition: all 0.3s ease;
-}
-
-.hover-lift:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
-}
-
-.avatar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.avatar-sm {
-    width: 2rem;
-    height: 2rem;
-    font-size: 0.875rem;
-}
-
-.avatar-md {
-    width: 2.5rem;
-    height: 2.5rem;
-    font-size: 1rem;
-}
-
-.avatar-lg {
-    width: 3rem;
-    height: 3rem;
-    font-size: 1.25rem;
-}
-
-.fs-7 {
-    font-size: 0.875rem;
-}
-
-.report-card {
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0,0,0,0.05) !important;
-}
-
-.report-card:hover {
-    border-color: var(--bs-primary) !important;
-}
-
-.stats-card {
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0,0,0,0.05) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-.stats-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    background: linear-gradient(90deg, var(--bs-primary), var(--bs-info));
-}
-
-.card-header.bg-gradient {
-    background: linear-gradient(135deg, var(--bs-primary), var(--bs-info)) !important;
-}
-
-.btn {
-    transition: all 0.3s ease;
-}
-
-.btn:hover {
-    transform: translateY(-1px);
-}
-
-/* Animation classes */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.animate-fade-in {
-    animation: fadeInUp 0.6s ease forwards;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .stats-card {
-        margin-bottom: 1rem;
-    }
-    
-    .avatar-lg {
-        width: 2.5rem;
-        height: 2.5rem;
-        font-size: 1rem;
-    }
-}
-</style>
 @endsection

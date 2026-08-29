@@ -2,6 +2,7 @@
 
 @section('title', 'Pengaturan Sistem')
 @section('page-title', 'Pengaturan Sistem')
+@section('page-subtitle', 'Konfigurasi sistem LMS Trimurti Husada.')
 
 @section('breadcrumb')
     <li class="breadcrumb-item active">Pengaturan Sistem</li>
@@ -37,10 +38,10 @@
 @endif
 
 <!-- Settings Form -->
-<div class="card shadow">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">
-            <i class="fas fa-cogs me-2"></i>Konfigurasi Sistem
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3">
+        <h6 class="mb-0 fw-semibold">
+            <i class="fas fa-cogs me-2 text-primary"></i>Konfigurasi Sistem
         </h6>
     </div>
     <div class="card-body">
@@ -159,7 +160,7 @@
 
                         <div class="col-md-6">
                             <label for="semester" class="form-label">Semester Aktif <span class="text-danger">*</span></label>
-                            <select name="semester" id="semester" class="form-control" required>
+                            <select name="semester" id="semester" class="form-select" required>
                                 <option value="1" selected>Semester 1 (Ganjil)</option>
                                 <option value="2">Semester 2 (Genap)</option>
                             </select>
@@ -275,7 +276,7 @@
 
                         <div class="col-md-6">
                             <label for="backup_frequency" class="form-label">Frekuensi Backup</label>
-                            <select name="backup_frequency" id="backup_frequency" class="form-control">
+                            <select name="backup_frequency" id="backup_frequency" class="form-select">
                                 <option value="daily" selected>Harian</option>
                                 <option value="weekly">Mingguan</option>
                                 <option value="monthly">Bulanan</option>
@@ -476,108 +477,3 @@ function showAlert(message, type = 'info') {
 }
 </script>
 @endsection
-
-@push('styles')
-<style>
-.nav-tabs .nav-link {
-    color: #6c757d;
-    border-color: transparent;
-    border-bottom: 2px solid transparent;
-}
-
-.nav-tabs .nav-link:hover {
-    color: #495057;
-    border-color: #e9ecef #e9ecef #dee2e6;
-}
-
-.nav-tabs .nav-link.active {
-    color: #495057;
-    background-color: #fff;
-    border-color: #dee2e6 #dee2e6 #fff;
-    border-bottom: 2px solid #007bff;
-}
-
-.form-control:focus {
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.form-check-input:focus {
-    border-color: #80bdff;
-    outline: 0;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-.card-header {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-}
-
-.card-footer {
-    background-color: #f8f9fa;
-    border-top: 1px solid rgba(0, 0, 0, 0.125);
-}
-
-.btn-outline-secondary:hover {
-    background-color: #6c757d;
-    border-color: #6c757d;
-}
-
-.tab-content {
-    padding-top: 1.5rem;
-}
-
-.form-text {
-    font-size: 0.875em;
-    color: #6c757d;
-}
-
-.alert.auto-dismiss {
-    animation: slideInDown 0.5s ease-out;
-}
-
-@keyframes slideInDown {
-    from {
-        transform: translateY(-100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.img-thumbnail {
-    padding: 0.25rem;
-    background-color: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 0.25rem;
-    max-width: 100%;
-    height: auto;
-}
-
-.form-switch .form-check-input {
-    width: 2em;
-    margin-left: -2.5em;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%2855, 63, 71, 0.75%29'/%3e%3c/svg%3e");
-    background-position: left center;
-    background-size: contain;
-    background-repeat: no-repeat;
-    border-radius: 2em;
-    transition: background-position 0.15s ease-in-out;
-}
-
-.form-switch .form-check-input:checked {
-    background-position: right center;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
-}
-
-.btn .fas {
-    font-size: 0.875em;
-}
-
-.spinner-border-sm {
-    width: 1rem;
-    height: 1rem;
-}
-</style>
-@endpush

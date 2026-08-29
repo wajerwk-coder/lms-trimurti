@@ -1,302 +1,247 @@
 @extends('layouts.admin')
 
 @section('title', 'Detail Praktikum')
+@section('page-title', 'Detail Praktikum')
+@section('page-subtitle', 'Informasi lengkap praktikum.')
 
-@section('content')
-<div class="mb-6">
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800">Detail Praktikum</h1>
-            <p class="text-gray-600">Informasi lengkap praktikum {{ $practical->judul }}</p>
-        </div>
-        <div class="flex space-x-3">
-            <a href="{{ route('admin.practicals.edit', $practical) }}" 
-               class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                <i class="fas fa-edit mr-2"></i> Edit
-            </a>
-            @if($practical->tanggal >= now())
-            <button type="button" 
-                    class="px-4 py-2 {{ $practical->is_published ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-600 hover:bg-green-700' }} text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-{{ $practical->is_published ? 'gray' : 'green' }}-500"
-                    onclick="togglePublish({{ $practical->id }})">
-                <i class="fas fa-{{ $practical->is_published ? 'eye-slash' : 'eye' }} mr-2"></i>
+@section('page-actions')
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ route('admin.practicals.edit', $practical) }}" class="btn btn-warning btn-sm">
+            <i class="fas fa-edit me-1"></i>Edit
+        </a>
+        <form action="{{ route('admin.practicals.toggle-publish', $practical) }}" method="POST" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-sm {{ $practical->is_published ? 'btn-secondary' : 'btn-success' }}">
+                <i class="fas fa-{{ $practical->is_published ? 'eye-slash' : 'eye' }} me-1"></i>
                 {{ $practical->is_published ? 'Unpublish' : 'Publish' }}
             </button>
-            @endif
-            <button type="button" 
-                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    onclick="deletePractical({{ $practical->id }})">
-                <i class="fas fa-trash mr-2"></i> Hapus
-            </button>
-        </div>
+        </form>
+        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
+            <i class="fas fa-trash me-1"></i>Hapus
+        </button>
+        <a href="{{ route('admin.practicals.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Kembali
+        </a>
     </div>
-</div>
+@endsection
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div class="lg:col-span-2 space-y-6">
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-800">Informasi Praktikum</h2>
+@section('content')
+
+{{-- Flash --}}
+@if(session('success'))
+    <div id="flashMessage" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+<div class="row g-4">
+
+    {{-- Main Column --}}
+    <div class="col-lg-8">
+
+        {{-- Info Card --}}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-flask me-2"></i>Informasi Praktikum</h6>
             </div>
-            <div class="p-6">
-                <div class="mb-6">
-                    <h3 class="text-xl font-semibold text-gray-900 mb-2">{{ $practical->judul }}</h3>
-                    <div class="flex items-center text-sm text-gray-500 space-x-4">
-                        <div class="flex items-center">
-                            <i class="fas fa-user mr-2"></i>
-                            <span>Dibuat oleh: {{ $practical->guru->name ?? 'N/A' }}</span>
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-calendar mr-2"></i>
-                            <span>{{ $practical->created_at->format('d/m/Y H:i') }}</span>
-                        </div>
-                    </div>
+            <div class="card-body">
+                <h5 class="fw-bold mb-1">{{ $practical->title }}</h5>
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-user me-1"></i>{{ $practical->guru->name ?? 'N/A' }}
+                    &nbsp;·&nbsp;
+                    <i class="fas fa-calendar me-1"></i>{{ optional($practical->created_at)->format('d/m/Y H:i') }}
+                </p>
+
+                <h6 class="fw-bold">Deskripsi</h6>
+                <div class="bg-light rounded-3 p-3 mb-3">
+                    {!! nl2br(e($practical->description)) !!}
                 </div>
 
-                <div class="mb-6">
-                    <h4 class="text-lg font-medium text-gray-900 mb-3">Deskripsi Praktikum</h4>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="prose max-w-none text-gray-700">
-                            {!! nl2br(e($practical->deskripsi)) !!}
-                        </div>
+                @if($practical->instructions)
+                    <h6 class="fw-bold">Instruksi</h6>
+                    <div class="bg-light rounded-3 p-3">
+                        @if(is_array($practical->instructions))
+                            <ol class="mb-0 ps-3 small">
+                                @foreach($practical->instructions as $step)
+                                    <li>{{ $step }}</li>
+                                @endforeach
+                            </ol>
+                        @else
+                            {!! nl2br(e($practical->instructions)) !!}
+                        @endif
                     </div>
-                </div>
-
-                @if($practical->instruksi)
-                <div class="mb-6">
-                    <h4 class="text-lg font-medium text-gray-900 mb-3">Instruksi Praktikum</h4>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="prose max-w-none text-gray-700">
-                            {!! nl2br(e($practical->instruksi)) !!}
-                        </div>
-                    </div>
-                </div>
-                @endif
-
-                @if($practical->tools)
-                <div class="mb-6">
-                    <h4 class="text-lg font-medium text-gray-900 mb-3">Alat & Peralatan</h4>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="prose max-w-none text-gray-700">
-                            {!! nl2br(e($practical->tools)) !!}
-                        </div>
-                    </div>
-                </div>
-                @endif
-
-                @if($practical->bahan)
-                <div class="mb-6">
-                    <h4 class="text-lg font-medium text-gray-900 mb-3">Bahan & Material</h4>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <div class="prose max-w-none text-gray-700">
-                            {!! nl2br(e($practical->bahan)) !!}
-                        </div>
-                    </div>
-                </div>
                 @endif
             </div>
         </div>
 
-        <!-- Participants & Scores -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-xl font-semibold text-gray-800">Peserta & Nilai ({{ $practical->scores->count() }})</h3>
+        {{-- Scores Table --}}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-list-check me-2"></i>Penilaian Siswa</h6>
+                <span class="badge bg-white text-success">{{ $practical->scores->count() }} siswa</span>
             </div>
-            <div class="p-6">
+            <div class="card-body p-0">
                 @if($practical->scores->count() > 0)
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Siswa</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nilai</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Komentar</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Penilaian</th>
+                                    <th class="ps-3">#</th>
+                                    <th>Nama Siswa</th>
+                                    <th class="text-center">Nilai</th>
+                                    <th>Komentar</th>
+                                    <th>Tanggal Penilaian</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($practical->scores as $score)
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {{ $score->siswa->name ?? 'N/A' }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        @if($score->score !== null)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                {{ $score->score }}
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                                Belum dinilai
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-900">
-                                        {{ $score->comment ?? '-' }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        @if($score->created_at)
-                                            {{ $score->created_at->format('d/m/Y H:i') }}
-                                        @else
-                                            -
-                                        @endif
-                                    </td>
-                                </tr>
+                            <tbody>
+                                @foreach($practical->scores as $i => $score)
+                                    <tr>
+                                        <td class="ps-3 text-muted">{{ $i + 1 }}</td>
+                                        <td class="fw-semibold">{{ $score->siswa->name ?? 'N/A' }}</td>
+                                        <td class="text-center">
+                                            @if($score->score !== null)
+                                                @php
+                                                    $val = $score->score;
+                                                    $badgeColor = $val >= 80 ? 'success' : ($val >= 60 ? 'warning' : 'danger');
+                                                @endphp
+                                                <span class="badge bg-{{ $badgeColor }}">{{ $val }}</span>
+                                            @else
+                                                <span class="badge bg-secondary">Belum dinilai</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-muted">{{ $score->comment ?? '—' }}</td>
+                                        <td class="text-muted small">
+                                            {{ optional($score->created_at)->format('d/m/Y H:i') ?? '—' }}
+                                        </td>
+                                    </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
                 @else
-                    <div class="text-center py-12">
-                        <i class="fas fa-users text-4xl text-gray-400 mb-4"></i>
-                        <p class="text-lg font-medium text-gray-500 mb-2">Belum ada peserta</p>
-                        <p class="text-sm text-gray-400">Praktikum ini belum memiliki peserta</p>
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted opacity-25 mb-3 d-block"></i>
+                        <p class="text-muted mb-0">Belum ada penilaian siswa.</p>
                     </div>
                 @endif
             </div>
         </div>
+
     </div>
 
-    <div class="space-y-6">
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-xl font-semibold text-gray-800">Detail Informasi</h3>
+    {{-- Sidebar --}}
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-info-circle me-2"></i>Detail Info</h6>
             </div>
-            <div class="p-6 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                    <div>
-                        @if($practical->tanggal < now())
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                Selesai
-                            </span>
-                        @elseif($practical->is_published)
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Aktif
-                            </span>
-                        @else
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                Draft
-                            </span>
-                        @endif
-                    </div>
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <small class="text-muted d-block">Status</small>
+                    @if($practical->is_published)
+                        <span class="badge bg-success">Published</span>
+                    @else
+                        <span class="badge bg-secondary">Draft</span>
+                    @endif
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal & Waktu</label>
-                    <div>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $practical->tanggal < now() ? 'bg-gray-100 text-gray-800' : 'bg-blue-100 text-blue-800' }}">
-                            {{ $practical->tanggal->format('d/m/Y H:i') }}
-                        </span>
-                        @if($practical->tanggal < now())
-                            <p class="mt-1 text-xs text-gray-500">Praktikum telah selesai</p>
-                        @else
-                            <p class="mt-1 text-xs text-blue-600">{{ $practical->tanggal->diffForHumans() }}</p>
-                        @endif
-                    </div>
+                <div class="mb-3">
+                    <small class="text-muted d-block">Batas Waktu</small>
+                    <span class="fw-semibold">
+                        {{ optional($practical->due_date)->format('d M Y H:i') ?? '—' }}
+                    </span>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Lokasi</label>
-                    <p class="text-sm text-gray-900">{{ $practical->lokasi }}</p>
+                @if($practical->published_at)
+                <div class="mb-3">
+                    <small class="text-muted d-block">Dipublikasikan</small>
+                    <span class="fw-semibold">{{ optional($practical->published_at)->format('d M Y H:i') }}</span>
+                </div>
+                @endif
+
+                <div class="mb-3">
+                    <small class="text-muted d-block">Guru</small>
+                    <span class="fw-semibold">{{ $practical->guru->name ?? '—' }}</span>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Durasi</label>
-                    <p class="text-sm text-gray-900">{{ $practical->durasi }} menit ({{ number_format($practical->durasi / 60, 1) }} jam)</p>
+                <div class="mb-3">
+                    <small class="text-muted d-block">Mata Pelajaran</small>
+                    <span class="fw-semibold">{{ $practical->subject->name ?? '—' }}</span>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Total Peserta</label>
-                    <p class="text-sm text-gray-900">{{ $practical->scores->count() }}</p>
+                <div class="mb-3">
+                    <small class="text-muted d-block">Kelas</small>
+                    <span class="fw-semibold">{{ $practical->kelas->name ?? 'Semua Kelas' }}</span>
                 </div>
 
+                <hr>
+
+                @php
+                    $scored = $practical->scores->whereNotNull('score');
+                    $avgScore = $scored->count() > 0 ? $scored->avg('score') : 0;
+                @endphp
+
+                <div class="mb-2">
+                    <small class="text-muted d-block">Total Penilaian</small>
+                    <span class="fw-bold text-primary">{{ $practical->scores->count() }}</span>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted d-block">Sudah Dinilai</small>
+                    <span class="fw-bold text-success">{{ $scored->count() }}</span>
+                </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Peserta yang Sudah Dinilai</label>
-                    <p class="text-sm text-gray-900">{{ $practical->scores->whereNotNull('score')->count() }}</p>
+                    <small class="text-muted d-block">Rata-rata Nilai</small>
+                    <span class="fw-bold text-info">{{ number_format($avgScore, 1) }}</span>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Rata-rata Nilai</label>
-                    <p class="text-sm text-gray-900">
-                        @php
-                            $scoredParticipants = $practical->scores->whereNotNull('score');
-                            $averageScore = $scoredParticipants->count() > 0 ? $scoredParticipants->avg('score') : 0;
-                        @endphp
-                        {{ number_format($averageScore, 2) }}
-                    </p>
-                </div>
             </div>
         </div>
     </div>
+
 </div>
 
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
-                <i class="fas fa-exclamation-triangle text-red-600"></i>
+{{-- Delete Modal --}}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>Konfirmasi Hapus
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="mt-2 px-7 py-3">
-                <h3 class="text-lg font-medium text-gray-900">Konfirmasi Hapus</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">Apakah Anda yakin ingin menghapus praktikum ini?</p>
-                    <p class="text-xs text-red-500 mt-1">Tindakan ini tidak dapat dibatalkan.</p>
-                </div>
+            <div class="modal-body">
+                <p class="text-muted">Apakah Anda yakin ingin menghapus praktikum <strong>{{ $practical->title }}</strong>?</p>
+                <p class="text-danger small"><i class="fas fa-info-circle me-1"></i>Tindakan ini tidak dapat dibatalkan.</p>
             </div>
-            <div class="items-center px-4 py-3">
-                <div class="flex space-x-3">
-                    <button type="button" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300" onclick="closeDeleteModal()">
-                        Batal
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                <form action="{{ route('admin.practicals.destroy', $practical) }}" method="POST" class="d-inline">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Hapus
                     </button>
-                    <form id="deleteForm" method="POST" class="inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
-                            Hapus
-                        </button>
-                    </form>
-                </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
-@endsection
 
 @push('js')
 <script>
-function deletePractical(id) {
-    document.getElementById('deleteForm').action = '{{ route("admin.practicals.destroy", ":id") }}'.replace(':id', id);
-    document.getElementById('deleteModal').classList.remove('hidden');
-}
-
-function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden');
-}
-
-function togglePublish(id) {
-    if (confirm('Apakah Anda yakin ingin mengubah status publikasi praktikum ini?')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '{{ route("admin.practicals.publish", ":id") }}'.replace(':id', id);
-        
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = '_token';
-        csrfToken.value = '{{ csrf_token() }}';
-        
-        form.appendChild(csrfToken);
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-
-// Close modal when clicking outside
-document.addEventListener('click', function(event) {
-    const deleteModal = document.getElementById('deleteModal');
-    if (event.target === deleteModal) {
-        closeDeleteModal();
-    }
+document.addEventListener('DOMContentLoaded', function () {
+    const flash = document.getElementById('flashMessage');
+    if (flash) setTimeout(() => flash.classList.remove('show'), 5000);
 });
 </script>
 @endpush
+
+@endsection

@@ -1,6 +1,17 @@
-@extends('admin.layouts.admin-layout')
+﻿@extends('layouts.admin')
 
 @section('title', 'Detail Kelas - ' . $kelas->name)
+@section('page-title', 'Detail Kelas')
+@section('page-subtitle', $kelas->name . ' — ' . $kelas->grade . ' | ' . ($kelas->academic_year ?? ''))
+
+@section('page-actions')
+    <a href="{{ route('admin.kelas.edit', $kelas->id) }}" class="btn btn-sm btn-warning me-1">
+        <i class="fas fa-edit me-1"></i> Edit
+    </a>
+    <a href="{{ route('admin.kelas.index') }}" class="btn btn-sm btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Kembali
+    </a>
+@endsection
 
 @push('css')
 <style>
@@ -63,7 +74,7 @@
     <div class="col-12 mb-3">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="{{ route('admin.kelas.index') }}">Manajemen Kelas</a></li>
                 <li class="breadcrumb-item active" aria-current="page">{{ $kelas->name }}</li>
             </ol>
@@ -85,8 +96,10 @@
                         <i class="fas fa-school text-primary fs-1"></i>
                     </div>
                     <h4 class="mt-3 mb-2">{{ $kelas->name }}</h4>
-                    <span class="badge bg-secondary mb-2">{{ $kelas->code }}</span>
-                    <p class="text-muted mb-0">{{ $kelas->description ?: 'Tidak ada deskripsi' }}</p>
+                    @if($kelas->grade)
+                        <span class="badge bg-secondary mb-2">Kelas {{ $kelas->grade }}</span>
+                    @endif
+                    <p class="text-muted mb-0">{{ $kelas->jurusan?->name ?? 'Jurusan tidak ditentukan' }}</p>
                 </div>
 
                 <hr>
@@ -103,13 +116,9 @@
                             <div class="text-center">
                                 <div class="info-label">Jurusan</div>
                                 <div class="info-value">
-                                    @if($kelas->major === 'Keperawatan')
-                                        <span class="badge bg-info">{{ $kelas->major }}</span>
-                                    @elseif($kelas->major === 'Farmasi')
-                                        <span class="badge bg-warning">{{ $kelas->major }}</span>
-                                    @else
-                                        <span class="badge bg-success">{{ $kelas->major }}</span>
-                                    @endif
+                                    @php $jurusanName = $kelas->jurusan?->name ?? '—'; @endphp
+                                    @php $jc = match(strtolower($jurusanName)) { 'keperawatan' => 'info', 'farmasi' => 'warning', default => 'success' }; @endphp
+                                    <span class="badge bg-{{ $jc }}">{{ $jurusanName }}</span>
                                 </div>
                             </div>
                         </div>
@@ -119,7 +128,7 @@
                 <div class="row text-center">
                     <div class="col-6">
                         <div class="info-label">Kapasitas</div>
-                        <div class="info-value">{{ $kelas->capacity }} siswa</div>
+                        <div class="info-value">{{ $kelas->siswa->count() }} siswa</div>
                     </div>
                     <div class="col-6">
                         <div class="info-label">Status</div>
@@ -145,7 +154,7 @@
                     <div class="info-value">
                         @if($kelas->guru_id && $kelas->guru)
                             <div class="d-flex align-items-center">
-                                <img src="{{ $kelas->guru->photo_url ?? asset('images/default-avatar.png') }}" 
+                                <img src="{{ asset('images/default-avatar.png') }}" 
                                      class="rounded-circle me-2 student-avatar" alt="Wali Kelas">
                                 <span>{{ $kelas->guru->name }}</span>
                             </div>
@@ -188,14 +197,12 @@
             <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-users me-2"></i>
-                    Daftar Siswa ({{ $kelas->siswa->count() }}/{{ $kelas->capacity }})
+                    Daftar Siswa ({{ $kelas->siswa->count() }} siswa)
                 </h5>
-                @if($kelas->siswa->count() < $kelas->capacity)
-                    <span class="badge bg-light text-success">
-                        {{ $kelas->capacity - $kelas->siswa->count() }} slot tersisa
-                    </span>
+                @if($kelas->siswa->count() > 0)
+                    <span class="badge bg-primary">{{ $kelas->siswa->count() }} siswa</span>
                 @else
-                    <span class="badge bg-warning text-dark">Penuh</span>
+                    <span class="badge bg-secondary">Kosong</span>
                 @endif
             </div>
             
@@ -299,18 +306,18 @@
                 <i class="fas fa-percentage fa-2x mb-2"></i>
             </div>
             <div class="h4 mb-1 text-warning">
-                {{ $kelas->capacity > 0 ? round(($kelas->siswa->count() / $kelas->capacity) * 100) : 0 }}%
+                {{ $kelas->siswa->count() > 0 ? 100 : 0 }}%
             </div>
-            <div class="small text-muted">Kapasitas Terisi</div>
+            <div class="small text-muted">Terisi</div>
         </div>
     </div>
     <div class="col-md-3 mb-3">
         <div class="info-card p-3 text-center h-100">
             <div class="text-info">
-                <i class="fas fa-chair fa-2x mb-2"></i>
+                <i class="fas fa-users fa-2x mb-2"></i>
             </div>
-            <div class="h4 mb-1 text-info">{{ $kelas->capacity - $kelas->siswa->count() }}</div>
-            <div class="small text-muted">Slot Tersisa</div>
+            <div class="h4 mb-1 text-info">{{ $kelas->siswa->count() }}</div>
+            <div class="small text-muted">Total Siswa</div>
         </div>
     </div>
 </div>
@@ -393,20 +400,3 @@
     </div>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-hide alerts after 5 seconds
-    const alerts = document.querySelectorAll('.alert');
-    alerts.forEach(alert => {
-        setTimeout(() => {
-            if (alert.classList.contains('show')) {
-                alert.classList.remove('show');
-                alert.classList.add('fade');
-            }
-        }, 5000);
-    });
-});
-</script>
-@endpush

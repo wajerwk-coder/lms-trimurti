@@ -1,166 +1,155 @@
 @extends('layouts.admin')
 
 @section('title', 'Edit Tugas')
+@section('page-title', 'Edit Tugas')
+@section('page-subtitle', 'Perbarui informasi tugas.')
 
-@section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('admin.assignments.index') }}">Tugas & Quiz</a></li>
-    <li class="breadcrumb-item active">Edit Tugas</li>
+@section('page-actions')
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.assignments.show', $assignment) }}" class="btn btn-outline-info btn-sm">
+            <i class="fas fa-eye me-1"></i>Lihat
+        </a>
+        <a href="{{ route('admin.assignments.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Kembali
+        </a>
+    </div>
 @endsection
 
-@section('page-title', 'Edit Tugas')
-
 @section('content')
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Form Edit Tugas</h3>
+
+@if($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        <strong>Terdapat kesalahan:</strong>
+        <ul class="mb-0 mt-1 small">
+            @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+<form action="{{ route('admin.assignments.update', $assignment) }}" method="POST" enctype="multipart/form-data">
+    @csrf @method('PUT')
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-tasks me-2"></i>Informasi Tugas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label fw-bold">Judul <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control @error('title') is-invalid @enderror"
+                               id="title" name="title" value="{{ old('title', $assignment->title) }}" required>
+                        @error('title')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label fw-bold">Deskripsi <span class="text-danger">*</span></label>
+                        <textarea class="form-control @error('description') is-invalid @enderror"
+                                  id="description" name="description" rows="3" required>{{ old('description', $assignment->description) }}</textarea>
+                        @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="instructions" class="form-label fw-bold">Instruksi</label>
+                        <textarea class="form-control @error('instructions') is-invalid @enderror"
+                                  id="instructions" name="instructions" rows="4">{{ old('instructions', $assignment->instructions) }}</textarea>
+                        @error('instructions')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="attachment" class="form-label fw-bold">Ganti File Lampiran</label>
+                        @if($assignment->file_url)
+                            <div class="d-flex align-items-center mb-2 p-2 bg-light rounded-3">
+                                <i class="fas fa-file-alt text-primary me-2"></i>
+                                <span class="small">{{ $assignment->file_url }}</span>
+                            </div>
+                        @endif
+                        <input type="file" class="form-control @error('attachment') is-invalid @enderror"
+                               id="attachment" name="attachment" accept=".pdf,.doc,.docx,.ppt,.pptx">
+                        <div class="form-text">Kosongkan jika tidak ingin mengubah file.</div>
+                        @error('attachment')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                @if($errors->any())
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <ul class="mb-0">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-cog me-2"></i>Pengaturan</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="guru_id" class="form-label fw-bold">Guru <span class="text-danger">*</span></label>
+                        <select class="form-select @error('guru_id') is-invalid @enderror"
+                                id="guru_id" name="guru_id" required>
+                            <option value="">— Pilih Guru —</option>
+                            @foreach($gurus as $guru)
+                                <option value="{{ $guru->id }}" {{ old('guru_id', $assignment->guru_id) == $guru->id ? 'selected' : '' }}>{{ $guru->name }}</option>
                             @endforeach
-                        </ul>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </select>
+                        @error('guru_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                @endif
-
-                <form action="{{ route('admin.assignments.update', $assignment) }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    @method('PUT')
-                    
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <label for="title" class="form-label">Judul Tugas <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control @error('title') is-invalid @enderror" 
-                                       id="title" name="title" value="{{ old('title', $assignment->title) }}" required>
-                                @error('title')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="description" class="form-label">Deskripsi Tugas <span class="text-danger">*</span></label>
-                                <textarea class="form-control @error('description') is-invalid @enderror" 
-                                          id="description" name="description" rows="5" required>{{ old('description', $assignment->description) }}</textarea>
-                                @error('description')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="guru_id" class="form-label">Guru Penanggung Jawab <span class="text-danger">*</span></label>
-                                <select class="form-select @error('guru_id') is-invalid @enderror" 
-                                        id="guru_id" name="guru_id" required>
-                                    <option value="">Pilih Guru</option>
-                                    @foreach($gurus as $guru)
-                                        <option value="{{ $guru->id }}" 
-                                                {{ old('guru_id', $assignment->guru_id) == $guru->id ? 'selected' : '' }}>
-                                            {{ $guru->name }} ({{ $guru->email }})
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('guru_id')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="due_date" class="form-label">Tanggal Deadline <span class="text-danger">*</span></label>
-                                <input type="datetime-local" class="form-control @error('due_date') is-invalid @enderror" 
-                                       id="due_date" name="due_date" 
-                                       value="{{ old('due_date', $assignment->deadline->format('Y-m-d\TH:i')) }}" required>
-                                @error('due_date')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="max_score" class="form-label">Nilai Maksimal <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control @error('max_score') is-invalid @enderror" 
-                                       id="max_score" name="max_score" 
-                                       value="{{ old('max_score', $assignment->max_score) }}" 
-                                       min="0" max="100" required>
-                                @error('max_score')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="attachment" class="form-label">Lampiran Baru</label>
-                                <input type="file" class="form-control @error('attachment') is-invalid @enderror" 
-                                       id="attachment" name="attachment" 
-                                       accept=".pdf,.doc,.docx,.ppt,.pptx">
-                                <div class="form-text">Format yang didukung: PDF, DOC, DOCX, PPT, PPTX (Max: 10MB)</div>
-                                @error('attachment')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                                
-                                @if($assignment->file)
-                                    <div class="mt-2">
-                                        <label class="form-label">Lampiran Saat Ini:</label>
-                                        <div class="border rounded p-2 bg-light">
-                                            <div class="d-flex align-items-center">
-                                                <i class="fas fa-paperclip me-2 text-muted"></i>
-                                                <span class="flex-grow-1">{{ $assignment->file }}</span>
-                                                <a href="{{ asset('storage/assignments/' . $assignment->file) }}" 
-                                                   class="btn btn-sm btn-outline-primary" target="_blank">
-                                                    <i class="fas fa-download me-1"></i> Download
-                                                </a>
-                                            </div>
-                                        </div>
-                                        <small class="text-muted">Upload file baru untuk mengganti lampiran saat ini.</small>
-                                    </div>
-                                @endif
-                            </div>
-
-                            <div class="mb-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="is_published" name="is_published" 
-                                           {{ old('is_published', $assignment->is_published) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="is_published">
-                                        Publikasikan Tugas
-                                    </label>
-                                </div>
-                                <div class="form-text">Centang untuk mempublikasikan tugas kepada siswa</div>
-                            </div>
-                        </div>
+                    <div class="mb-3">
+                        <label for="subject_id" class="form-label fw-bold">Mata Pelajaran <span class="text-danger">*</span></label>
+                        <select class="form-select @error('subject_id') is-invalid @enderror"
+                                id="subject_id" name="subject_id" required>
+                            <option value="">— Pilih Mapel —</option>
+                            @foreach($subjects as $subject)
+                                <option value="{{ $subject->id }}" {{ old('subject_id', $assignment->subject_id) == $subject->id ? 'selected' : '' }}>{{ $subject->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('subject_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="d-flex justify-content-end gap-2">
-                                <a href="{{ route('admin.assignments.show', $assignment) }}" class="btn btn-secondary">
-                                    <i class="fas fa-eye me-1"></i> Lihat Detail
-                                </a>
-                                <a href="{{ route('admin.assignments.index') }}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-arrow-left me-1"></i> Kembali
-                                </a>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save me-1"></i> Update Tugas
-                                </button>
-                            </div>
-                        </div>
+                    <div class="mb-3">
+                        <label for="kelas_id" class="form-label fw-bold">Kelas</label>
+                        <select class="form-select @error('kelas_id') is-invalid @enderror"
+                                id="kelas_id" name="kelas_id">
+                            <option value="">— Semua Kelas —</option>
+                            @foreach($kelas as $k)
+                                <option value="{{ $k->id }}" {{ old('kelas_id', $assignment->kelas_id) == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('kelas_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                </form>
+                    <div class="mb-3">
+                        <label for="due_date" class="form-label fw-bold">Batas Waktu <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control @error('due_date') is-invalid @enderror"
+                               id="due_date" name="due_date"
+                               value="{{ old('due_date', optional($assignment->due_date)->format('Y-m-d\TH:i')) }}" required>
+                        @error('due_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="max_score" class="form-label fw-bold">Nilai Maksimal <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control @error('max_score') is-invalid @enderror"
+                               id="max_score" name="max_score"
+                               value="{{ old('max_score', $assignment->max_score) }}" min="0" max="100" required>
+                        @error('max_score')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <hr class="my-2">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="allow_late" value="1" id="allow_late"
+                               {{ old('allow_late', $assignment->allow_late) ? 'checked' : '' }}>
+                        <label class="form-check-label fw-semibold" for="allow_late">Izinkan Terlambat</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="publish_now" value="1" id="publish_now"
+                               {{ old('publish_now', $assignment->is_published) ? 'checked' : '' }}>
+                        <label class="form-check-label fw-semibold" for="publish_now">
+                            {{ $assignment->is_published ? 'Sudah Dipublikasikan' : 'Publikasikan' }}
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-warning fw-semibold text-dark">
+                    <i class="fas fa-save me-1"></i>Simpan Perubahan
+                </button>
+                <a href="{{ route('admin.assignments.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Batal
+                </a>
             </div>
         </div>
     </div>
-</div>
-@endsection
+</form>
 
-@push('js')
-<script>
-$(document).ready(function() {
-    // Set minimum date to today
-    const today = new Date().toISOString().slice(0, 16);
-    $('#due_date').attr('min', today);
-});
-</script>
-@endpush
+@endsection

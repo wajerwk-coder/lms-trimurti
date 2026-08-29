@@ -67,7 +67,7 @@
                 <tbody>
                     @forelse($scores as $item)
                         <tr>
-                            <td>{{ optional($item->practical)->judul ?? '-' }}</td>
+                            <td>{{ optional($item->practical)->title ?? '-' }}</td>
                             <td>{{ optional($item->criteria)->name }}</td>
                             <td>{{ $item->score }}</td>
                             <td>{{ optional($item->created_at)->format('d M Y') }}</td>

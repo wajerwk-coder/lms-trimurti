@@ -3,271 +3,210 @@
 namespace App\Http\Controllers\Siswa;
 
 use App\Http\Controllers\Controller;
-use App\Models\PracticalScore;
+use App\Models\NilaiPraktik;
 use App\Models\AssignmentSubmission;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 class ScoreController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware(['auth', 'siswa']);
     }
 
-    /**
-     * Display a listing of scores.
-     */
+    // ── Helpers ────────────────────────────────────────────────────────────────
+
+    private function getSiswaContext(): array
+    {
+        $user    = Auth::user();
+        $siswaId = $user->id;
+        // kelas_id ada di tabel siswa, bukan users_central
+        $kelasId = $user->siswa?->kelas_id;
+        return [$siswaId, $kelasId];
+    }
+
+    // ── Public methods ─────────────────────────────────────────────────────────
+
     public function index(): View
     {
-        $siswaId = Auth::id();
-        $kelasId = Auth::user()->kelas_id ?? null; // gunakan kelas_id sesuai skema
+        [$siswaId, $kelasId] = $this->getSiswaContext();
 
-        $practicalScores = PracticalScore::with(['practical', 'criteria'])
+        $practicalScores = NilaiPraktik::with(['practical.subject'])
             ->where('siswa_id', $siswaId)
-            ->when($kelasId, function($q) use ($kelasId) {
-                $q->whereHas('practical', function($sub) use ($kelasId) {
-                    $sub->where('kelas_id', $kelasId);
-                });
-            })
+            ->whereNull('criteria_id')   // hanya nilai summary, bukan per-kriteria
+            ->when($kelasId, fn($q) => $q->whereHas('practical', fn($s) => $s->where('kelas_id', $kelasId)))
             ->latest()
-            ->paginate(10);
+            ->paginate(10, ['*'], 'practical_page');
 
-        $assignmentScores = AssignmentSubmission::with(['assignment', 'assignment.guru'])
+        // AssignmentSubmission FK: student_id
+        $assignmentScores = AssignmentSubmission::with(['assignment.subject', 'assignment.guru'])
             ->where('siswa_id', $siswaId)
             ->whereNotNull('score')
-            ->when($kelasId, function($q) use ($kelasId) {
-                $q->whereHas('assignment', function($sub) use ($kelasId) {
-                    $sub->where('kelas_id', $kelasId);
-                });
-            })
+            ->when($kelasId, fn($q) => $q->whereHas('assignment', fn($s) => $s->where('kelas_id', $kelasId)))
             ->latest()
-            ->paginate(10);
+            ->paginate(10, ['*'], 'assignment_page');
 
         $stats = $this->calculateStats($siswaId, $kelasId);
 
-        // Normalize aggregated scores structure expected by the view
-        $scores = [];
-
-        return view('siswa.nilai.index', compact('practicalScores', 'assignmentScores', 'stats', 'scores'));
+        return view('siswa.nilai.index', compact('practicalScores', 'assignmentScores', 'stats'));
     }
 
-    /**
-     * Display the specified practical score.
-     */
-    public function show($id): View
+    public function practical(): View
     {
-        $siswaId = Auth::id();
-        $kelasId = Auth::user()->kelas_id ?? null;
+        [$siswaId, $kelasId] = $this->getSiswaContext();
 
-        $score = PracticalScore::with(['practical', 'criteria'])
-            ->where('id', $id)
+        $scores = NilaiPraktik::with(['practical.subject'])
             ->where('siswa_id', $siswaId)
-            ->when($kelasId, function($q) use ($kelasId) {
-                $q->whereHas('practical', function($sub) use ($kelasId) {
-                    $sub->where('kelas_id', $kelasId);
-                });
-            })
-            ->firstOrFail();
-
-        $averageScore = PracticalScore::where('practical_id', $score->practical_id)
-            ->avg('score') ?? 0;
-
-        return view('siswa.nilai.show', compact('score', 'averageScore'));
-    }
-
-    /**
-     * Display practical scores.
-     */
-    public function practicalScores(): View
-    {
-        $siswaId = Auth::id();
-        $kelasId = Auth::user()->kelas_id ?? null;
-
-        $scores = PracticalScore::with(['practical', 'criteria'])
-            ->where('siswa_id', $siswaId)
-            ->when($kelasId, function($q) use ($kelasId) {
-                $q->whereHas('practical', function($sub) use ($kelasId) {
-                    $sub->where('kelas_id', $kelasId);
-                });
-            })
+            ->whereNull('criteria_id')
+            ->when($kelasId, fn($q) => $q->whereHas('practical', fn($s) => $s->where('kelas_id', $kelasId)))
             ->latest()
             ->paginate(15);
 
-        $scoreCollection = $scores->getCollection();
+        $col   = $scores->getCollection();
         $stats = [
-            'average_score' => $scoreCollection->avg('score') ?? 0,
-            'total_scores' => $scoreCollection->count(),
-            'highest_score' => $scoreCollection->max('score') ?? 0,
-            'lowest_score' => $scoreCollection->min('score') ?? 0,
+            'average_score' => round($col->avg('score') ?? 0, 1),
+            'total_scores'  => $col->count(),
+            'highest_score' => $col->max('score') ?? 0,
+            'lowest_score'  => $col->min('score') ?? 0,
         ];
 
         return view('siswa.nilai.practical', compact('scores', 'stats'));
     }
 
-    /**
-     * Alias for route siswa.reports.practical
-     */
-    public function practical(): View
-    {
-        return $this->practicalScores();
-    }
+    /** Alias backward compat */
+    public function practicalScores(): View { return $this->practical(); }
 
-    /**
-     * Display assignment scores.
-     */
-    public function assignmentScores(): View
+    public function assignment(): View
     {
-        $siswaId = Auth::id();
-        $kelasId = Auth::user()->kelas_id ?? null;
+        [$siswaId, $kelasId] = $this->getSiswaContext();
 
-        $scores = AssignmentSubmission::with(['assignment', 'assignment.guru'])
+        $scores = AssignmentSubmission::with(['assignment.subject', 'assignment.guru'])
             ->where('siswa_id', $siswaId)
             ->whereNotNull('score')
-            ->when($kelasId, function($q) use ($kelasId) {
-                $q->whereHas('assignment', function($sub) use ($kelasId) {
-                    $sub->where('kelas_id', $kelasId);
-                });
-            })
+            ->when($kelasId, fn($q) => $q->whereHas('assignment', fn($s) => $s->where('kelas_id', $kelasId)))
             ->latest()
             ->paginate(15);
 
-        $scoreCollection = $scores->getCollection();
+        $col   = $scores->getCollection();
         $stats = [
-            'average_score' => $scoreCollection->avg('score') ?? 0,
-            'total_graded' => $scoreCollection->count(),
-            'highest_score' => $scoreCollection->max('score') ?? 0,
-            'lowest_score' => $scoreCollection->min('score') ?? 0,
+            'average_score' => round($col->avg('score') ?? 0, 1),
+            'total_graded'  => $col->count(),
+            'highest_score' => $col->max('score') ?? 0,
+            'lowest_score'  => $col->min('score') ?? 0,
         ];
 
         return view('siswa.nilai.assignment', compact('scores', 'stats'));
     }
 
-    /**
-     * Alias for route siswa.reports.assignment
-     */
-    public function assignment(): View
-    {
-        return $this->assignmentScores();
-    }
+    /** Alias backward compat */
+    public function assignmentScores(): View { return $this->assignment(); }
 
-    protected function calculateStats($siswaId, $kelasId)
+    public function exportScores()
     {
-        $practicalScores = PracticalScore::where('siswa_id', $siswaId)
-            ->when($kelasId, function($q) use ($kelasId) {
-                $q->whereHas('practical', function($sub) use ($kelasId) {
-                    $sub->where('kelas_id', $kelasId);
-                });
-            })
+        [$siswaId, $kelasId] = $this->getSiswaContext();
+        $user = Auth::user();
+
+        $practicalScores = NilaiPraktik::with(['practical.subject'])
+            ->where('siswa_id', $siswaId)
+            ->whereNull('criteria_id')
+            ->when($kelasId, fn($q) => $q->whereHas('practical', fn($s) => $s->where('kelas_id', $kelasId)))
             ->get();
 
-        $assignmentScores = AssignmentSubmission::where('siswa_id', $siswaId)
+        $assignmentScores = AssignmentSubmission::with(['assignment.subject'])
+            ->where('siswa_id', $siswaId)
             ->whereNotNull('score')
-            ->when($kelasId, function($q) use ($kelasId) {
-                $q->whereHas('assignment', function($sub) use ($kelasId) {
-                    $sub->where('kelas_id', $kelasId);
-                });
-            })
+            ->when($kelasId, fn($q) => $q->whereHas('assignment', fn($s) => $s->where('kelas_id', $kelasId)))
             ->get();
 
-        return [
-            'practical_avg' => $practicalScores->avg('score') ?? 0,
-            'assignment_avg' => $assignmentScores->avg('score') ?? 0,
-            'total_practical_scores' => $practicalScores->count(),
-            'total_graded_assignments' => $assignmentScores->count(),
-            'overall_avg' => $this->calculateOverallAverageFromCollections($practicalScores, $assignmentScores),
+        $filename = 'nilai-' . $siswaId . '-' . now()->format('Ymd') . '.csv';
+        $headers  = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
+
+        $callback = function () use ($practicalScores, $assignmentScores) {
+            $handle = fopen('php://output', 'w');
+            fputs($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['Jenis', 'Judul', 'Mata Pelajaran', 'Nilai', 'Grade', 'Tanggal']);
+
+            foreach ($practicalScores as $s) {
+                $score = (float)($s->score ?? 0);
+                $grade = $score >= 90 ? 'A' : ($score >= 80 ? 'B' : ($score >= 70 ? 'C' : ($score >= 60 ? 'D' : 'E')));
+                fputcsv($handle, [
+                    'Praktikum',
+                    $s->practical?->title ?? '—',
+                    $s->practical?->subject?->name ?? '—',
+                    $score, $grade,
+                    $s->graded_at?->format('d/m/Y') ?? $s->created_at?->format('d/m/Y') ?? '—',
+                ]);
+            }
+
+            foreach ($assignmentScores as $s) {
+                $score = (float)($s->score ?? 0);
+                $grade = $score >= 90 ? 'A' : ($score >= 80 ? 'B' : ($score >= 70 ? 'C' : ($score >= 60 ? 'D' : 'E')));
+                fputcsv($handle, [
+                    'Tugas',
+                    $s->assignment?->title ?? '—',
+                    $s->assignment?->subject?->nama ?? $s->assignment?->subject?->name ?? '—',
+                    $score, $grade,
+                    $s->updated_at?->format('d/m/Y') ?? '—',
+                ]);
+            }
+            fclose($handle);
+        };
+
+        return response()->streamDownload($callback, $filename, $headers);
     }
 
-    protected function calculateOverallAverageFromCollections($practicalScores, $assignmentScores)
-    {
-        $practicalAvg = $practicalScores->avg('score') ?? 0;
-        $assignmentAvg = $assignmentScores->avg('score') ?? 0;
-
-        $practicalCount = $practicalScores->count();
-        $assignmentCount = $assignmentScores->count();
-
-        $totalCount = $practicalCount + $assignmentCount;
-
-        if ($totalCount === 0) {
-            return 0;
-        }
-
-        return (($practicalAvg * $practicalCount) + ($assignmentAvg * $assignmentCount)) / $totalCount;
-    }
-
-    /**
-     * Get chart data for scores (AJAX).
-     */
     public function getChartData(): JsonResponse
     {
-        $siswaId = Auth::id();
-        $kelasId = Auth::user()->kelas_id ?? null;
+        [$siswaId, $kelasId] = $this->getSiswaContext();
 
-        $practicalScores = PracticalScore::where('student_id', $siswaId)
-            ->when($kelasId, function($q) use ($kelasId) {
-                $q->whereHas('practical', function($sub) use ($kelasId) {
-                    $sub->where('kelas_id', $kelasId);
-                });
-            })
+        $practicalData = NilaiPraktik::where('siswa_id', $siswaId)
+            ->when($kelasId, fn($q) => $q->whereHas('practical', fn($s) => $s->where('kelas_id', $kelasId)))
             ->selectRaw('DATE(created_at) as date, AVG(score) as average_score')
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+            ->groupBy('date')->orderBy('date')->get();
 
-        $assignmentScores = AssignmentSubmission::where('student_id', $siswaId)
+        $assignmentData = AssignmentSubmission::where('siswa_id', $siswaId)
             ->whereNotNull('score')
-            ->when($kelasId, function($q) use ($kelasId) {
-                $q->whereHas('assignment', function($sub) use ($kelasId) {
-                    $sub->where('kelas_id', $kelasId);
-                });
-            })
+            ->when($kelasId, fn($q) => $q->whereHas('assignment', fn($s) => $s->where('kelas_id', $kelasId)))
             ->selectRaw('DATE(created_at) as date, AVG(score) as average_score')
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+            ->groupBy('date')->orderBy('date')->get();
 
         return response()->json([
-            'practical_scores' => $practicalScores,
-            'assignment_scores' => $assignmentScores,
+            'practical_scores'  => $practicalData,
+            'assignment_scores' => $assignmentData,
         ]);
     }
 
-    /**
-     * Export scores.
-     */
-    public function exportScores(): View
+    // ── Protected helpers ─────────────────────────────────────────────────────
+
+    protected function calculateStats(int $siswaId, ?int $kelasId): array
     {
-        $siswaId = Auth::id();
-        $kelasId = Auth::user()->kelas_id ?? null;
-
-        $practicalScores = PracticalScore::with(['practical', 'criteria'])
-            ->where('siswa_id', $siswaId)
-            ->when($kelasId, function($q) use ($kelasId) {
-                $q->whereHas('practical', function($sub) use ($kelasId) {
-                    $sub->where('kelas_id', $kelasId);
-                });
-            })
+        $practicals = NilaiPraktik::where('siswa_id', $siswaId)
+            ->whereNull('criteria_id')
+            ->when($kelasId, fn($q) => $q->whereHas('practical', fn($s) => $s->where('kelas_id', $kelasId)))
             ->get();
 
-        $assignmentScores = AssignmentSubmission::with(['assignment', 'assignment.guru'])
-            ->where('siswa_id', $siswaId)
+        $assignments = AssignmentSubmission::where('siswa_id', $siswaId)
             ->whereNotNull('score')
-            ->when($kelasId, function($q) use ($kelasId) {
-                $q->whereHas('assignment', function($sub) use ($kelasId) {
-                    $sub->where('kelas_id', $kelasId);
-                });
-            })
+            ->when($kelasId, fn($q) => $q->whereHas('assignment', fn($s) => $s->where('kelas_id', $kelasId)))
             ->get();
 
-        Log::info('Scores exported', [
-            'siswa_id' => $siswaId,
-            'ip' => request()->ip()
-        ]);
+        $pAvg = (float)($practicals->avg('score') ?? 0);
+        $aAvg = (float)($assignments->avg('score') ?? 0);
+        $pCnt = $practicals->count();
+        $aCnt = $assignments->count();
+        $tot  = $pCnt + $aCnt;
 
-        return view('siswa.nilai.export', compact('practicalScores', 'assignmentScores'));
+        return [
+            'practical_avg'            => round($pAvg, 1),
+            'assignment_avg'           => round($aAvg, 1),
+            'overall_avg'              => $tot > 0 ? round((($pAvg * $pCnt) + ($aAvg * $aCnt)) / $tot, 1) : 0,
+            'total_practical_scores'   => $pCnt,
+            'total_graded_assignments' => $aCnt,
+        ];
     }
 }

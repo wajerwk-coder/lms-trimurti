@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class MataPelajaran extends Model
 {
@@ -13,7 +14,8 @@ class MataPelajaran extends Model
 
     protected $fillable = [
         'name',
-        'code', 
+        'code',
+        'major_id',
         'description',
         'guru_id',
         'kelas_id',
@@ -21,18 +23,43 @@ class MataPelajaran extends Model
         'type',
         'color',
         'is_active',
-        'order'
+        'order',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'sks' => 'integer',
-        'order' => 'integer'
+        'sks'       => 'integer',
+        'order'     => 'integer',
     ];
 
     public function jurusan()
     {
-        return $this->belongsToMany(Jurusan::class, 'jurusan_mata_pelajaran');
+        return $this->belongsTo(Jurusan::class, 'major_id');
+    }
+
+    public function guru()
+    {
+        return $this->belongsTo(UserCentral::class, 'guru_id');
+    }
+
+    public function kelas()
+    {
+        return $this->belongsTo(Kelas::class, 'kelas_id');
+    }
+
+    public function materials()
+    {
+        return $this->hasMany(Material::class, 'subject_id');
+    }
+
+    public function assignments()
+    {
+        return $this->hasMany(Assignment::class, 'subject_id');
+    }
+
+    public function practicals()
+    {
+        return $this->hasMany(Practical::class, 'subject_id');
     }
 
     public function scopeActive($query)
@@ -55,13 +82,19 @@ class MataPelajaran extends Model
         return $query->where('type', 'campuran');
     }
 
+    /**
+     * Umum = teori + campuran (bukan murni kejuruan/praktikum)
+     */
     public function scopeUmum($query)
     {
-        return $query->where('type', 'teori'); // Assuming umum = teori
+        return $query->whereIn('type', ['teori', 'campuran']);
     }
 
+    /**
+     * Kejuruan = praktikum + campuran (bukan murni teori)
+     */
     public function scopeKejuruan($query)
     {
-        return $query->where('type', 'praktikum'); // Assuming kejuruan = praktikum
+        return $query->whereIn('type', ['praktikum', 'campuran']);
     }
 }

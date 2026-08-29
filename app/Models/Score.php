@@ -39,15 +39,12 @@ class Score extends Model
      */
     public function siswa(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'siswa_id');
+        return $this->belongsTo(UserCentral::class, 'siswa_id');
     }
 
-    /**
-     * Get the guru that owns the score.
-     */
     public function guru(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'guru_id');
+        return $this->belongsTo(UserCentral::class, 'guru_id');
     }
 
     /**

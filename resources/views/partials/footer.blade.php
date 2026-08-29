@@ -1,313 +1,394 @@
-<!-- Footer Universal untuk Admin, Guru, dan Siswa -->
-<footer class="mt-auto bg-gradient-to-r from-gray-50 to-gray-100 border-top border-primary border-opacity-20 py-4">
-    <div class="container-fluid">
-        <!-- Main Footer Content -->
-        <div class="row align-items-center mb-3">
-            <div class="col-lg-4 col-md-6 mb-3 mb-md-0">
-                <div class="d-flex align-items-center">
-                    <div class="bg-primary rounded-circle p-2 me-3">
-                        @php $role = Auth::check() ? Auth::user()->role : null; @endphp
-                        @if($role === 'student')
-                            <i class="fas fa-user-graduate text-white"></i>
-                        @else
-                            <i class="fas fa-graduation-cap text-white"></i>
-                        @endif
-                    </div>
-                    <div>
-                        <div class="fw-bold text-dark">
-                            @if($role === 'student') LMS Student Portal
-                            @else LMS Trimurti Husada
-                            @endif
-                        </div>
-                        <small class="text-muted">
-                            @if($role === 'student') Portal Pembelajaran Siswa
-                            @else Learning Management System
-                            @endif
-                        </small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6 mb-3 mb-md-0">
-                <div class="text-center">
-                    <div class="d-flex justify-content-center gap-3">
-                        @if($role === 'student')
-                            <a href="{{ route('siswa.materials.index') }}" class="btn btn-outline-primary btn-sm" title="Materi Pembelajaran">
-                                <i class="fas fa-book me-1"></i>
-                                <span class="d-none d-sm-inline">Materi</span>
-                            </a>
-                            <a href="{{ route('siswa.assignments.index') }}" class="btn btn-outline-success btn-sm" title="Tugas Saya">
-                                <i class="fas fa-tasks me-1"></i>
-                                <span class="d-none d-sm-inline">Tugas</span>
-                            </a>
-                            <a href="{{ route('siswa.reports.index') }}" class="btn btn-outline-info btn-sm" title="Nilai Saya">
-                                <i class="fas fa-chart-line me-1"></i>
-                                <span class="d-none d-sm-inline">Nilai</span>
-                            </a>
-                        @else
-                            <a href="#" class="btn btn-outline-primary btn-sm" title="Panduan Penggunaan">
-                                <i class="fas fa-question-circle me-1"></i>
-                                <span class="d-none d-sm-inline">Bantuan</span>
-                            </a>
-                            <a href="#" class="btn btn-outline-success btn-sm" title="Dokumentasi">
-                                <i class="fas fa-book me-1"></i>
-                                <span class="d-none d-sm-inline">Docs</span>
-                            </a>
-                            <a href="#" class="btn btn-outline-info btn-sm" title="Support">
-                                <i class="fas fa-headset me-1"></i>
-                                <span class="d-none d-sm-inline">Support</span>
-                            </a>
-                        @endif
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4">
-                <div class="text-lg-end text-center">
-                    <div class="d-flex flex-column flex-lg-row align-items-center justify-content-lg-end gap-2">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-success bg-opacity-10 rounded-pill px-2 py-1 me-2">
-                                @if($role === 'student')
-                                    <i class="fas fa-user-check text-success me-1"></i>
-                                    <small class="text-success fw-medium">Active</small>
-                                @else
-                                    <i class="fas fa-wifi text-success me-1"></i>
-                                    <small class="text-success fw-medium">Online</small>
-                                @endif
-                            </div>
-                            <small class="text-muted">
-                                @if($role === 'student')
-                                    <i class="fas fa-graduation-cap me-1"></i>Student v1.0.0
-                                @else
-                                    <i class="fas fa-code me-1"></i>v1.0.0
-                                @endif
-                            </small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        @if($role === 'student')
-        <!-- Student Progress Row -->
-        <div class="row align-items-center mb-3 py-2 bg-light rounded">
-            <div class="col-md-3 text-center">
-                <small class="text-muted d-block">Tugas Selesai</small>
-                <span class="fw-bold text-success">{{ $progress['completed_assignments'] ?? '12' }}/{{ $progress['total_assignments'] ?? '15' }}</span>
-            </div>
-            <div class="col-md-3 text-center">
-                <small class="text-muted d-block">Nilai Rata-rata</small>
-                <span class="fw-bold text-primary">{{ $progress['average_grade'] ?? '8.2' }}</span>
-            </div>
-            <div class="col-md-3 text-center">
-                <small class="text-muted d-block">Kehadiran</small>
-                <span class="fw-bold text-info">{{ $progress['attendance_rate'] ?? '92%' }}</span>
-            </div>
-            <div class="col-md-3 text-center">
-                <small class="text-muted d-block">Progress</small>
-                @php $completion = isset($progress['completion_rate']) ? $progress['completion_rate'] : 85; @endphp
-                <div class="progress mx-auto" style="width: 60px; height: 6px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ $completion }}%"></div>
-                </div>
-                <small class="fw-medium text-success">{{ $progress['completion_rate'] ?? '85' }}%</small>
-            </div>
-        </div>
-        @endif
-        @if($role === 'admin')
-        <!-- Statistics Row (Admin) -->
-        <div class="row align-items-center mb-3 py-2 bg-light rounded">
-            <div class="col-md-3 text-center">
-                <small class="text-muted d-block">Total Users</small>
-                <span class="fw-bold text-primary" id="stat-total-users">-</span>
-            </div>
-            <div class="col-md-3 text-center">
-                <small class="text-muted d-block">Active Sessions</small>
-                <span class="fw-bold text-success" id="stat-active-sessions">-</span>
-            </div>
-            <div class="col-md-3 text-center">
-                <small class="text-muted d-block">Storage Used</small>
-                <span class="fw-bold text-warning" id="stat-storage-used">-</span>
-            </div>
-            <div class="col-md-3 text-center">
-                <small class="text-muted d-block">System Load</small>
-                <span class="fw-bold text-info" id="stat-system-load">Normal</span>
-            </div>
-        </div>
-        @endif
-        <!-- Copyright Row -->
-        <hr class="border-primary border-opacity-20">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <small class="text-muted">
-                    &copy; {{ date('Y') }}
-                    <strong class="text-primary">SMK Kesehatan Trimurti Husada Ambon</strong>.
-                    All rights reserved.
-                </small>
-            </div>
-            <div class="col-md-6">
-                <div class="text-md-end text-center mt-2 mt-md-0">
-                    <small class="text-muted">
-                        Built with ❤️ for better education
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
+@php
+    $role = Auth::check() ? Auth::user()->role : null;
+    $year = date('Y');
 
-    <!-- Enhanced Back to Top Button -->
-    <button type="button"
-            class="btn btn-primary rounded-circle position-fixed shadow-lg border-0"
-            id="backToTop"
-            style="bottom: 30px; right: 30px; width: 55px; height: 55px; display: none; z-index: 1000; transition: all 0.3s ease;"
-            title="Kembali ke Atas">
-        <i class="fas fa-chevron-up fs-5"></i>
-    </button>
+    // Warna accent per role
+    $accent = match($role) {
+        'guru'  => ['from' => '#0f766e', 'to' => '#0891b2', 'hover_bg' => '#f0fdfa', 'hover_text' => '#0f766e', 'hover_border' => '#99f6e4'],
+        'siswa' => ['from' => '#7c3aed', 'to' => '#db2777', 'hover_bg' => '#fdf4ff', 'hover_text' => '#7c3aed', 'hover_border' => '#e9d5ff'],
+        default => ['from' => '#3b82f6', 'to' => '#6d28d9', 'hover_bg' => '#eef2ff', 'hover_text' => '#4f46e5', 'hover_border' => '#c7d2fe'],
+    };
+@endphp
+
+<footer class="app-footer" data-role="{{ $role ?? 'guest' }}">
+    <div class="footer-inner">
+
+        {{-- MAIN ROW --}}
+        <div class="footer-main">
+
+            {{-- Brand --}}
+            <div class="footer-brand">
+                <div class="footer-brand-icon"
+                     style="background:linear-gradient(135deg,{{ $accent['from'] }},{{ $accent['to'] }});">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div class="footer-brand-text">
+                    <div class="footer-brand-name">SMK Kesehatan Trimurti Husada</div>
+                    <div class="footer-brand-sub">Learning Management System</div>
+                </div>
+            </div>
+
+            {{-- Quick Links --}}
+            <div class="footer-links">
+                @if($role === 'siswa')
+                    <a href="{{ route('siswa.materials.index') }}" class="footer-link">
+                        <i class="fas fa-book"></i>Materi
+                    </a>
+                    <a href="{{ route('siswa.assignments.index') }}" class="footer-link">
+                        <i class="fas fa-tasks"></i>Tugas
+                    </a>
+                    <a href="{{ route('siswa.praktikum.index') }}" class="footer-link">
+                        <i class="fas fa-flask"></i>Praktikum
+                    </a>
+                    <a href="{{ route('siswa.nilai.index') }}" class="footer-link">
+                        <i class="fas fa-chart-bar"></i>Nilai
+                    </a>
+                    <a href="{{ route('siswa.absensi.index') }}" class="footer-link">
+                        <i class="fas fa-calendar-check"></i>Absensi
+                    </a>
+                @elseif($role === 'guru')
+                    <a href="{{ route('guru.materials.index') }}" class="footer-link">
+                        <i class="fas fa-book"></i>Materi
+                    </a>
+                    <a href="{{ route('guru.assignments.index') }}" class="footer-link">
+                        <i class="fas fa-tasks"></i>Tugas
+                    </a>
+                    <a href="{{ route('guru.praktikum.index') }}" class="footer-link">
+                        <i class="fas fa-flask"></i>Praktikum
+                    </a>
+                    <a href="{{ route('guru.penilaian.index') }}" class="footer-link">
+                        <i class="fas fa-star"></i>Penilaian
+                    </a>
+                    <a href="{{ route('guru.absensi.index') }}" class="footer-link">
+                        <i class="fas fa-user-check"></i>Absensi
+                    </a>
+                    <a href="{{ route('guru.reports.index') }}" class="footer-link">
+                        <i class="fas fa-chart-line"></i>Laporan
+                    </a>
+                @elseif($role === 'admin')
+                    <a href="{{ route('admin.users.index') }}" class="footer-link">
+                        <i class="fas fa-users"></i>Pengguna
+                    </a>
+                    <a href="{{ route('admin.materials.index') }}" class="footer-link">
+                        <i class="fas fa-book"></i>Materi
+                    </a>
+                    <a href="{{ route('admin.assignments.index') }}" class="footer-link">
+                        <i class="fas fa-tasks"></i>Tugas
+                    </a>
+                    <a href="{{ route('admin.attendance.index') }}" class="footer-link">
+                        <i class="fas fa-calendar-check"></i>Absensi
+                    </a>
+                    <a href="{{ route('admin.exam-schedules.index') }}" class="footer-link">
+                        <i class="fas fa-calendar-alt"></i>Jadwal Ujian
+                    </a>
+                @endif
+            </div>
+
+            {{-- Status --}}
+            <div class="footer-status">
+                <div class="footer-status-row">
+                    <span class="footer-status-dot"></span>
+                    <span class="footer-status-label">Sistem Online</span>
+                </div>
+                <div class="footer-version">
+                    <i class="fas fa-code-branch"></i> v2.0.0
+                </div>
+                <button class="btn-back-top" id="backToTop" title="Kembali ke atas">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+            </div>
+        </div>
+
+        {{-- BOTTOM ROW — Copyright --}}
+        <div class="footer-bottom">
+            <span class="footer-copyright">
+                &copy; {{ $year }}
+                <strong>SMK Kesehatan Trimurti Husada Ambon</strong>.
+                Hak cipta dilindungi.
+            </span>
+            <span class="footer-made">
+                Dibuat dengan <i class="fas fa-heart footer-heart"></i> untuk pendidikan yang lebih baik
+            </span>
+        </div>
+
+    </div>{{-- .footer-inner --}}
 </footer>
 
-<!-- Footer Styles -->
+{{-- Back to top overlay button (fixed, only visible on scroll) --}}
+<button class="btn-back-top-fixed" id="backToTopFixed" title="Kembali ke atas"
+        style="display:none;"
+        aria-label="Kembali ke atas">
+    <i class="fas fa-chevron-up"></i>
+</button>
+
 <style>
-    /* Footer Gradient Background */
-    footer {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        clear: both !important;
-        width: 100% !important;
-        margin-top: auto;
+/* ═══════════════════════════════════════════════
+   APP FOOTER — clean, role-adaptive
+   ═══════════════════════════════════════════════ */
+.app-footer {
+    background: #fff;
+    border-top: 1.5px solid #e8edf2;
+    width: 100%;
+    margin-top: auto;
+    font-family: 'Inter', sans-serif;
+}
+
+.footer-inner {
+    padding: 0 1.5rem;
+}
+
+/* ── Main row ────────────────────────────────── */
+.footer-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding: .875rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+}
+
+/* ── Brand ───────────────────────────────────── */
+.footer-brand {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    flex-shrink: 0;
+}
+.footer-brand-icon {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: #fff;
+    font-size: .85rem;
+}
+.footer-brand-name {
+    font-size: .82rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+.footer-brand-sub {
+    font-size: .7rem;
+    color: #94a3b8;
+    line-height: 1.2;
+}
+
+/* ── Links ───────────────────────────────────── */
+.footer-links {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    flex: 1;
+}
+
+.footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .28rem .6rem;
+    font-size: .75rem;
+    font-weight: 500;
+    color: #64748b;
+    text-decoration: none !important;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #f8fafc;
+    transition: background .15s, color .15s, border-color .15s, transform .1s;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+.footer-link i { font-size: .68rem; }
+.footer-link:hover {
+    transform: translateY(-1px);
+    text-decoration: none !important;
+}
+
+/* Role-specific link hover colours via data-role */
+[data-role="admin"]  .footer-link:hover { background: #eef2ff; color: #4f46e5; border-color: #c7d2fe; }
+[data-role="guru"]   .footer-link:hover { background: #f0fdfa; color: #0f766e; border-color: #99f6e4; }
+[data-role="siswa"]  .footer-link:hover { background: #fdf4ff; color: #7c3aed; border-color: #e9d5ff; }
+
+/* ── Status block ────────────────────────────── */
+.footer-status {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    flex-shrink: 0;
+}
+.footer-status-row {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+}
+.footer-status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    display: inline-block;
+    animation: footer-pulse 2s ease-in-out infinite;
+    flex-shrink: 0;
+}
+.footer-status-label {
+    font-size: .72rem;
+    color: #64748b;
+    white-space: nowrap;
+}
+.footer-version {
+    font-size: .72rem;
+    color: #94a3b8;
+    white-space: nowrap;
+}
+.footer-version i { font-size: .65rem; }
+
+/* Inline back-to-top (hidden, replaced by fixed button) */
+.btn-back-top { display: none; }
+
+/* ── Bottom row ──────────────────────────────── */
+.footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: .55rem 0;
+    flex-wrap: wrap;
+}
+.footer-copyright {
+    font-size: .73rem;
+    color: #64748b;
+}
+.footer-copyright strong { color: #334155; }
+.footer-made {
+    font-size: .73rem;
+    color: #94a3b8;
+}
+.footer-heart {
+    color: #f43f5e;
+    font-size: .65rem;
+    margin: 0 .15rem;
+    animation: footer-heartbeat 1.4s ease-in-out infinite;
+}
+
+/* ── Fixed back-to-top button ─────────────────── */
+.btn-back-top-fixed {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 999;
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-size: .8rem;
+    color: #fff;
+    background: linear-gradient(135deg, #3b82f6, #6d28d9);
+    box-shadow: 0 4px 14px rgba(59,130,246,.35);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity .2s, transform .2s, box-shadow .2s;
+    opacity: 0;
+    pointer-events: none;
+}
+.btn-back-top-fixed.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+.btn-back-top-fixed:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(59,130,246,.45);
+}
+
+/* Role-specific back-to-top colour */
+[data-role="guru"]  ~ .btn-back-top-fixed,
+footer[data-role="guru"]  .btn-back-top-fixed {
+    background: linear-gradient(135deg, #0f766e, #0891b2);
+    box-shadow: 0 4px 14px rgba(8,145,178,.35);
+}
+[data-role="siswa"] ~ .btn-back-top-fixed,
+footer[data-role="siswa"] .btn-back-top-fixed {
+    background: linear-gradient(135deg, #7c3aed, #db2777);
+    box-shadow: 0 4px 14px rgba(124,58,237,.35);
+}
+
+/* ── Animations ─────────────────────────────── */
+@keyframes footer-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .55; transform: scale(.85); }
+}
+@keyframes footer-heartbeat {
+    0%, 100% { transform: scale(1); }
+    14%       { transform: scale(1.3); }
+    28%       { transform: scale(1); }
+    42%       { transform: scale(1.2); }
+    70%       { transform: scale(1); }
+}
+
+/* ── Responsive ─────────────────────────────── */
+@media (max-width: 992px) {
+    .footer-main {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .75rem;
+        padding: .75rem 0;
     }
-
-    /* Back to Top Button Enhancements */
-    #backToTop {
-        backdrop-filter: blur(10px);
-        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%) !important;
+    .footer-links {
+        justify-content: flex-start;
     }
-
-    #backToTop:hover {
-        transform: translateY(-3px) scale(1.05);
-        box-shadow: 0 8px 25px rgba(13, 110, 253, 0.3) !important;
+    .footer-status {
+        width: 100%;
+        justify-content: space-between;
     }
-
-    /* Footer Links Hover Effects */
-    footer .btn-outline-primary:hover,
-    footer .btn-outline-success:hover,
-    footer .btn-outline-info:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    .footer-bottom {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: .25rem;
+        padding: .5rem 0;
     }
-
-    /* Responsive Footer */
-    @media (max-width: 768px) {
-        footer {
-            text-align: center;
-        }
-
-        footer .row > div {
-            margin-bottom: 1rem;
-        }
-
-        #backToTop {
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-        }
-    }
+}
+@media (max-width: 576px) {
+    .footer-inner { padding: 0 1rem; }
+    .footer-brand-name { font-size: .78rem; }
+    .footer-link { font-size: .7rem; padding: .24rem .5rem; }
+    .btn-back-top-fixed { bottom: 1rem; right: 1rem; width: 34px; height: 34px; }
+}
 </style>
 
 <script>
-    // Enhanced Back to Top functionality (no jQuery dependency)
-    document.addEventListener('DOMContentLoaded', function () {
-        const backToTop = document.getElementById('backToTop');
-        if (!backToTop) return;
+(function() {
+    'use strict';
+    var btn = document.getElementById('backToTopFixed');
+    if (!btn) return;
 
-        let isVisible = false;
-        let scrollTimeout;
-
-        function showButton() {
-            backToTop.style.display = 'inline-flex';
-            backToTop.style.opacity = '1';
-            backToTop.style.transform = 'translateY(0)';
-            isVisible = true;
+    function syncRole() {
+        var footer = document.querySelector('.app-footer');
+        var role   = footer ? footer.getAttribute('data-role') : null;
+        if (role === 'guru') {
+            btn.style.background = 'linear-gradient(135deg,#0f766e,#0891b2)';
+            btn.style.boxShadow  = '0 4px 14px rgba(8,145,178,.35)';
+        } else if (role === 'siswa') {
+            btn.style.background = 'linear-gradient(135deg,#7c3aed,#db2777)';
+            btn.style.boxShadow  = '0 4px 14px rgba(124,58,237,.35)';
         }
+    }
 
-        function hideButton() {
-            backToTop.style.opacity = '0';
-            backToTop.style.transform = 'translateY(6px)';
-            window.setTimeout(function () {
-                if (!isVisible) backToTop.style.display = 'none';
-            }, 200);
-            isVisible = false;
-        }
+    function onScroll() {
+        var scrolled = (window.pageYOffset || document.documentElement.scrollTop) > 300;
+        btn.classList.toggle('visible', scrolled);
+        btn.style.display = 'inline-flex';
+    }
 
-        function onScroll() {
-            const shouldShow = window.pageYOffset > 300;
-            if (shouldShow && !isVisible) {
-                showButton();
-            } else if (!shouldShow && isVisible) {
-                hideButton();
-            }
-        }
-
-        window.addEventListener('scroll', function () {
-            window.clearTimeout(scrollTimeout);
-            scrollTimeout = window.setTimeout(onScroll, 50);
-        }, { passive: true });
-
-        backToTop.addEventListener('click', function (e) {
-            e.preventDefault();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-
-        document.querySelectorAll('footer .btn').forEach(function (btn) {
-            btn.addEventListener('mouseenter', function () {
-                btn.classList.add('shadow-sm');
-            });
-            btn.addEventListener('mouseleave', function () {
-                btn.classList.remove('shadow-sm');
-            });
-        });
-
-        // Admin Statistics Update
-        function updateAdminStats() {
-            // Update Total Users
-            const totalUsersEl = document.getElementById('stat-total-users');
-            if (totalUsersEl) {
-                // Simulate fetching real data
-                totalUsersEl.textContent = Math.floor(Math.random() * 50) + 150;
-            }
-
-            // Update Active Sessions
-            const activeSessionsEl = document.getElementById('stat-active-sessions');
-            if (activeSessionsEl) {
-                activeSessionsEl.textContent = Math.floor(Math.random() * 20) + 25;
-            }
-
-            // Update Storage Used
-            const storageUsedEl = document.getElementById('stat-storage-used');
-            if (storageUsedEl) {
-                const storageGB = (Math.random() * 5 + 2).toFixed(1);
-                storageUsedEl.textContent = storageGB + ' GB';
-            }
-
-            // Update System Load
-            const systemLoadEl = document.getElementById('stat-system-load');
-            if (systemLoadEl) {
-                const load = Math.random() * 100;
-                let status = 'Normal';
-                if (load > 80) status = 'High';
-                else if (load > 60) status = 'Medium';
-                
-                systemLoadEl.textContent = status;
-                systemLoadEl.className = 'fw-bold text-' + 
-                    (status === 'High' ? 'danger' : status === 'Medium' ? 'warning' : 'info');
-            }
-        }
-
-        // Initial stats update
-        updateAdminStats();
-
-        // Update stats every 30 seconds
-        setInterval(updateAdminStats, 30000);
-
-        // Initial state
-        backToTop.style.opacity = '0';
-        backToTop.style.transform = 'translateY(6px)';
-        backToTop.style.display = 'none';
-        onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    btn.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+
+    syncRole();
+    onScroll();
+})();
 </script>

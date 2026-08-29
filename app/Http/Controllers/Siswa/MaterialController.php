@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Siswa;
 use App\Http\Controllers\Controller;
 use App\Models\Material;
 use App\Models\MaterialDownload;
+use App\Models\Siswa;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +20,7 @@ class MaterialController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware(['auth', 'siswa']);
     }
 
     /**
@@ -28,7 +29,7 @@ class MaterialController extends Controller
     public function index(Request $request): View
     {
         // Get student's class
-        $student = \App\Models\Student::where('user_id', Auth::id())->first();
+        $student = Siswa::where('user_id', Auth::id())->first();
         $kelasId = $student->kelas_id ?? null;
 
         $query = Material::whereNotNull('published_at')
@@ -49,8 +50,8 @@ class MaterialController extends Controller
         // Apply search filter
         if ($search = $request->get('search')) {
             $query->where(function($q) use ($search) {
-                $q->where('judul', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('content', 'like', "%{$search}%");
             });
         }
 
@@ -59,10 +60,7 @@ class MaterialController extends Controller
             $query->where('subject_id', $subject);
         }
 
-        // Apply category filter
-        if ($category = $request->get('category')) {
-            $query->where('category', $category);
-        }
+        // Remove category filter — column does not exist in DB
 
         $materials = $query->latest()->paginate(12);
 
@@ -94,57 +92,76 @@ class MaterialController extends Controller
     }
 
     /**
+     * Resolve the real storage path for a material file.
+     * Handles two storage formats:
+     *   1. file_url = "filename.pdf"          → stored at materials/filename.pdf
+     *   2. file_url = "materials/filename.pdf" → stored as-is under public disk
+     */
+    private function resolveFilePath(string $fileUrl): ?string
+    {
+        // Try as-is first (covers "materials/filename" format)
+        if (Storage::disk('public')->exists($fileUrl)) {
+            return $fileUrl;
+        }
+
+        // Try with materials/ prefix (covers bare "filename" format)
+        $withPrefix = 'materials/' . ltrim($fileUrl, '/');
+        if (Storage::disk('public')->exists($withPrefix)) {
+            return $withPrefix;
+        }
+
+        // Strip existing materials/ prefix then re-add (handles double-prefix edge case)
+        $stripped = preg_replace('#^materials/#', '', $fileUrl);
+        $canonical = 'materials/' . $stripped;
+        if (Storage::disk('public')->exists($canonical)) {
+            return $canonical;
+        }
+
+        return null;
+    }
+
+    /**
      * Download the material.
      */
-    public function download($id) // ✅ Hapus return type
+    public function download($id)
     {
-        // Get student's class
-        $student = \App\Models\Student::where('user_id', Auth::id())->first();
+        $student = Siswa::where('user_id', Auth::id())->first();
         $kelasId = $student->kelas_id ?? null;
 
         $material = Material::whereNotNull('published_at')
-            ->where(function($query) use ($kelasId) {
+            ->where(function ($query) use ($kelasId) {
                 if ($kelasId) {
-                    $query->where('kelas_id', $kelasId)
-                          ->orWhereNull('kelas_id');
+                    $query->where('kelas_id', $kelasId)->orWhereNull('kelas_id');
                 } else {
                     $query->whereNull('kelas_id');
                 }
             })
             ->findOrFail($id);
 
-        if (!$material->file) {
-            Log::warning('Material file not found', [
-                'material_id' => $id,
-                'siswa_id' => Auth::id(),
-                'ip' => request()->ip()
-            ]);
+        if (!$material->file_url) {
             return back()->with('error', 'File materi tidak tersedia.');
         }
 
-        $filePath = 'materials/' . $material->file;
+        $resolvedPath = $this->resolveFilePath($material->file_url);
 
-        if (!Storage::disk('public')->exists($filePath)) {
-            Log::error('Material file not found in storage', [
+        if (!$resolvedPath) {
+            Log::warning('Material file not found on disk', [
                 'material_id' => $id,
-                'file_path' => $filePath,
-                'siswa_id' => Auth::id(),
-                'ip' => request()->ip()
+                'file_url'    => $material->file_url,
+                'siswa_id'    => Auth::id(),
             ]);
-            return back()->with('error', 'File tidak ditemukan.');
+            return back()->with('error', 'File tidak ditemukan di server.');
         }
 
         // Catat download
         $this->logDownload($material->id);
 
-        // Gunakan atomic increment
-        DB::table('materials')
-            ->where('id', $material->id)
-            ->increment('downloads_count');
+        DB::table('materials')->where('id', $material->id)->increment('downloads_count');
 
-        $filename = $material->judul . '.' . pathinfo($material->file, PATHINFO_EXTENSION);
+        $ext      = pathinfo($material->file_url, PATHINFO_EXTENSION);
+        $filename = preg_replace('/[^a-zA-Z0-9\-_.]/', '_', $material->title) . '.' . $ext;
 
-        return Storage::disk('public')->download($filePath, $filename);
+        return Storage::disk('public')->download($resolvedPath, $filename);
     }
 
     /**
@@ -173,7 +190,7 @@ class MaterialController extends Controller
     public function show($id): View
     {
         // Get student's class
-        $student = \App\Models\Student::where('user_id', Auth::id())->first();
+        $student = Siswa::where('user_id', Auth::id())->first();
         $kelasId = $student->kelas_id ?? null;
 
         $material = Material::whereNotNull('published_at')
@@ -196,7 +213,12 @@ class MaterialController extends Controller
             ->where('siswa_id', Auth::id())
             ->exists();
 
-        return view('siswa.materials.show', compact('material', 'isDownloaded'));
+        // Resolve actual file path for view
+        $resolvedFilePath = $material->file_url
+            ? $this->resolveFilePath($material->file_url)
+            : null;
+
+        return view('siswa.materials.show', compact('material', 'isDownloaded', 'resolvedFilePath'));
     }
 
     /**
@@ -241,22 +263,26 @@ class MaterialController extends Controller
      */
     public function getFileInfo($id): JsonResponse
     {
-        $material = Material::whereNotNull('published_at')
-            ->findOrFail($id);
+        $material = Material::whereNotNull('published_at')->findOrFail($id);
 
-        $filePath = 'materials/' . $material->file;
-
-        if (!$material->file || !Storage::disk('public')->exists($filePath)) {
+        if (!$material->file_url) {
             return response()->json(['error' => 'File tidak ditemukan'], 404);
         }
 
-        $fileSize = Storage::disk('public')->size($filePath);
+        $resolvedPath = $this->resolveFilePath($material->file_url);
+
+        if (!$resolvedPath) {
+            return response()->json(['error' => 'File tidak ditemukan di server'], 404);
+        }
+
+        $fileSize = Storage::disk('public')->size($resolvedPath);
+        $ext      = pathinfo($material->file_url, PATHINFO_EXTENSION);
 
         return response()->json([
-            'filename' => $material->file,
-            'size' => $this->formatFileSize($fileSize),
-            'type' => pathinfo($material->file, PATHINFO_EXTENSION),
-            'download_url' => route('siswa.materials.download', $material->id)
+            'filename'     => basename($material->file_url),
+            'size'         => $this->formatFileSize($fileSize),
+            'type'         => $ext,
+            'download_url' => route('siswa.materials.download', $material->id),
         ]);
     }
 
@@ -280,10 +306,10 @@ class MaterialController extends Controller
     {
         $materials = Material::whereNotNull('published_at')
             ->where(function($query) {
-                $query->where('judul', 'like', '%kesehatan%')
-                      ->orWhere('judul', 'like', '%medis%')
-                      ->orWhere('judul', 'like', '%klinis%')
-                      ->orWhere('description', 'like', '%kesehatan%');
+                $query->where('title', 'like', '%kesehatan%')
+                      ->orWhere('title', 'like', '%medis%')
+                      ->orWhere('title', 'like', '%klinis%')
+                      ->orWhere('content', 'like', '%kesehatan%');
             })
             ->with(['guru', 'subject', 'downloads' => function($query) {
                 $query->where('siswa_id', Auth::id());

@@ -10,9 +10,9 @@
         .card-header { background-color: #007bff; color: white; padding: 10px 15px; border-top-left-radius: 8px; border-top-right-radius: 8px; }
         .card-body { padding: 15px; }
         .badge { padding: 3px 8px; border-radius: 4px; font-weight: bold; margin-right: 5px; }
-        .badge-info { background-color: #17a2b8; color: white; }
-        .badge-success { background-color: #28a745; color: white; }
-        .badge-warning { background-color: #ffc107; color: black; }
+        .bg-info { background-color: #17a2b8; color: white; }
+        .bg-success { background-color: #28a745; color: white; }
+        .bg-warning text-dark { background-color: #ffc107; color: black; }
         .list-group-item { padding: 8px 15px; border: 1px solid #dee2e6; margin-bottom: 5px; border-radius: 4px; }
     </style>
 </head>
@@ -35,11 +35,11 @@
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span>{{ $practical->title }}</span>
                         @if($practical->date->isToday())
-                            <span class="badge badge-warning">HARI INI</span>
+                            <span class="badge bg-warning text-dark">HARI INI</span>
                         @elseif($practical->date->isFuture())
-                            <span class="badge badge-info">AKAN DATANG</span>
+                            <span class="badge bg-info">AKAN DATANG</span>
                         @else
-                            <span class="badge badge-success">SELESAI</span>
+                            <span class="badge bg-success">SELESAI</span>
                         @endif
                     </div>
                 </div>

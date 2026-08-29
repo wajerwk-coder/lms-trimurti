@@ -15,7 +15,7 @@ class AttendanceController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware(['auth', 'siswa']);
     }
 
     /**
@@ -45,10 +45,10 @@ class AttendanceController extends Controller
     protected function getMonthlyStats($siswaId, $month = null, $year = null)
     {
         $month = $month ?? Carbon::now()->month;
-        $year = $year ?? Carbon::now()->year;
+        $year  = $year  ?? Carbon::now()->year;
 
         $startDate = Carbon::create($year, $month, 1)->startOfMonth();
-        $endDate = Carbon::create($year, $month, 1)->endOfMonth();
+        $endDate   = Carbon::create($year, $month, 1)->endOfMonth();
 
         $stats = Attendance::selectRaw('status, COUNT(*) as count')
             ->where('siswa_id', $siswaId)
@@ -56,19 +56,24 @@ class AttendanceController extends Controller
             ->groupBy('status')
             ->get();
 
-        $total = $stats->sum('count');
-        $present = $stats->where('status', 'hadir')->first()?->count ?? 0;
+        $total       = $stats->sum('count');
+        $present     = $stats->firstWhere('status', 'hadir')?->count ?? 0;
+        $izin        = $stats->firstWhere('status', 'izin')?->count  ?? 0;
+        $sakit       = $stats->firstWhere('status', 'sakit')?->count ?? 0;
+        $alpha       = $stats->firstWhere('status', 'alpha')?->count ?? 0;
         $workingDays = $this->getWorkingDays($month, $year);
 
         return [
-            'total' => $total,
-            'present' => $present,
-            'absent' => $stats->where('status', 'alpha')->first()?->count ?? 0,
-            'permission' => $stats->whereIn('status', ['izin', 'sakit'])->sum('count'),
-            'percentage' => $total > 0 ? round(($present / $total) * 100, 2) : 0,
-            'breakdown' => $stats,
-            'working_days' => $workingDays,
-            'attendance_rate' => $workingDays > 0 ? round(($present / $workingDays) * 100, 2) : 0
+            'total'           => $total,
+            'present'         => $present,
+            'izin'            => $izin,
+            'sakit'           => $sakit,
+            'absent'          => $alpha,
+            'permission'      => $izin + $sakit,   // backward compat
+            'percentage'      => $total > 0 ? round(($present / $total) * 100, 1) : 0,
+            'breakdown'       => $stats,
+            'working_days'    => $workingDays,
+            'attendance_rate' => $workingDays > 0 ? round(($present / $workingDays) * 100, 1) : 0,
         ];
     }
 
@@ -79,16 +84,21 @@ class AttendanceController extends Controller
             ->groupBy('status')
             ->get();
 
-        $total = $stats->sum('count');
-        $present = $stats->where('status', 'hadir')->first()?->count ?? 0;
+        $total   = $stats->sum('count');
+        $present = $stats->firstWhere('status', 'hadir')?->count ?? 0;
+        $izin    = $stats->firstWhere('status', 'izin')?->count  ?? 0;
+        $sakit   = $stats->firstWhere('status', 'sakit')?->count ?? 0;
+        $alpha   = $stats->firstWhere('status', 'alpha')?->count ?? 0;
 
         return [
-            'total' => $total,
-            'present' => $present,
-            'absent' => $stats->where('status', 'alpha')->first()?->count ?? 0,
-            'permission' => $stats->whereIn('status', ['izin', 'sakit'])->sum('count'),
-            'percentage' => $total > 0 ? round(($present / $total) * 100, 2) : 0,
-            'breakdown' => $stats
+            'total'      => $total,
+            'present'    => $present,
+            'izin'       => $izin,
+            'sakit'      => $sakit,
+            'absent'     => $alpha,
+            'permission' => $izin + $sakit,
+            'percentage' => $total > 0 ? round(($present / $total) * 100, 1) : 0,
+            'breakdown'  => $stats,
         ];
     }
 
@@ -191,8 +201,7 @@ class AttendanceController extends Controller
 
         $medicalRecords = Attendance::where('siswa_id', $siswaId)
             ->whereIn('status', ['sakit', 'izin'])
-            ->whereNotNull('keterangan')
-            // ->with('approval') // ✅ Hapus jika tidak ada relasi
+            ->whereNotNull('note')
             ->orderBy('date', 'desc')
             ->paginate(10);
 

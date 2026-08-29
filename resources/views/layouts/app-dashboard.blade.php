@@ -257,17 +257,17 @@
             font-weight: 500;
         }
 
-        .badge-success {
+        .bg-success {
             background-color: #D1FAE5;
             color: #065F46;
         }
 
-        .badge-warning {
+        .bg-warning text-dark {
             background-color: #FEF3C7;
             color: #92400E;
         }
 
-        .badge-danger {
+        .bg-danger {
             background-color: #FEE2E2;
             color: #B91C1C;
         }

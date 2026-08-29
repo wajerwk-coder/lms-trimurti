@@ -16,7 +16,7 @@ class KehadiranSiswaSeeder extends Seeder
     public function run(): void
     {
         // Get all active classes
-        $kelasList = Kelas::where('status', 'active')->get();
+        $kelasList = Kelas::aktif()->get();
         
         if ($kelasList->isEmpty()) {
             $this->command->error('No active classes found. Please run KelasSiswaSeeder first.');

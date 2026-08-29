@@ -1,4 +1,4 @@
-@extends('layouts.guru')
+﻿@extends('layouts.guru')
 
 @section('title', 'Edit Absensi - Guru')
 @section('page-title', 'Edit Absensi')
@@ -197,7 +197,7 @@
 @endpush
 
 @section('breadcrumb')
-<li class="breadcrumb-item"><a href="{{ route('guru.dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ route('guru.dashboard') }}" class="text-decoration-none">Beranda</a></li>
 <li class="breadcrumb-item"><a href="{{ route('guru.absensi-new.index') }}" class="text-decoration-none">Manajemen Absensi</a></li>
 <li class="breadcrumb-item active">Edit Absensi</li>
 @endsection
@@ -248,7 +248,7 @@
             <div class="col-md-6">
                 <label class="form-label fw-bold">Tanggal</label>
                 <input type="text" class="form-control form-control-lg" 
-                       value="{{ $attendance->tanggal?->format('d/m/Y') ?? '-' }}" 
+                       value="{{ $attendance->date?->format('d/m/Y') ?? '-' }}" 
                        readonly>
             </div>
         </div>
@@ -310,7 +310,7 @@
                     <i class="fas fa-sign-in-alt me-2"></i>Waktu Masuk
                 </label>
                 <input type="time" class="form-control form-control-lg" id="waktu_masuk" name="waktu_masuk" 
-                       value="{{ $attendance->waktu_masuk?->format('H:i') ?? '' }}">
+                       value="{{ null?->format('H:i') ?? '' }}">
             </div>
             
             <div class="time-card">
@@ -318,7 +318,7 @@
                     <i class="fas fa-sign-out-alt me-2"></i>Waktu Keluar
                 </label>
                 <input type="time" class="form-control form-control-lg" id="waktu_keluar" name="waktu_keluar" 
-                       value="{{ $attendance->waktu_keluar?->format('H:i') ?? '' }}">
+                       value="{{ null?->format('H:i') ?? '' }}">
             </div>
         </div>
 
@@ -327,8 +327,8 @@
             <label for="keterangan" class="form-label fw-bold">
                 <i class="fas fa-comment me-2"></i>Keterangan
             </label>
-            <textarea class="form-control" id="keterangan" name="keterangan" rows="3" 
-                      placeholder="Tambahkan keterangan jika diperlukan...">{{ e($attendance->keterangan ?? '') }}</textarea>
+            <textarea class="form-control" id="keterangan" name="note" rows="3" 
+                      placeholder="Tambahkan keterangan jika diperlukan...">{{ e($attendance->note ?? '') }}</textarea>
         </div>
 
         <!-- Action Buttons -->
@@ -345,69 +345,3 @@
     </form>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-// Auto-set waktu masuk when status is "hadir"
-document.querySelectorAll('input[name="status"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        const waktuMasuk = document.getElementById('waktu_masuk');
-        const waktuKeluar = document.getElementById('waktu_keluar');
-        
-        if (this.value === 'hadir') {
-            // Set current time if not already set
-            if (!waktuMasuk.value) {
-                const now = new Date();
-                const hours = String(now.getHours()).padStart(2, '0');
-                const minutes = String(now.getMinutes()).padStart(2, '0');
-                waktuMasuk.value = `${hours}:${minutes}`;
-            }
-        } else {
-            // Clear times for non-hadir status
-            // waktuMasuk.value = '';
-            // waktuKeluar.value = '';
-        }
-    });
-});
-
-// Form validation
-document.querySelector('form').addEventListener('submit', function(e) {
-    const status = document.querySelector('input[name="status"]:checked');
-    const waktuMasuk = document.getElementById('waktu_masuk').value;
-    const waktuKeluar = document.getElementById('waktu_keluar').value;
-    
-    if (!status) {
-        e.preventDefault();
-        alert('Silakan pilih status kehadiran.');
-        return false;
-    }
-    
-    // Validate time logic
-    if (waktuMasuk && waktuKeluar && waktuMasuk >= waktuKeluar) {
-        e.preventDefault();
-        alert('Waktu keluar harus lebih lambat dari waktu masuk.');
-        return false;
-    }
-    
-    return true;
-});
-
-// Add visual feedback for status selection
-document.querySelectorAll('.status-option').forEach(option => {
-    option.addEventListener('click', function() {
-        const radio = this.querySelector('input[type="radio"]');
-        radio.checked = true;
-        
-        // Add visual feedback
-        document.querySelectorAll('.status-option').forEach(opt => {
-            opt.style.transform = 'scale(1)';
-        });
-        this.style.transform = 'scale(1.05)';
-        
-        setTimeout(() => {
-            this.style.transform = 'scale(1)';
-        }, 200);
-    });
-});
-</script>
-@endpush

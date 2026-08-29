@@ -8,6 +8,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UserCentral extends Authenticatable
 {
@@ -112,7 +113,8 @@ class UserCentral extends Authenticatable
     // Relationships
     public function adminProfile(): HasOne
     {
-        return $this->hasOne(Admin::class, 'user_id');
+        // Jika tabel admins belum ada, skip
+        return $this->hasOne(Guru::class, 'user_id')->where('role', 'admin');
     }
 
     public function guruProfile(): HasOne
@@ -122,16 +124,76 @@ class UserCentral extends Authenticatable
 
     public function siswaProfile(): HasOne
     {
-        return $this->hasOne(Student::class, 'user_id');
+        // Tabel siswa → FK user_id
+        return $this->hasOne(\App\Models\Siswa::class, 'user_id');
+    }
+
+    // Alias yang lebih pendek
+    public function siswa(): HasOne
+    {
+        return $this->siswaProfile();
+    }
+
+    public function guru(): HasOne
+    {
+        return $this->guruProfile();
+    }
+
+    // Relasi konten guru
+    public function materials()
+    {
+        return $this->hasMany(\App\Models\Material::class, 'guru_id');
+    }
+
+    public function assignments()
+    {
+        return $this->hasMany(\App\Models\Assignment::class, 'guru_id');
+    }
+
+    public function practicals()
+    {
+        return $this->hasMany(\App\Models\Practical::class, 'guru_id');
+    }
+
+    // Relasi absensi siswa
+    public function attendances()
+    {
+        return $this->hasMany(\App\Models\Attendance::class, 'siswa_id');
+    }
+
+    // Submission tugas siswa
+    public function assignmentSubmissions()
+    {
+        return $this->hasMany(\App\Models\AssignmentSubmission::class, 'siswa_id');
+    }
+
+    // Nilai praktikum siswa
+    public function practicalScores()
+    {
+        return $this->hasMany(\App\Models\NilaiPraktik::class, 'siswa_id');
+    }
+
+    // Notifikasi yang diterima
+    public function notifications()
+    {
+        return $this->hasMany(\App\Models\Notification::class, 'penerima_id');
     }
 
     public function getProfileAttribute()
     {
         return match($this->role) {
-            'admin' => $this->adminProfile,
             'guru' => $this->guruProfile,
             'siswa' => $this->siswaProfile,
             default => null
         };
+    }
+
+    // Shortcut untuk mendapatkan kelas_id siswa
+    public function getKelasIdAttribute()
+    {
+        if ($this->isSiswa() && $this->siswaProfile) {
+            return $this->siswaProfile->kelas_id;
+        }
+        return null;
     }
 }

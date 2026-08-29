@@ -14,6 +14,9 @@ class Material extends Model
     protected $fillable = [
         'guru_id',
         'class_subject_id',
+        'subject_id',
+        'kelas_id',
+        'siswa_id',
         'title',
         'content',
         'file_url',
@@ -24,31 +27,32 @@ class Material extends Model
     ];
 
     protected $casts = [
-        'published_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'published_at'    => 'datetime',
+        'created_at'      => 'datetime',
+        'updated_at'      => 'datetime',
+        'deleted_at'      => 'datetime',
     ];
 
     // Relationships
     public function guru()
     {
-        return $this->belongsTo(User::class, 'guru_id');
+        return $this->belongsTo(UserCentral::class, 'guru_id')->withTrashed();
     }
 
+    /** Alias — beberapa view pakai $material->teacher */
     public function teacher()
     {
-        return $this->belongsTo(User::class, 'guru_id');
+        return $this->belongsTo(UserCentral::class, 'guru_id')->withTrashed();
     }
 
     public function subject()
     {
-        return $this->belongsTo(Subject::class);
+        return $this->belongsTo(Subject::class, 'subject_id');
     }
 
     public function kelas()
     {
-        return $this->belongsTo(Kelas::class);
+        return $this->belongsTo(Kelas::class, 'kelas_id');
     }
 
     public function downloads()
@@ -77,44 +81,25 @@ class Material extends Model
         return $query->where('kelas_id', $kelasId);
     }
 
-    // Accessors
-    public function getFileUrlAttribute()
+    // Accessors — TIDAK override file_url karena sudah ada di DB
+    public function getFileSizeFormattedAttribute(): string
     {
-        return $this->file ? asset('storage/materials/' . $this->file) : null;
-    }
-
-    public function getFileSizeFormattedAttribute()
-    {
-        $bytes = $this->file_size;
-        
-        if (!$bytes) {
-            return 'Unknown';
-        }
-        
-        if ($bytes >= 1073741824) {
-            return number_format($bytes / 1073741824, 2) . ' GB';
-        } elseif ($bytes >= 1048576) {
-            return number_format($bytes / 1048576, 2) . ' MB';
-        } elseif ($bytes >= 1024) {
-            return number_format($bytes / 1024, 2) . ' KB';
-        } else {
-            return $bytes . ' bytes';
-        }
+        $bytes = $this->file_size ?? 0;
+        if (!$bytes) return 'Unknown';
+        if ($bytes >= 1073741824) return number_format($bytes / 1073741824, 2) . ' GB';
+        if ($bytes >= 1048576)    return number_format($bytes / 1048576, 2) . ' MB';
+        if ($bytes >= 1024)       return number_format($bytes / 1024, 2) . ' KB';
+        return $bytes . ' bytes';
     }
 
     // Methods
-    public function incrementViews()
+    public function incrementViews(): void
     {
         $this->increment('views_count');
     }
 
-    public function incrementDownloads()
+    public function incrementDownloads(): void
     {
         $this->increment('downloads_count');
-    }
-
-    public function canBeDownloadedBy($userId)
-    {
-        return true;
     }
 }

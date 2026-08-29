@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\Siswa;
 use App\Models\Kelas;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -27,12 +27,10 @@ class StudentController extends Controller
                 ], 400);
             }
             
-            // Get students from the specified class
-            $students = User::where('role', 'siswa')
-                ->where('kelas_id', $classId)
-                ->where('status', 'active')
+            // Get students from the specified class (kelas_id is in siswa table)
+            $students = Siswa::where('kelas_id', $classId)
                 ->orderBy('name')
-                ->get(['id', 'name', 'nis', 'kelas_id']);
+                ->get(['id', 'name', 'nis', 'kelas_id', 'user_id']);
             
             if ($students->isEmpty()) {
                 return response()->json([

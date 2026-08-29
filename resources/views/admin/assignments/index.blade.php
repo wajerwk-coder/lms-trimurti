@@ -1,158 +1,146 @@
 @extends('layouts.admin')
 
 @section('title', 'Manajemen Tugas')
-
-@section('breadcrumb')
-    <li class="breadcrumb-item active">Tugas & Quiz</li>
-@endsection
-
 @section('page-title', 'Manajemen Tugas & Quiz')
+@section('page-subtitle', 'Kelola semua tugas yang dibuat oleh guru.')
 
 @section('page-actions')
-    <a href="{{ route('admin.assignments.create') }}" class="btn btn-primary">
-        <i class="fas fa-plus me-1"></i> Tambah Tugas
+    <a href="{{ route('admin.assignments.create') }}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i>Tambah Tugas
     </a>
 @endsection
 
 @section('content')
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Daftar Tugas & Quiz</h3>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-sm btn-danger" id="bulkDeleteBtn" disabled>
-                        <i class="fas fa-trash me-1"></i> Hapus Terpilih
-                    </button>
-                </div>
-            </div>
-            <div class="card-body">
-                @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
 
-                @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
-
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped" id="assignmentsTable">
-                        <thead>
-                            <tr>
-                                <th width="30">
-                                    <input type="checkbox" id="selectAll" class="form-check-input">
-                                </th>
-                                <th>Judul Tugas</th>
-                                <th>Guru</th>
-                                <th>Tanggal Deadline</th>
-                                <th>Nilai Maksimal</th>
-                                <th>Status</th>
-                                <th>Submissions</th>
-                                <th width="120">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($assignments as $assignment)
-                            <tr>
-                                <td>
-                                    <input type="checkbox" class="form-check-input assignment-checkbox" 
-                                           value="{{ $assignment->id }}">
-                                </td>
-                                <td>
-                                    <div class="fw-bold">{{ $assignment->title }}</div>
+{{-- Tabel --}}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold"><i class="fas fa-tasks me-2 text-primary"></i>Daftar Tugas & Quiz</h6>
+        <button type="button" class="btn btn-outline-danger btn-sm" id="bulkDeleteBtn" disabled>
+            <i class="fas fa-trash me-1"></i>Hapus Terpilih
+        </button>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small" id="assignmentsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="width:40px;">
+                            <input type="checkbox" id="selectAll" class="form-check-input">
+                        </th>
+                        <th>Judul Tugas</th>
+                        <th>Guru</th>
+                        <th>Deadline</th>
+                        <th class="text-center">Nilai Maks</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Submissions</th>
+                        <th class="text-center pe-4">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($assignments as $assignment)
+                        <tr>
+                            <td class="ps-4">
+                                <input type="checkbox" class="form-check-input assignment-checkbox"
+                                       value="{{ $assignment->id }}">
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ $assignment->title }}</div>
+                                @if($assignment->description)
                                     <small class="text-muted">{{ Str::limit($assignment->description, 50) }}</small>
-                                </td>
-                                <td>{{ $assignment->guru->name ?? 'N/A' }}</td>
-                                <td>
-                                    <span class="badge {{ $assignment->deadline < now() ? 'bg-danger' : 'bg-info' }}">
-                                        {{ $assignment->deadline->format('d/m/Y H:i') }}
-                                    </span>
-                                </td>
-                                <td>{{ $assignment->max_score }}</td>
-                                <td>
-                                    @if($assignment->is_published)
-                                        <span class="badge bg-success">Dipublikasikan</span>
-                                    @else
-                                        <span class="badge bg-warning">Draft</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="badge bg-primary">
-                                        {{ $assignment->submissions->count() }} submission(s)
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a href="{{ route('admin.assignments.show', $assignment) }}" 
-                                           class="btn btn-sm btn-info" title="Lihat Detail">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a href="{{ route('admin.assignments.edit', $assignment) }}" 
-                                           class="btn btn-sm btn-warning" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-sm btn-{{ $assignment->is_published ? 'secondary' : 'success' }}"
-                                                onclick="togglePublish({{ $assignment->id }})" 
-                                                title="{{ $assignment->is_published ? 'Unpublish' : 'Publish' }}">
-                                            <i class="fas fa-{{ $assignment->is_published ? 'eye-slash' : 'eye' }}"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-danger"
-                                                onclick="deleteAssignment({{ $assignment->id }})" title="Hapus">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                @endif
+                            </td>
+                            <td class="text-muted">{{ $assignment->guru?->name ?? '—' }}</td>
+                            <td>
+                                @if($assignment->deadline ?? $assignment->due_date)
+                                    @php $dl = $assignment->deadline ?? $assignment->due_date; @endphp
+                                    <div class="{{ $dl->isPast() ? 'text-danger fw-semibold' : 'text-muted' }}">
+                                        {{ $dl->format('d/m/Y') }}
                                     </div>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="8" class="text-center py-4">
-                                    <div class="text-muted">
-                                        <i class="fas fa-tasks fa-3x mb-3"></i>
-                                        <p>Tidak ada tugas yang ditemukan.</p>
-                                        <a href="{{ route('admin.assignments.create') }}" class="btn btn-primary">
-                                            <i class="fas fa-plus me-1"></i> Tambah Tugas Pertama
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-
-                @if($assignments->hasPages())
-                    <div class="d-flex justify-content-center mt-4">
-                        {{ $assignments->links() }}
-                    </div>
-                @endif
-            </div>
+                                    <small class="{{ $dl->isPast() ? 'text-danger' : 'text-muted' }}">
+                                        {{ $dl->format('H:i') }}
+                                        @if($dl->isPast()) <span class="badge bg-danger ms-1">Lewat</span> @endif
+                                    </small>
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
+                            </td>
+                            <td class="text-center">{{ $assignment->max_score ?? 100 }}</td>
+                            <td class="text-center">
+                                @if($assignment->is_published)
+                                    <span class="badge bg-success">Dipublikasikan</span>
+                                @else
+                                    <span class="badge bg-warning text-dark">Draft</span>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-primary bg-opacity-10 text-primary">
+                                    {{ $assignment->submissions->count() }}
+                                </span>
+                            </td>
+                            <td class="text-center pe-4">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a href="{{ route('admin.assignments.show', $assignment) }}"
+                                       class="btn btn-outline-info btn-sm" title="Detail">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ route('admin.assignments.edit', $assignment) }}"
+                                       class="btn btn-outline-warning btn-sm" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button"
+                                            class="btn btn-outline-{{ $assignment->is_published ? 'secondary' : 'success' }} btn-sm"
+                                            onclick="togglePublish({{ $assignment->id }})"
+                                            title="{{ $assignment->is_published ? 'Sembunyikan' : 'Publikasikan' }}">
+                                        <i class="fas fa-{{ $assignment->is_published ? 'eye-slash' : 'eye' }}"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                            onclick="deleteAssignment({{ $assignment->id }})" title="Hapus">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <i class="fas fa-tasks fa-3x text-muted opacity-25 mb-3 d-block"></i>
+                                <h6 class="text-muted">Tidak ada tugas</h6>
+                                <a href="{{ route('admin.assignments.create') }}" class="btn btn-primary btn-sm mt-2">
+                                    <i class="fas fa-plus me-1"></i>Tambah Pertama
+                                </a>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
+    @if($assignments->hasPages())
+        <div class="card-footer bg-white border-top">
+            {{ $assignments->links() }}
+        </div>
+    @endif
 </div>
 
-<!-- Delete Confirmation Modal -->
+{{-- Delete Modal --}}
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Konfirmasi Hapus</h5>
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-semibold">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>Konfirmasi Hapus
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Apakah Anda yakin ingin menghapus tugas ini?</p>
-                <p class="text-danger"><small>Tindakan ini tidak dapat dibatalkan.</small></p>
+                <p class="text-muted">Hapus tugas ini? Semua submission terkait juga akan dihapus.</p>
+                <p class="text-danger small"><i class="fas fa-info-circle me-1"></i>Tidak dapat dibatalkan.</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                <form id="deleteForm" method="POST" style="display: inline;">
-                    @csrf
-                    @method('DELETE')
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                <form id="deleteForm" method="POST" class="d-inline">
+                    @csrf @method('DELETE')
                     <button type="submit" class="btn btn-danger">Hapus</button>
                 </form>
             </div>
@@ -160,105 +148,81 @@
     </div>
 </div>
 
-<!-- Bulk Delete Modal -->
+{{-- Bulk Delete Modal --}}
 <div class="modal fade" id="bulkDeleteModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Konfirmasi Hapus Massal</h5>
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-semibold">Hapus Massal</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Apakah Anda yakin ingin menghapus <span id="selectedCount">0</span> tugas yang dipilih?</p>
-                <p class="text-danger"><small>Tindakan ini tidak dapat dibatalkan.</small></p>
+                <p class="text-muted">Hapus <span id="selectedCount" class="fw-bold text-dark">0</span> tugas?</p>
+                <p class="text-danger small">Tidak dapat dibatalkan.</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                <form id="bulkDeleteForm" method="POST" action="{{ route('admin.assignments.bulk-delete') }}" style="display: inline;">
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                <form id="bulkDeleteForm" method="POST"
+                      action="{{ route('admin.assignments.bulk-delete') }}" class="d-inline">
                     @csrf
-                    <button type="submit" class="btn btn-danger">Hapus Semua</button>
+                    <button type="submit" class="btn btn-danger">Hapus</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
-@endsection
 
 @push('js')
 <script>
-$(document).ready(function() {
-    // Initialize DataTable
-    $('#assignmentsTable').DataTable({
-        "paging": false,
-        "searching": true,
-        "ordering": true,
-        "info": false,
-        "autoWidth": false,
-        "responsive": true,
-        "language": {
-            "url": "//cdn.datatables.net/plug-ins/1.11.5/i18n/id.json"
-        }
-    });
+document.addEventListener('DOMContentLoaded', function () {
+    const selectAll  = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.assignment-checkbox');
+    const bulkBtn    = document.getElementById('bulkDeleteBtn');
+    const cntEl      = document.getElementById('selectedCount');
 
-    // Select All functionality
-    $('#selectAll').change(function() {
-        $('.assignment-checkbox').prop('checked', this.checked);
-        updateBulkDeleteButton();
-    });
-
-    $('.assignment-checkbox').change(function() {
-        updateBulkDeleteButton();
-    });
-
-    function updateBulkDeleteButton() {
-        const checkedBoxes = $('.assignment-checkbox:checked');
-        const bulkDeleteBtn = $('#bulkDeleteBtn');
-        
-        if (checkedBoxes.length > 0) {
-            bulkDeleteBtn.prop('disabled', false);
-            $('#selectedCount').text(checkedBoxes.length);
-        } else {
-            bulkDeleteBtn.prop('disabled', true);
-        }
+    function updateBulk() {
+        const cnt = document.querySelectorAll('.assignment-checkbox:checked').length;
+        bulkBtn.disabled = cnt === 0;
+        if (cntEl) cntEl.textContent = cnt;
     }
 
-    // Bulk delete
-    $('#bulkDeleteBtn').click(function() {
-        const checkedBoxes = $('.assignment-checkbox:checked');
-        if (checkedBoxes.length > 0) {
-            // Add hidden inputs for selected IDs
-            const form = $('#bulkDeleteForm');
-            form.find('input[name="assignment_ids[]"]').remove();
-            
-            checkedBoxes.each(function() {
-                form.append('<input type="hidden" name="assignment_ids[]" value="' + $(this).val() + '">');
-            });
-            
-            $('#bulkDeleteModal').modal('show');
-        }
+    selectAll.addEventListener('change', function () {
+        checkboxes.forEach(c => c.checked = this.checked);
+        updateBulk();
+    });
+    checkboxes.forEach(c => c.addEventListener('change', updateBulk));
+
+    bulkBtn.addEventListener('click', function () {
+        const checked = document.querySelectorAll('.assignment-checkbox:checked');
+        if (!checked.length) return;
+        const form = document.getElementById('bulkDeleteForm');
+        form.querySelectorAll('input[name="assignment_ids[]"]').forEach(i => i.remove());
+        checked.forEach(c => {
+            const inp = document.createElement('input');
+            inp.type = 'hidden'; inp.name = 'assignment_ids[]'; inp.value = c.value;
+            form.appendChild(inp);
+        });
+        new bootstrap.Modal(document.getElementById('bulkDeleteModal')).show();
     });
 });
 
 function deleteAssignment(id) {
-    $('#deleteForm').attr('action', '{{ route("admin.assignments.destroy", ":id") }}'.replace(':id', id));
-    $('#deleteModal').modal('show');
+    document.getElementById('deleteForm').action =
+        '{{ route("admin.assignments.destroy", ":id") }}'.replace(':id', id);
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
 
 function togglePublish(id) {
-    if (confirm('Apakah Anda yakin ingin mengubah status publikasi tugas ini?')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '{{ route("admin.assignments.publish", ":id") }}'.replace(':id', id);
-        
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = '_token';
-        csrfToken.value = '{{ csrf_token() }}';
-        
-        form.appendChild(csrfToken);
-        document.body.appendChild(form);
-        form.submit();
-    }
+    if (!confirm('Ubah status publikasi tugas ini?')) return;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ route("admin.assignments.publish", ":id") }}'.replace(':id', id);
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden'; csrf.name = '_token'; csrf.value = '{{ csrf_token() }}';
+    form.appendChild(csrf);
+    document.body.appendChild(form);
+    form.submit();
 }
 </script>
 @endpush
+@endsection

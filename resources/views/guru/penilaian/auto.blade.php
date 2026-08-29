@@ -1,77 +1,66 @@
 @extends('layouts.guru')
 
 @section('title', 'Penilaian Praktik Otomatis')
+@section('page-title', 'Penilaian Praktik Otomatis')
+@section('page-subtitle', 'Sistem penilaian praktik dengan checklist kriteria otomatis.')
+
+@section('page-actions')
+    <a href="{{ route('guru.penilaian.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Kembali
+    </a>
+@endsection
 
 @section('content')
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h1 class="h3 mb-0 text-gray-800">Penilaian Praktik Otomatis</h1>
-            <p class="text-muted mb-0">Sistem penilaian praktik dengan checklist kriteria otomatis</p>
-        </div>
-        <div>
-            <a href="{{ route('guru.penilaian.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left mr-2"></i>Kembali
-            </a>
-        </div>
-    </div>
-
-    <!-- Student & Practical Selection -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-user-graduate mr-2"></i>Pilih Siswa dan Praktik
+<div>
+    {{-- Pilih Siswa & Praktik --}}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom py-3">
+            <h6 class="mb-0 fw-semibold">
+                <i class="fas fa-user-graduate me-2 text-primary"></i>Pilih Siswa dan Praktik
             </h6>
         </div>
         <div class="card-body">
-            <div class="row">
+            <div class="row g-3">
                 <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="student_id" class="form-label font-weight-bold">Siswa *</label>
-                        <select name="student_id" id="student_id" class="form-control" required>
-                            <option value="">Pilih Siswa</option>
-                            @foreach($students as $student)
-                            <option value="{{ $student->id }}" 
-                                    data-name="{{ $student->name }}"
-                                    data-class="{{ $student->siswa->kelas->name ?? 'N/A' }}"
-                                    data-nis="{{ $student->siswa->nis ?? 'N/A' }}">
-                                {{ $student->name }} - {{ $student->siswa->nis ?? 'N/A' }} - {{ $student->siswa->kelas->name ?? 'N/A' }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <label for="student_id" class="form-label small fw-semibold">Siswa <span class="text-danger">*</span></label>
+                    <select name="student_id" id="student_id" class="form-select" required>
+                        <option value="">— Pilih Siswa —</option>
+                        @foreach($students as $student)
+                        <option value="{{ $student->id }}"
+                                data-name="{{ $student->name }}"
+                                data-class="{{ $student->siswa?->kelas?->name ?? 'N/A' }}"
+                                data-nis="{{ $student->siswa?->nis ?? 'N/A' }}">
+                            {{ $student->name }} — {{ $student->siswa?->nis ?? 'N/A' }} — {{ $student->siswa?->kelas?->name ?? 'N/A' }}
+                        </option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="practical_id" class="form-label font-weight-bold">Praktik *</label>
-                        <select name="practical_id" id="practical_id" class="form-control" required>
-                            <option value="">Pilih Praktik</option>
-                            @foreach($practicals as $practical)
-                            <option value="{{ $practical->id }}" 
-                                    data-title="{{ $practical->judul }}"
-                                    data-subject="{{ $practical->subject->name ?? 'N/A' }}"
-                                    data-max-score="{{ $practical->max_score }}"
-                                    data-class="{{ $practical->kelas->name ?? 'N/A' }}">
-                                {{ $practical->judul }} - {{ $practical->subject->name ?? 'N/A' }} ({{ $practical->kelas->name ?? 'N/A' }})
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <label for="practical_id" class="form-label small fw-semibold">Praktik <span class="text-danger">*</span></label>
+                    <select name="practical_id" id="practical_id" class="form-select" required>
+                        <option value="">— Pilih Praktik —</option>
+                        @foreach($practicals as $practical)
+                        <option value="{{ $practical->id }}"
+                                data-title="{{ $practical->title }}"
+                                data-subject="{{ $practical->subject?->name ?? 'N/A' }}"
+                                data-max-score="{{ $practical->max_score }}"
+                                data-class="{{ $practical->kelas?->name ?? 'N/A' }}">
+                            {{ $practical->title }} — {{ $practical->subject?->name ?? 'N/A' }} ({{ $practical->kelas?->name ?? 'N/A' }})
+                        </option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Assessment Form -->
+    {{-- Assessment Form --}}
     <form id="autoAssessmentForm" method="POST" action="{{ route('guru.penilaian.auto.save') }}">
         @csrf
-        
-        <!-- Practical Info Card -->
         <div class="card shadow mb-4" id="practicalInfo" style="display: none;">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-info">
-                    <i class="fas fa-info-circle mr-2"></i>Informasi Praktik
+                <h6 class="m-0 fw-bold text-info">
+                    <i class="fas fa-info-circle me-2"></i>Informasi Praktik
                 </h6>
             </div>
             <div class="card-body">
@@ -92,8 +81,8 @@
         <!-- Assessment Criteria -->
         <div class="card shadow mb-4" id="assessmentCriteria" style="display: none;">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">
-                    <i class="fas fa-clipboard-check mr-2"></i>Kriteria Penilaian
+                <h6 class="m-0 fw-bold text-primary">
+                    <i class="fas fa-clipboard-check me-2"></i>Kriteria Penilaian
                 </h6>
             </div>
             <div class="card-body">
@@ -101,13 +90,13 @@
                     <!-- Persiapan -->
                     <div class="col-md-4">
                         <h6 class="text-center mb-3 text-info">
-                            <i class="fas fa-clipboard-list mr-2"></i>Persiapan (40%)
+                            <i class="fas fa-clipboard-list me-2"></i>Persiapan (40%)
                         </h6>
                         <div class="list-group">
                             <label class="list-group-item list-group-item-action">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span>
-                                        <input type="checkbox" name="kriteria_nilai[prep_1]" value="1" class="mr-2">
+                                        <input type="checkbox" name="kriteria_nilai[prep_1]" value="1" class="me-2">
                                         Persiapan alat dan bahan
                                     </span>
                                     <small class="text-muted">20%</small>
@@ -116,7 +105,7 @@
                             <label class="list-group-item list-group-item-action">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span>
-                                        <input type="checkbox" name="kriteria_nilai[prep_2]" value="1" class="mr-2">
+                                        <input type="checkbox" name="kriteria_nilai[prep_2]" value="1" class="me-2">
                                         Pemahaman prosedur
                                     </span>
                                     <small class="text-muted">15%</small>
@@ -125,7 +114,7 @@
                             <label class="list-group-item list-group-item-action">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span>
-                                        <input type="checkbox" name="kriteria_nilai[prep_3]" value="1" class="mr-2">
+                                        <input type="checkbox" name="kriteria_nilai[prep_3]" value="1" class="me-2">
                                         Kebersihan dan kerapian
                                     </span>
                                     <small class="text-muted">15%</small>
@@ -137,13 +126,13 @@
                     <!-- Pelaksanaan -->
                     <div class="col-md-4">
                         <h6 class="text-center mb-3 text-success">
-                            <i class="fas fa-play-circle mr-2"></i>Pelaksanaan (40%)
+                            <i class="fas fa-play-circle me-2"></i>Pelaksanaan (40%)
                         </h6>
                         <div class="list-group">
                             <label class="list-group-item list-group-item-action">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span>
-                                        <input type="checkbox" name="kriteria_nilai[exec_1]" value="1" class="mr-2">
+                                        <input type="checkbox" name="kriteria_nilai[exec_1]" value="1" class="me-2">
                                         Teknik pelaksanaan
                                     </span>
                                     <small class="text-muted">25%</small>
@@ -152,7 +141,7 @@
                             <label class="list-group-item list-group-item-action">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span>
-                                        <input type="checkbox" name="kriteria_nilai[exec_2]" value="1" class="mr-2">
+                                        <input type="checkbox" name="kriteria_nilai[exec_2]" value="1" class="me-2">
                                         Keamanan kerja
                                     </span>
                                     <small class="text-muted">20%</small>
@@ -161,7 +150,7 @@
                             <label class="list-group-item list-group-item-action">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span>
-                                        <input type="checkbox" name="kriteria_nilai[exec_3]" value="1" class="mr-2">
+                                        <input type="checkbox" name="kriteria_nilai[exec_3]" value="1" class="me-2">
                                         Efisiensi waktu
                                     </span>
                                     <small class="text-muted">20%</small>
@@ -173,13 +162,13 @@
                     <!-- Hasil -->
                     <div class="col-md-4">
                         <h6 class="text-center mb-3 text-warning">
-                            <i class="fas fa-check-circle mr-2"></i>Hasil (20%)
+                            <i class="fas fa-check-circle me-2"></i>Hasil (20%)
                         </h6>
                         <div class="list-group">
                             <label class="list-group-item list-group-item-action">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span>
-                                        <input type="checkbox" name="kriteria_nilai[result_1]" value="1" class="mr-2">
+                                        <input type="checkbox" name="kriteria_nilai[result_1]" value="1" class="me-2">
                                         Kualitas hasil
                                     </span>
                                     <small class="text-muted">30%</small>
@@ -188,7 +177,7 @@
                             <label class="list-group-item list-group-item-action">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span>
-                                        <input type="checkbox" name="kriteria_nilai[result_2]" value="1" class="mr-2">
+                                        <input type="checkbox" name="kriteria_nilai[result_2]" value="1" class="me-2">
                                         Laporan praktikum
                                     </span>
                                     <small class="text-muted">20%</small>
@@ -203,8 +192,8 @@
         <!-- Score Display -->
         <div class="card shadow mb-4" id="scoreDisplay" style="display: none;">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-success">
-                    <i class="fas fa-calculator mr-2"></i>Hasil Penilaian
+                <h6 class="m-0 fw-bold text-success">
+                    <i class="fas fa-calculator me-2"></i>Hasil Penilaian
                 </h6>
             </div>
             <div class="card-body text-center">
@@ -245,7 +234,7 @@
                 
                 <div class="mt-4">
                     <h4 class="text-center">
-                        <span class="badge badge-primary badge-lg" id="gradeDisplay">-</span>
+                        <span class="badge bg-primary badge-lg" id="gradeDisplay">-</span>
                     </h4>
                 </div>
             </div>
@@ -254,7 +243,7 @@
         <!-- Submit Button -->
         <div class="text-center" id="submitSection" style="display: none;">
             <button type="submit" class="btn btn-primary btn-lg px-5">
-                <i class="fas fa-save mr-2"></i>Simpan Penilaian
+                <i class="fas fa-save me-2"></i>Simpan Penilaian
             </button>
         </div>
     </form>
@@ -294,7 +283,7 @@
     color: #36b9cc !important;
 }
 
-.badge-primary {
+.bg-primary {
     background-color: #4e73df;
 }
 
@@ -323,138 +312,86 @@
     color: #495057;
 }
 
-.font-weight-bold {
+.fw-bold {
     font-weight: 700;
 }
 
-.form-control:focus {
-    border-color: #4e73df;
-    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
-}
-
-.btn-primary {
-    background-color: #4e73df;
-    border-color: #4e73df;
-}
-
-.btn-primary:hover {
-    background-color: #2e59d9;
-    border-color: #2653d4;
-}
-
-.btn-secondary {
-    background-color: #858796;
-    border-color: #858796;
-}
-
-.btn-secondary:hover {
-    background-color: #717384;
-    border-color: #6c6e7e;
-}
-</style>
-
-<!-- JavaScript -->
+@push('js')
 <script>
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function () {
     let selectedPractical = null;
-    
-    // Handle practical selection
-    $('#practical_id').change(function() {
-        const practicalId = $(this).val();
-        const practical = $('#practical_id option[value="' + practicalId + '"]');
-        
-        if (practicalId) {
-            selectedPractical = {
-                id: practicalId,
-                title: practical.data('title'),
-                subject: practical.data('subject'),
-                maxScore: practical.data('max-score')
-            };
-            
-            // Show practical info
-            $('#practicalInfo').show();
-            $('#practicalTitle').text(selectedPractical.title);
-            $('#practicalSubject').text(selectedPractical.subject);
-            $('#practicalMaxScore').text(selectedPractical.maxScore);
-            
-            // Show assessment criteria
-            $('#assessmentCriteria').show();
-            
-            // Show submit button
-            $('#submitSection').show();
-        } else {
-            $('#practicalInfo').hide();
-            $('#assessmentCriteria').hide();
-            $('#scoreDisplay').hide();
-            $('#submitSection').hide();
-        }
+
+    const practicalSel = document.getElementById('practical_id');
+    const practicalInfo = document.getElementById('practicalInfo');
+    const scoreDisplay  = document.getElementById('scoreDisplay');
+    const assessCrit    = document.getElementById('assessmentCriteria');
+    const submitSec     = document.getElementById('submitSection');
+
+    function show(el) { if (el) el.style.display = 'block'; }
+    function hide(el) { if (el) el.style.display = 'none'; }
+    function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
+    if (practicalSel) {
+        practicalSel.addEventListener('change', function () {
+            const opt = this.options[this.selectedIndex];
+            const id  = this.value;
+            if (id) {
+                selectedPractical = {
+                    id, title: opt.dataset.title,
+                    subject: opt.dataset.subject, maxScore: opt.dataset.maxScore
+                };
+                setText('practicalTitle', selectedPractical.title);
+                setText('practicalSubject', selectedPractical.subject);
+                setText('practicalMaxScore', selectedPractical.maxScore);
+                show(practicalInfo); show(assessCrit); show(submitSec);
+            } else {
+                selectedPractical = null;
+                hide(practicalInfo); hide(assessCrit); hide(scoreDisplay); hide(submitSec);
+            }
+        });
+    }
+
+    // Handle criteria checkboxes
+    document.querySelectorAll('input[name^="kriteria_nilai"]').forEach(function (cb) {
+        cb.addEventListener('change', calculateScore);
     });
-    
-    // Handle criteria selection
-    $('input[name^="kriteria_nilai"]').change(function() {
-        calculateScore();
-    });
-    
+
+    const criteriaWeights = {
+        'prep_1':0.20,'prep_2':0.15,'prep_3':0.15,
+        'exec_1':0.25,'exec_2':0.20,'exec_3':0.20,
+        'result_1':0.30,'result_2':0.20
+    };
+
     function calculateScore() {
         if (!selectedPractical) return;
-        
-        const criteriaWeights = {
-            'prep_1': 0.20, 'prep_2': 0.15, 'prep_3': 0.15,
-            'exec_1': 0.25, 'exec_2': 0.20, 'exec_3': 0.20,
-            'result_1': 0.30, 'result_2': 0.20
-        };
-        
-        let prepScore = 0;
-        let execScore = 0;
-        let resultScore = 0;
-        let totalWeightedScore = 0;
-        
-        // Calculate scores for each category
-        $('input[name^="kriteria_nilai[prep_"]').each(function() {
-            if (this.checked) {
-                prepScore += 100 * criteriaWeights[this.name];
+        let prep = 0, exec = 0, result = 0, total = 0;
+
+        Object.keys(criteriaWeights).forEach(function (key) {
+            const cb = document.querySelector('input[name="kriteria_nilai[' + key + ']"]');
+            if (cb && cb.checked) {
+                const w = criteriaWeights[key] * 100;
+                total += criteriaWeights[key] * 100;
+                if (key.startsWith('prep'))   prep   += w;
+                if (key.startsWith('exec'))   exec   += w;
+                if (key.startsWith('result')) result += w;
             }
         });
-        
-        $('input[name^="kriteria_nilai[exec_"]').each(function() {
-            if (this.checked) {
-                execScore += 100 * criteriaWeights[this.name];
-            }
-        });
-        
-        $('input[name^="kriteria_nilai[result_"]').each(function() {
-            if (this.checked) {
-                resultScore += 100 * criteriaWeights[this.name];
-            }
-        });
-        
-        // Calculate total weighted score
-        Object.keys(criteriaWeights).forEach(function(key) {
-            if ($('input[name="kriteria_nilai[' + key + ']"]').prop('checked')) {
-                totalWeightedScore += 100 * criteriaWeights[key];
-            }
-        });
-        
-        // Update display
-        $('#prepScore').text(Math.round(prepScore) + '%');
-        $('#execScore').text(Math.round(execScore) + '%');
-        $('#resultScore').text(Math.round(resultScore) + '%');
-        $('#totalScore').text(totalWeightedScore.toFixed(1));
-        
-        // Calculate grade
+
+        setText('prepScore',   Math.round(prep)   + '%');
+        setText('execScore',   Math.round(exec)   + '%');
+        setText('resultScore', Math.round(result) + '%');
+        setText('totalScore',  total.toFixed(1));
+
         let grade = 'E';
-        if (totalWeightedScore >= 90) grade = 'A';
-        else if (totalWeightedScore >= 80) grade = 'B';
-        else if (totalWeightedScore >= 70) grade = 'C';
-        else if (totalWeightedScore >= 60) grade = 'D';
-        
-        $('#gradeDisplay').text(grade);
-        
-        // Show score display if any criteria is selected
-        if (totalWeightedScore > 0) {
-            $('#scoreDisplay').show();
-        }
+        if      (total >= 90) grade = 'A';
+        else if (total >= 80) grade = 'B';
+        else if (total >= 70) grade = 'C';
+        else if (total >= 60) grade = 'D';
+        setText('gradeDisplay', grade);
+
+        if (total > 0) show(scoreDisplay);
     }
 });
 </script>
+@endpush
 @endsection

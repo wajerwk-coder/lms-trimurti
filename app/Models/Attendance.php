@@ -4,22 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Attendance extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'siswa_id',
         'class_subject_id',
+        'kelas_id',
+        'subject_id',
+        'guru_id',
         'date',
         'status',
         'note',
         'created_by',
         'recorded_by',
-        'type', // regular atau praktik
-        'practical_id', // ID praktik terkait (jika type = praktik)
-        'subject_id', // ID mata pelajaran
     ];
 
     protected $casts = [
@@ -33,12 +34,41 @@ class Attendance extends Model
     // Relationships
     public function siswa()
     {
-        return $this->belongsTo(User::class, 'siswa_id');
+        // siswa_id menyimpan users_central.id (bukan siswa.id)
+        return $this->belongsTo(UserCentral::class, 'siswa_id');
+    }
+
+    /**
+     * Relasi via student_id (kolom lama)
+     */
+    public function studentAlt()
+    {
+        return $this->belongsTo(UserCentral::class, 'student_id');
+    }
+
+    /**
+     * Ambil nama siswa dari salah satu kolom yang tersedia
+     */
+    public function getNamaSiswaAttribute(): string
+    {
+        return $this->siswa?->name
+            ?? $this->studentAlt?->name
+            ?? '—';
     }
 
     public function recorder()
     {
-        return $this->belongsTo(User::class, 'recorded_by');
+        return $this->belongsTo(UserCentral::class, 'recorded_by');
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(UserCentral::class, 'created_by');
+    }
+
+    public function guru()
+    {
+        return $this->belongsTo(UserCentral::class, 'guru_id');
     }
 
     public function subject()
@@ -46,9 +76,15 @@ class Attendance extends Model
         return $this->belongsTo(Subject::class, 'subject_id');
     }
 
+    public function kelas()
+    {
+        return $this->belongsTo(Kelas::class, 'kelas_id');
+    }
+
+    // Alias untuk backward compatibility
     public function student()
     {
-        return $this->belongsTo(Student::class, 'siswa_id', 'user_id');
+        return $this->siswa();
     }
 
     // Scopes

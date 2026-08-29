@@ -4,139 +4,236 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Practical;
-use App\Models\User;
+use App\Models\UserCentral;
+use App\Models\Subject;
+use App\Models\Kelas;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
 
 class PracticalController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function __construct()
+    {
+        $this->middleware(['auth', 'admin']);
+    }
+
+    // ── Index ─────────────────────────────────────────────────────────────
+
     public function index()
     {
-        $practicals = Practical::with(['guru', 'scores'])
+        $practicals = Practical::with(['guru', 'subject', 'kelas', 'scores'])
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
-        return view('admin.practicals.index', compact('practicals'));
+        // Hitung stats dari semua data, bukan hanya halaman ini
+        $totalPublished   = Practical::where('is_published', true)->count();
+        $totalDraft       = Practical::where('is_published', false)->count();
+        $totalPenilaian   = \App\Models\NilaiPraktik::count();
+
+        return view('admin.practicals.index', compact(
+            'practicals', 'totalPublished', 'totalDraft', 'totalPenilaian'
+        ));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
+    // ── Create ────────────────────────────────────────────────────────────
+
     public function create()
     {
-        $gurus = User::where('role', 'guru')->get();
-        return view('admin.practicals.create', compact('gurus'));
+        return view('admin.practicals.create', [
+            'gurus'    => UserCentral::where('role', 'guru')->where('is_active', true)->orderBy('name')->get(),
+            'subjects' => Subject::where('is_active', true)->orderBy('name')->get(),
+            'kelas'    => Kelas::orderBy('name')->get(),
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    // ── Store ─────────────────────────────────────────────────────────────
+
+    public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'judul' => 'required|string|max:255',
-            'deskripsi' => 'required|string',
-            'guru_id' => 'required|exists:users,id',
-            'date' => 'required|date|after:now',
-            'lokasi' => 'required|string|max:255',
-            'durasi' => 'required|integer|min:1|max:480', // Max 8 hours
-            'tools' => 'nullable|string',
-            'bahan' => 'nullable|string',
-            'instruksi' => 'nullable|string',
+            'title'        => 'required|string|max:255',
+            'description'  => 'required|string',
+            'instructions' => 'nullable|string',
+            'guru_id'      => 'required|exists:users_central,id',
+            'subject_id'   => 'required|exists:subjects,id',
+            'kelas_id'     => 'nullable|exists:classes,id',
+            'due_date'     => 'required|date|after:now',
+        ], [
+            'title.required'       => 'Judul praktikum wajib diisi.',
+            'description.required' => 'Deskripsi wajib diisi.',
+            'guru_id.required'     => 'Guru wajib dipilih.',
+            'subject_id.required'  => 'Mata pelajaran wajib dipilih.',
+            'due_date.after'       => 'Batas waktu harus setelah sekarang.',
         ]);
 
-        $data = $request->all();
-        $data['is_published'] = $request->has('is_published');
+        try {
+            $isPublished = $request->boolean('publish_now');
 
-        Practical::create($data);
+            $practical = Practical::create([
+                'title'        => $request->title,
+                'description'  => $request->description,
+                'instructions' => $request->instructions,
+                'guru_id'      => $request->guru_id,
+                'subject_id'   => $request->subject_id,
+                'kelas_id'     => $request->kelas_id,
+                'due_date'     => $request->due_date,
+                'is_published' => $isPublished,
+                'published_at' => $isPublished ? now() : null,
+                'is_active'    => true,
+            ]);
 
-        return redirect()->route('admin.practicals.index')
-            ->with('success', 'Praktikum berhasil dibuat.');
+            Log::info('Practical created by admin', ['id' => $practical->id, 'admin_id' => auth()->id()]);
+
+            return redirect()->route('admin.practicals.index')
+                ->with('success', "Praktikum '{$practical->title}' berhasil dibuat.");
+
+        } catch (\Throwable $e) {
+            Log::error('Admin practical create failed: ' . $e->getMessage());
+            return back()->withInput()
+                ->with('error', 'Gagal membuat praktikum: ' . $e->getMessage());
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
+    // ── Show ──────────────────────────────────────────────────────────────
+
     public function show(Practical $practical)
     {
-        $practical->load(['guru', 'scores.siswa']);
+        $practical->load(['guru', 'subject', 'kelas', 'scores.siswa']);
         return view('admin.practicals.show', compact('practical'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
+    // ── Edit ──────────────────────────────────────────────────────────────
+
     public function edit(Practical $practical)
     {
-        $gurus = User::where('role', 'guru')->get();
-        return view('admin.practicals.edit', compact('practical', 'gurus'));
+        return view('admin.practicals.edit', [
+            'practical' => $practical,
+            'gurus'     => UserCentral::where('role', 'guru')->where('is_active', true)->orderBy('name')->get(),
+            'subjects'  => Subject::where('is_active', true)->orderBy('name')->get(),
+            'kelas'     => Kelas::orderBy('name')->get(),
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Practical $practical)
+    // ── Update ────────────────────────────────────────────────────────────
+
+    public function update(Request $request, Practical $practical): RedirectResponse
     {
         $request->validate([
-            'judul' => 'required|string|max:255',
-            'deskripsi' => 'required|string',
-            'guru_id' => 'required|exists:users,id',
-            'date' => 'required|date|after:now',
-            'lokasi' => 'required|string|max:255',
-            'durasi' => 'required|integer|min:1|max:480', // Max 8 hours
-            'tools' => 'nullable|string',
-            'bahan' => 'nullable|string',
-            'instruksi' => 'nullable|string',
+            'title'        => 'required|string|max:255',
+            'description'  => 'required|string',
+            'instructions' => 'nullable|string',
+            'guru_id'      => 'required|exists:users_central,id',
+            'subject_id'   => 'required|exists:subjects,id',
+            'kelas_id'     => 'nullable|exists:classes,id',
+            'due_date'     => 'required|date',      // no after:now agar bisa simpan data lama
+        ], [
+            'title.required'       => 'Judul praktikum wajib diisi.',
+            'description.required' => 'Deskripsi wajib diisi.',
+            'guru_id.required'     => 'Guru wajib dipilih.',
+            'subject_id.required'  => 'Mata pelajaran wajib dipilih.',
         ]);
 
-        $data = $request->all();
-        $data['is_published'] = $request->has('is_published');
+        try {
+            $isPublished = $request->boolean('publish_now');
 
-        $practical->update($data);
+            $practical->update([
+                'title'        => $request->title,
+                'description'  => $request->description,
+                'instructions' => $request->instructions,
+                'guru_id'      => $request->guru_id,
+                'subject_id'   => $request->subject_id,
+                'kelas_id'     => $request->kelas_id,
+                'due_date'     => $request->due_date,
+                // Selalu set dari checkbox — boolean() false saat unchecked
+                'is_published' => $isPublished,
+                'published_at' => $isPublished
+                    ? ($practical->published_at ?? now())   // pertahankan tanggal asli jika sudah pernah publish
+                    : null,
+            ]);
 
-        return redirect()->route('admin.practicals.index')
-            ->with('success', 'Praktikum berhasil diperbarui.');
+            Log::info('Practical updated by admin', ['id' => $practical->id, 'admin_id' => auth()->id()]);
+
+            return redirect()->route('admin.practicals.index')
+                ->with('success', "Praktikum '{$practical->title}' berhasil diperbarui.");
+
+        } catch (\Throwable $e) {
+            Log::error('Admin practical update failed: ' . $e->getMessage());
+            return back()->withInput()
+                ->with('error', 'Gagal memperbarui praktikum: ' . $e->getMessage());
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Practical $practical)
+    // ── Destroy ───────────────────────────────────────────────────────────
+
+    public function destroy(Practical $practical): RedirectResponse
     {
-        $practical->delete();
+        try {
+            $nama = $practical->title;
+            $practical->delete();
 
-        return redirect()->route('admin.practicals.index')
-            ->with('success', 'Praktikum berhasil dihapus.');
+            return redirect()->route('admin.practicals.index')
+                ->with('success', "Praktikum '{$nama}' berhasil dihapus.");
+
+        } catch (\Throwable $e) {
+            Log::error('Admin practical destroy failed: ' . $e->getMessage());
+            return back()->with('error', 'Gagal menghapus praktikum: ' . $e->getMessage());
+        }
     }
 
-    /**
-     * Toggle publish status
-     */
-    public function togglePublish(Practical $practical)
+    // ── Toggle Publish ────────────────────────────────────────────────────
+
+    public function togglePublish(Practical $practical): RedirectResponse
     {
-        $practical->update(['is_published' => !$practical->is_published]);
-        
-        $status = $practical->is_published ? 'dipublikasikan' : 'tidak dipublikasikan';
-        return redirect()->back()
-            ->with('success', "Praktikum berhasil {$status}.");
+        $newPublished = !$practical->is_published;
+
+        $practical->update([
+            'is_published' => $newPublished,
+            'published_at' => $newPublished
+                ? ($practical->published_at ?? now())
+                : null,
+        ]);
+
+        $practical->refresh();
+        $status = $practical->is_published ? 'dipublikasikan' : 'disembunyikan';
+
+        return back()->with('success', "Praktikum '{$practical->title}' berhasil {$status}.");
     }
 
-    /**
-     * Bulk delete practicals
-     */
+    // ── Bulk Delete ───────────────────────────────────────────────────────
+
     public function bulkDelete(Request $request)
     {
         $request->validate([
-            'practical_ids' => 'required|array',
-            'practical_ids.*' => 'exists:practicals,id'
+            'practical_ids'   => 'required|array',
+            'practical_ids.*' => 'exists:practicals,id',
         ]);
 
-        Practical::whereIn('id', $request->practical_ids)->delete();
+        try {
+            $count = Practical::whereIn('id', $request->practical_ids)->delete();
 
-        return redirect()->route('admin.practicals.index')
-            ->with('success', 'Praktikum yang dipilih berhasil dihapus.');
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "{$count} praktikum berhasil dihapus.",
+                    'deleted' => $count,
+                ]);
+            }
+
+            return redirect()->route('admin.practicals.index')
+                ->with('success', "{$count} praktikum berhasil dihapus.");
+
+        } catch (\Throwable $e) {
+            Log::error('Admin practical bulk delete failed: ' . $e->getMessage());
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menghapus praktikum: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', 'Gagal menghapus praktikum: ' . $e->getMessage());
+        }
     }
 }

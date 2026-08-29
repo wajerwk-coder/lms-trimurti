@@ -73,15 +73,15 @@
             margin-right: 5px;
             margin-bottom: 5px;
         }
-        .badge-info {
+        .bg-info {
             background-color: #17a2b8;
             color: white;
         }
-        .badge-secondary {
+        .bg-secondary {
             background-color: #6c757d;
             color: white;
         }
-        .badge-primary {
+        .bg-primary {
             background-color: #007bff;
             color: white;
         }
@@ -141,8 +141,8 @@
                         <p class="card-text">{{ $material->description }}</p>
                         
                         <div style="margin: 10px 0;">
-                            <span class="badge badge-info">{{ $material->subject ?? 'Tidak tersedia' }}</span>
-                            <span class="badge badge-secondary">{{ $material->class_level ?? 'Tidak tersedia' }}</span>
+                            <span class="badge bg-info">{{ $material->subject ?? 'Tidak tersedia' }}</span>
+                            <span class="badge bg-secondary">{{ $material->class_level ?? 'Tidak tersedia' }}</span>
                         </div>
                         
                         <div class="meta">

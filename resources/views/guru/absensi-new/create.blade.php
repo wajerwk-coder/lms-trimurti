@@ -1,4 +1,4 @@
-@extends('layouts.guru')
+﻿@extends('layouts.guru')
 
 @section('title', 'Buat Absensi - Guru')
 @section('page-title', 'Buat Absensi Baru')
@@ -197,7 +197,7 @@
 @endpush
 
 @section('breadcrumb')
-<li class="breadcrumb-item"><a href="{{ route('guru.dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ route('guru.dashboard') }}" class="text-decoration-none">Beranda</a></li>
 <li class="breadcrumb-item"><a href="{{ route('guru.absensi-new.index') }}" class="text-decoration-none">Manajemen Absensi</a></li>
 <li class="breadcrumb-item active">Buat Absensi</li>
 @endsection
@@ -355,71 +355,3 @@
     </form>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-// Load students when class is selected
-document.getElementById('class_id').addEventListener('change', function() {
-    const classId = this.value;
-    if (classId) {
-        window.location.href = `{{ route('guru.absensi-new.create') }}?class=${classId}&date=${document.getElementById('date').value}`;
-    }
-});
-
-// Mark all students as present
-function markAllPresent() {
-    document.querySelectorAll('input[type="radio"][value="hadir"]').forEach(radio => {
-        radio.checked = true;
-    });
-}
-
-// Auto-save draft
-let autoSaveTimeout;
-function autoSave() {
-    clearTimeout(autoSaveTimeout);
-    autoSaveTimeout = setTimeout(function() {
-        const formData = new FormData(document.getElementById('attendanceForm'));
-        localStorage.setItem('attendanceDraft', JSON.stringify(Object.fromEntries(formData)));
-    }, 2000);
-}
-
-// Load draft on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const draft = localStorage.getItem('attendanceDraft');
-    if (draft) {
-        const data = JSON.parse(draft);
-        // Restore form data if needed
-    }
-});
-
-// Add change listeners for auto-save
-document.getElementById('attendanceForm').addEventListener('change', autoSave);
-
-// Form validation
-document.getElementById('attendanceForm').addEventListener('submit', function(e) {
-    const classId = document.getElementById('class_id').value;
-    const subjectId = document.getElementById('subject_id').value;
-    
-    if (!classId || !subjectId) {
-        e.preventDefault();
-        alert('Silakan pilih kelas dan mata pelajaran terlebih dahulu.');
-        return false;
-    }
-    
-    // Check if at least one student is selected
-    const studentsSelected = document.querySelectorAll('input[type="radio"]:checked').length;
-    if (studentsSelected === 0) {
-        e.preventDefault();
-        alert('Silakan pilih status kehadiran untuk minimal satu siswa.');
-        return false;
-    }
-    
-    return true;
-});
-
-// Clear draft after successful submission
-@if(session('success'))
-localStorage.removeItem('attendanceDraft');
-@endif
-</script>
-@endpush

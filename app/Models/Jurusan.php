@@ -5,26 +5,55 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Jurusan extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'jurusans';
 
     protected $fillable = [
         'name',
         'code',
-        'description'
-    ];
-
-    protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'description',
+        'is_active',
     ];
 
     /**
-     * Relationship dengan model Kelas
+     * Accessor 'nama' → alias ke 'name' untuk backward compatibility
+     */
+    public function getNamaAttribute(): string
+    {
+        return $this->attributes['name'] ?? '';
+    }
+
+    /**
+     * Accessor 'kode' → alias ke 'code' untuk backward compatibility
+     */
+    public function getKodeAttribute(): ?string
+    {
+        return $this->attributes['code'] ?? null;
+    }
+
+    /**
+     * Accessor 'deskripsi' → alias ke 'description' untuk backward compatibility
+     */
+    public function getDeskripsiAttribute(): ?string
+    {
+        return $this->attributes['description'] ?? null;
+    }
+
+    protected $casts = [
+        'is_active'  => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
+    ];
+
+    /**
+     * Relationship dengan model Kelas (FK: jurusan_id di tabel classes)
      */
     public function kelas(): HasMany
     {
@@ -32,11 +61,19 @@ class Jurusan extends Model
     }
 
     /**
-     * Relationship dengan model User (siswa)
+     * Relationship dengan model Siswa (via Kelas).
+     * Menggunakan hasManyThrough: Jurusan → Kelas (jurusan_id) → Siswa (kelas_id)
      */
-    public function siswa(): HasMany
+    public function siswa(): HasManyThrough
     {
-        return $this->hasMany(Student::class, 'jurusan_id')->where('is_active', true);
+        return $this->hasManyThrough(
+            \App\Models\Siswa::class,  // target
+            Kelas::class,              // through
+            'jurusan_id',              // FK di classes → jurusans
+            'kelas_id',                // FK di siswa → classes
+            'id',                      // local key di jurusans
+            'id'                       // local key di classes
+        );
     }
 
     /**
@@ -60,7 +97,7 @@ class Jurusan extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('status', true);
+        return $query->where('is_active', true);
     }
 
     /**

@@ -17,23 +17,56 @@ class AssignmentController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware(['auth', 'siswa']);
     }
 
     /**
-     * Display a listing of active assignments.
+     * Display a listing of all assignments (active + expired).
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $assignments = Assignment::with(['submissions' => function($query) {
-            $query->where('siswa_id', Auth::id());
-        }])
-        ->where('is_published', true)
-        ->where('due_date', '>', now())
-        ->orderBy('due_date', 'asc')
-        ->paginate(10);
+        $ucId   = Auth::id();
+        $status = $request->get('status', '');
+        $search = $request->get('search', '');
 
-        return view('siswa.assignments.index', compact('assignments'));
+        $query = Assignment::with([
+                'submissions' => fn($q) => $q->where('siswa_id', $ucId),
+                'subject',
+            ])
+            ->where('is_published', true)
+            ->when($search, fn($q) => $q->where('title', 'like', "%{$search}%"))
+            ->when($status === 'pending', function ($q) use ($ucId) {
+                $q->where('due_date', '>', now())
+                  ->whereDoesntHave('submissions', fn($s) => $s->where('siswa_id', $ucId));
+            })
+            ->when($status === 'submitted', function ($q) use ($ucId) {
+                $q->whereHas('submissions', fn($s) => $s->where('siswa_id', $ucId));
+            })
+            ->when($status === 'graded', function ($q) use ($ucId) {
+                $q->whereHas('submissions', fn($s) => $s->where('siswa_id', $ucId)->whereNotNull('score'));
+            })
+            ->when($status === 'overdue', function ($q) use ($ucId) {
+                $q->where('due_date', '<', now())
+                  ->whereDoesntHave('submissions', fn($s) => $s->where('siswa_id', $ucId));
+            })
+            ->orderBy('due_date', 'asc');
+
+        $assignments = $query->paginate(12);
+
+        // Stats dari aggregate query, bukan paginator
+        $baseQ = Assignment::where('is_published', true);
+        $totalAll   = (clone $baseQ)->count();
+        $submitted  = AssignmentSubmission::where('siswa_id', $ucId)->distinct('assignment_id')->count('assignment_id');
+        $graded     = AssignmentSubmission::where('siswa_id', $ucId)->whereNotNull('score')->count();
+        $overdue    = (clone $baseQ)
+            ->where('due_date', '<', now())
+            ->whereDoesntHave('submissions', fn($s) => $s->where('siswa_id', $ucId))
+            ->count();
+
+        return view('siswa.assignments.index', compact(
+            'assignments', 'status', 'search',
+            'totalAll', 'submitted', 'graded', 'overdue'
+        ));
     }
 
     /**
@@ -41,7 +74,7 @@ class AssignmentController extends Controller
      */
     public function show($id): View
     {
-        $assignment = Assignment::with('guru')
+        $assignment = Assignment::with(['guru', 'subject', 'kelas'])
             ->where('is_published', true)
             ->findOrFail($id);
 
@@ -49,10 +82,12 @@ class AssignmentController extends Controller
             ->where('siswa_id', Auth::id())
             ->first();
 
-        $isExpired = now() > $assignment->deadline;
-        $canSubmit = !$isExpired;
+        $isExpired = $assignment->due_date && now() > $assignment->due_date;
+        $canSubmit = !$isExpired || $assignment->allow_late;
 
-        return view('siswa.assignments.show', compact('assignment', 'submission', 'isExpired', 'canSubmit'));
+        return view('siswa.assignments.show', compact(
+            'assignment', 'submission', 'isExpired', 'canSubmit'
+        ));
     }
 
     /**
@@ -69,14 +104,14 @@ class AssignmentController extends Controller
             ->findOrFail($id);
 
         // Validasi deadline
-        if (now() > $assignment->deadline) {
+        if ($assignment->due_date && now() > $assignment->due_date && !$assignment->allow_late) {
             return back()->with('error', 'Batas waktu pengumpulan telah berlalu.');
         }
 
         try {
             $submission = AssignmentSubmission::firstOrNew([
                 'assignment_id' => $id,
-                'siswa_id' => Auth::id()
+                'siswa_id'      => Auth::id(),
             ]);
 
             // Jika sudah ada submission dan sudah dinilai, tidak boleh edit
@@ -84,6 +119,8 @@ class AssignmentController extends Controller
                 return back()->with('error', 'Tugas sudah dinilai dan tidak dapat diubah.');
             }
 
+            // student_id (NOT NULL) harus sama dengan siswa_id (users_central.id)
+            $submission->student_id      = Auth::id();
             $submission->submission_text = $request->submission_text;
 
             if ($request->hasFile('file')) { // ✅ Perbaikan: gunakan 'file'
@@ -142,7 +179,7 @@ class AssignmentController extends Controller
     /**
      * Download submission file.
      */
-    public function downloadFile($submissionId): BinaryFileResponse
+    public function downloadFile($assignment, $submissionId): BinaryFileResponse
     {
         $submission = AssignmentSubmission::where('siswa_id', Auth::id())
             ->findOrFail($submissionId);

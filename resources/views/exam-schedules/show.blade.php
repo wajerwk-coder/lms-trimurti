@@ -1,11 +1,11 @@
-@extends('layouts.base')
+﻿@extends('layouts.base')
 
 @section('title', 'Detail Jadwal Ujian')
 @section('page-title', 'Detail Jadwal Ujian')
 @section('page-subtitle', 'Informasi lengkap jadwal ujian')
 
 @section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Beranda</a></li>
     <li class="breadcrumb-item active" aria-current="page">Jadwal Ujian</li>
 @endsection
 
@@ -75,8 +75,8 @@
                 </div>
                 <div class="card-footer">
                     <div class="d-flex gap-2">
-                        <a href="{{ route('dashboard') }}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left me-2"></i>Kembali ke Dashboard
+                        <a href="{{ route('siswa.assignments.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Kembali
                         </a>
                         <button type="button" class="btn btn-primary" onclick="window.print()">
                             <i class="fas fa-print me-2"></i>Cetak Jadwal

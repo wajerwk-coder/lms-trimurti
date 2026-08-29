@@ -1,345 +1,277 @@
 @extends('layouts.admin')
 
-@section('title', 'Manajemen Materi Pembelajaran')
-
+@section('title', 'Materi Pembelajaran')
 @section('page-title', 'Materi Pembelajaran')
-@section('page-subtitle', 'Kelola materi dari guru SMK Kesehatan Trimurti Husada.')
+@section('page-subtitle', 'Kelola semua materi pembelajaran dari guru.')
 
 @section('page-actions')
     <a href="{{ route('admin.materials.create') }}" class="btn btn-primary btn-sm">
-        <i class="fas fa-plus me-1"></i> Tambah materi
+        <i class="fas fa-plus me-1"></i>Tambah Materi
     </a>
 @endsection
 
 @section('content')
-<!-- Stats Cards -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-2 bg-blue-100 rounded-lg">
-                <i class="fas fa-book text-blue-600 text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Total Materi</p>
-                <p class="text-2xl font-bold text-gray-900">{{ number_format($stats['total_materials']) }}</p>
+
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+{{-- Stats --}}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-primary bg-opacity-10 flex-shrink-0">
+                    <i class="fas fa-book text-primary fa-lg"></i>
+                </div>
+                <div>
+                    <div class="h4 fw-bold mb-0">{{ number_format($stats['total_materials'] ?? 0) }}</div>
+                    <small class="text-muted">Total Materi</small>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-2 bg-green-100 rounded-lg">
-                <i class="fas fa-eye text-green-600 text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Dipublikasikan</p>
-                <p class="text-2xl font-bold text-gray-900">{{ number_format($stats['published_materials']) }}</p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-2 bg-yellow-100 rounded-lg">
-                <i class="fas fa-eye-slash text-yellow-600 text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Disembunyikan</p>
-                <p class="text-2xl font-bold text-gray-900">{{ number_format($stats['unpublished_materials']) }}</p>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-success bg-opacity-10 flex-shrink-0">
+                    <i class="fas fa-eye text-success fa-lg"></i>
+                </div>
+                <div>
+                    <div class="h4 fw-bold mb-0">{{ number_format($stats['published_materials'] ?? 0) }}</div>
+                    <small class="text-muted">Dipublikasikan</small>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-2 bg-purple-100 rounded-lg">
-                <i class="fas fa-download text-purple-600 text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Total Download</p>
-                <p class="text-2xl font-bold text-gray-900">{{ number_format($stats['total_downloads']) }}</p>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-warning bg-opacity-10 flex-shrink-0">
+                    <i class="fas fa-eye-slash text-warning fa-lg"></i>
+                </div>
+                <div>
+                    <div class="h4 fw-bold mb-0">{{ number_format($stats['unpublished_materials'] ?? 0) }}</div>
+                    <small class="text-muted">Disembunyikan</small>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-2 bg-red-100 rounded-lg">
-                <i class="fas fa-hdd text-red-600 text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Total Downloads</p>
-                <p class="text-2xl font-bold text-gray-900">{{ $stats['total_downloads'] }}</p>
+    <div class="col-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-info bg-opacity-10 flex-shrink-0">
+                    <i class="fas fa-download text-info fa-lg"></i>
+                </div>
+                <div>
+                    <div class="h4 fw-bold mb-0">{{ number_format($stats['total_downloads'] ?? 0) }}</div>
+                    <small class="text-muted">Total Unduhan</small>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="bg-white rounded-lg shadow overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
-        <h2 class="text-xl font-semibold text-gray-800 mb-0">Daftar materi</h2>
-    </div>
-
-    <div class="px-6 py-4">
-        <!-- Filter and Search -->
-        <div class="flex flex-col sm:flex-row gap-4 mb-6">
-            <div class="flex-1">
-                <input type="text" 
-                       id="searchInput" 
-                       placeholder="Cari materi..." 
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+{{-- Filter --}}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Cari Materi</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Cari judul...">
+                </div>
             </div>
-            <div class="flex gap-2">
-                <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Status</label>
+                <select id="statusFilter" class="form-select">
                     <option value="">Semua Status</option>
                     <option value="published">Dipublikasikan</option>
                     <option value="unpublished">Disembunyikan</option>
                 </select>
-                <select id="categoryFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="">Semua Kategori</option>
-                    <option value="Teori">Teori</option>
-                    <option value="Praktikum">Praktikum</option>
-                    <option value="Modul">Modul</option>
-                    <option value="Handout">Handout</option>
-                    <option value="Lembar Kerja">Lembar Kerja</option>
-                    <option value="Video">Video</option>
-                    <option value="Referensi">Referensi</option>
-                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2 align-items-end">
+                <button type="button" id="bulkDeleteBtn" class="btn btn-outline-danger btn-sm flex-fill" disabled>
+                    <i class="fas fa-trash me-1"></i>Hapus
+                </button>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Bulk Actions -->
-        <div class="mb-4 flex items-center gap-4">
-            <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-            <label for="selectAll" class="text-sm text-gray-600">Pilih Semua</label>
-            <button id="bulkDeleteBtn" class="btn-danger text-sm" disabled>
-                <i class="fas fa-trash mr-1"></i>
-                Hapus Terpilih
-            </button>
-        </div>
-
-        <!-- Materials Table -->
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+{{-- Tabel --}}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold"><i class="fas fa-book me-2 text-primary"></i>Daftar Materi</h6>
+        <span class="badge bg-secondary">{{ $materials->total() }} materi</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            <input type="checkbox" id="selectAllHeader" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <th class="ps-4" style="width:40px;">
+                            <input type="checkbox" id="selectAll" class="form-check-input">
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materi</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guru</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mata Pelajaran</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Download</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        <th>Judul Materi</th>
+                        <th>Guru</th>
+                        <th>Mata Pelajaran</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Unduhan</th>
+                        <th>Tanggal</th>
+                        <th class="text-center pe-4">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody id="materialsBody">
                     @forelse($materials as $material)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <input type="checkbox" class="material-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="{{ $material->id }}">
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 h-10 w-10">
-                                    <div class="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                                        <i class="fas fa-file-{{ $material->file_type === 'pdf' ? 'pdf' : ($material->file_type === 'doc' || $material->file_type === 'docx' ? 'word' : 'alt') }} text-gray-600"></i>
-                                    </div>
+                        <tr class="material-row"
+                            data-status="{{ $material->published_at ? 'published' : 'unpublished' }}">
+                            <td class="ps-4">
+                                <input type="checkbox" class="form-check-input material-checkbox" value="{{ $material->id }}">
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ Str::limit($material->title, 45) }}</div>
+                            </td>
+                            <td class="text-muted">{{ $material->guru?->name ?? $material->teacher?->name ?? '—' }}</td>
+                            <td>
+                                @if($material->subject)
+                                    <span class="badge bg-primary bg-opacity-10 text-primary">
+                                        {{ $material->subject->name ?? '—' }}
+                                    </span>
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                @if($material->published_at)
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-eye me-1"></i>Publik
+                                    </span>
+                                @else
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-eye-slash me-1"></i>Draft
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="text-center text-muted">
+                                <i class="fas fa-download me-1 opacity-50"></i>
+                                {{ number_format($material->downloads_count ?? 0) }}
+                            </td>
+                            <td class="text-muted">{{ $material->created_at->format('d/m/Y') }}</td>
+                            <td class="text-center pe-4">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a href="{{ route('admin.materials.show', $material) }}"
+                                       class="btn btn-outline-info btn-sm" title="Detail">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ route('admin.materials.edit', $material) }}"
+                                       class="btn btn-outline-warning btn-sm" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form action="{{ route('admin.materials.publish', $material) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-{{ $material->published_at ? 'secondary' : 'success' }} btn-sm"
+                                                title="{{ $material->published_at ? 'Sembunyikan' : 'Publikasikan' }}">
+                                            <i class="fas fa-{{ $material->published_at ? 'eye-slash' : 'check' }}"></i>
+                                        </button>
+                                    </form>
+                                    <form action="{{ route('admin.materials.destroy', $material) }}" method="POST" class="d-inline"
+                                          onsubmit="return confirm('Hapus materi ini?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Hapus">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
                                 </div>
-                                <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900">{{ Str::limit($material->judul, 50) }}</div>
-                                    <div class="text-sm text-gray-500">{{ number_format($material->file_size / 1024, 1) }} KB</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">{{ $material->teacher->name ?? 'N/A' }}</div>
-                            <div class="text-sm text-gray-500">{{ $material->teacher->email ?? 'N/A' }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {{ $material->subject->name ?? 'N/A' }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                {{ $material->category }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @if($material->is_published)
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <i class="fas fa-eye mr-1"></i>
-                                    Dipublikasikan
-                                </span>
-                            @else
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                    <i class="fas fa-eye-slash mr-1"></i>
-                                    Disembunyikan
-                                </span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <div class="flex items-center">
-                                <i class="fas fa-download mr-1 text-gray-400"></i>
-                                {{ number_format($material->downloads_count) }}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ $material->created_at->format('d/m/Y') }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex items-center space-x-2">
-                                <a href="{{ route('admin.materials.show', $material) }}" 
-                                   class="text-blue-600 hover:text-blue-900" title="Lihat Detail">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ route('admin.materials.edit', $material) }}" 
-                                   class="text-indigo-600 hover:text-indigo-900" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form action="{{ route('admin.materials.publish', $material) }}" method="POST" class="inline">
-                                    @csrf
-                                    <button type="submit" 
-                                            class="text-{{ $material->is_published ? 'yellow' : 'green' }}-600 hover:text-{{ $material->is_published ? 'yellow' : 'green' }}-900" 
-                                            title="{{ $material->is_published ? 'Sembunyikan' : 'Publikasikan' }}">
-                                        <i class="fas fa-{{ $material->is_published ? 'eye-slash' : 'eye' }}"></i>
-                                    </button>
-                                </form>
-                                <form action="{{ route('admin.materials.destroy', $material) }}" method="POST" class="inline" 
-                                      onsubmit="return confirm('Apakah Anda yakin ingin menghapus materi ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:text-red-900" title="Hapus">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
+                            </td>
+                        </tr>
                     @empty
-                    <tr>
-                        <td colspan="9" class="px-6 py-12 text-center">
-                            <div class="text-gray-500">
-                                <i class="fas fa-book text-4xl mb-4"></i>
-                                <p class="text-lg font-medium">Belum ada materi pembelajaran</p>
-                                <p class="text-sm">Mulai dengan menambahkan materi pembelajaran pertama</p>
-                            </div>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <i class="fas fa-book fa-3x text-muted opacity-25 mb-3 d-block"></i>
+                                <h6 class="text-muted">Belum ada materi pembelajaran</h6>
+                                <a href="{{ route('admin.materials.create') }}" class="btn btn-primary btn-sm mt-2">
+                                    <i class="fas fa-plus me-1"></i>Tambah Pertama
+                                </a>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-
-        <!-- Pagination -->
-        @if($materials->hasPages())
-        <div class="px-6 py-4 border-t border-gray-200">
+    </div>
+    @if($materials->hasPages())
+        <div class="card-footer bg-white border-top">
             {{ $materials->links() }}
         </div>
-        @endif
-    </div>
+    @endif
 </div>
 
-@push('scripts')
+@push('js')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Select All functionality
-    const selectAllCheckbox = document.getElementById('selectAll');
-    const selectAllHeaderCheckbox = document.getElementById('selectAllHeader');
-    const materialCheckboxes = document.querySelectorAll('.material-checkbox');
-    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+document.addEventListener('DOMContentLoaded', function () {
+    const selectAll   = document.getElementById('selectAll');
+    const checkboxes  = document.querySelectorAll('.material-checkbox');
+    const bulkBtn     = document.getElementById('bulkDeleteBtn');
+    const searchInput = document.getElementById('searchInput');
+    const statusFil   = document.getElementById('statusFilter');
+    const rows        = document.querySelectorAll('.material-row');
 
-    function updateBulkDeleteButton() {
-        const checkedBoxes = document.querySelectorAll('.material-checkbox:checked');
-        bulkDeleteBtn.disabled = checkedBoxes.length === 0;
-        bulkDeleteBtn.textContent = checkedBoxes.length > 0 ? 
-            `Hapus Terpilih (${checkedBoxes.length})` : 'Hapus Terpilih';
+    // Select all
+    selectAll.addEventListener('change', function () {
+        checkboxes.forEach(c => c.checked = this.checked);
+        updateBulk();
+    });
+    checkboxes.forEach(c => c.addEventListener('change', updateBulk));
+
+    function updateBulk() {
+        const cnt = document.querySelectorAll('.material-checkbox:checked').length;
+        bulkBtn.disabled = cnt === 0;
+        bulkBtn.innerHTML = cnt > 0
+            ? `<i class="fas fa-trash me-1"></i>Hapus (${cnt})`
+            : '<i class="fas fa-trash me-1"></i>Hapus';
     }
 
-    selectAllCheckbox.addEventListener('change', function() {
-        materialCheckboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
-        });
-        selectAllHeaderCheckbox.checked = this.checked;
-        updateBulkDeleteButton();
+    // Bulk delete
+    bulkBtn.addEventListener('click', function () {
+        const ids = Array.from(document.querySelectorAll('.material-checkbox:checked')).map(c => c.value);
+        if (!ids.length || !confirm(`Hapus ${ids.length} materi?`)) return;
+
+        fetch('{{ route("admin.materials.bulk-delete") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ ids })
+        }).then(r => r.json()).then(d => { if (d.success) location.reload(); });
     });
 
-    selectAllHeaderCheckbox.addEventListener('change', function() {
-        materialCheckboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
-        });
-        selectAllCheckbox.checked = this.checked;
-        updateBulkDeleteButton();
-    });
-
-    materialCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateBulkDeleteButton);
-    });
-
-    // Bulk delete functionality
-    bulkDeleteBtn.addEventListener('click', function() {
-        const checkedBoxes = document.querySelectorAll('.material-checkbox:checked');
-        if (checkedBoxes.length === 0) return;
-
-        if (confirm(`Apakah Anda yakin ingin menghapus ${checkedBoxes.length} materi yang dipilih?`)) {
-            const ids = Array.from(checkedBoxes).map(cb => cb.value);
-            
-            fetch('{{ route("admin.materials.bulk-delete") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({ ids: ids })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Terjadi kesalahan: ' + (data.error || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Terjadi kesalahan saat menghapus materi');
-            });
-        }
-    });
-
-    // Search and filter functionality
-    const searchInput = document.getElementById('searchInput');
-    const statusFilter = document.getElementById('statusFilter');
-    const categoryFilter = document.getElementById('categoryFilter');
-
-    function filterTable() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const statusValue = statusFilter.value;
-        const categoryValue = categoryFilter.value;
-        const rows = document.querySelectorAll('tbody tr');
+    // Filter
+    function filterRows() {
+        const q  = searchInput.value.toLowerCase();
+        const st = statusFil.value;
 
         rows.forEach(row => {
-            const title = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-            const status = row.querySelector('td:nth-child(6)').textContent.toLowerCase();
-            const category = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
-
-            const matchesSearch = title.includes(searchTerm);
-            const matchesStatus = !statusValue || 
-                (statusValue === 'published' && status.includes('dipublikasikan')) ||
-                (statusValue === 'unpublished' && status.includes('disembunyikan'));
-            const matchesCategory = !categoryValue || category.includes(categoryValue.toLowerCase());
-
-            row.style.display = (matchesSearch && matchesStatus && matchesCategory) ? '' : 'none';
+            const title  = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+            const rowSt  = row.dataset.status;
+            const match  = (!q || title.includes(q)) && (!st || rowSt === st);
+            row.style.display = match ? '' : 'none';
         });
     }
 
-    searchInput.addEventListener('input', filterTable);
-    statusFilter.addEventListener('change', filterTable);
-    categoryFilter.addEventListener('change', filterTable);
+    searchInput.addEventListener('input', filterRows);
+    statusFil.addEventListener('change', filterRows);
 });
 </script>
 @endpush

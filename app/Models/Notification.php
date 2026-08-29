@@ -35,12 +35,12 @@ class Notification extends Model
     // Relationships
     public function sender(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'pengirim_id');
+        return $this->belongsTo(UserCentral::class, 'pengirim_id');
     }
 
     public function receiver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'penerima_id');
+        return $this->belongsTo(UserCentral::class, 'penerima_id');
     }
 
     // Scopes

@@ -48,7 +48,7 @@
                             <option value="">Semua Praktikum</option>
                             @foreach(($practicals ?? []) as $practical)
                                 <option value="{{ $practical->id }}" {{ (string)($practical_id ?? '') === (string)$practical->id ? 'selected' : '' }}>
-                                    {{ $practical->judul ?? ('Praktikum #' . $practical->id) }}
+                                    {{ $practical->title ?? ('Praktikum #' . $practical->id) }}
                                 </option>
                             @endforeach
                         </select>
@@ -103,22 +103,22 @@
                         <tbody>
                             @forelse(($attendances ?? []) as $attendance)
                                 <tr>
-                                    <td>{{ $attendance->siswa->name ?? '-' }}</td>
-                                    <td>{{ $attendance->siswa->kelas->name ?? '-' }}</td>
-                                    <td>{{ $attendance->tanggal?->format('d/m/Y') ?? '-' }}</td>
+                                    <td>{{ $attendance->siswa?->name ?? '-' }}</td>
+                                    <td>{{ $attendance->siswa?->kelas?->name ?? '-' }}</td>
+                                    <td>{{ $attendance->date?->format('d/m/Y') ?? '-' }}</td>
                                     <td>
                                         <span class="badge bg-{{ $attendance->status_color ?? 'secondary' }}">{{ ucfirst($attendance->status ?? '-') }}</span>
                                     </td>
                                     <td>
-                                        @if($attendance->waktu_masuk && $attendance->waktu_keluar)
-                                            {{ $attendance->waktu_masuk->format('H:i') }} - {{ $attendance->waktu_keluar->format('H:i') }}
-                                        @elseif($attendance->waktu_masuk)
-                                            {{ $attendance->waktu_masuk->format('H:i') }}
+                                        @if(null && null)
+                                            {{ null->format('H:i') }} - {{ null->format('H:i') }}
+                                        @elseif(null)
+                                            {{ null->format('H:i') }}
                                         @else
                                             <span class="text-muted">-</span>
                                         @endif
                                     </td>
-                                    <td>{{ $attendance->keterangan ?? '-' }}</td>
+                                    <td>{{ $attendance->note ?? '-' }}</td>
                                     <td>
                                         <a href="{{ route('guru.absensi.edit', $attendance->id) }}" class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-edit me-1"></i>Edit

@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class KriteriaPenilaian extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'assessment_criteria';
 
@@ -18,323 +19,310 @@ class KriteriaPenilaian extends Model
         'weight',
         'max_score',
         'subject_id',
-        'is_active'
+        'code',
+        'is_active',
+        'type',
+        'kategori',
+        'mata_praktik',
+        'tingkat_kelas',
+        'sop_checklist',
     ];
 
     protected $casts = [
-        'weight' => 'float',
-        'max_score' => 'integer',
-        'is_active' => 'boolean',
-        'sop_checklist' => 'array'
+        'weight'        => 'integer',
+        'max_score'     => 'integer',
+        'is_active'     => 'boolean',
+        'sop_checklist' => 'array',
     ];
 
     protected $attributes = [
         'is_active' => true,
-        'weight' => 0.10,
-        'max_score' => 100
+        'weight'    => 10,
+        'max_score' => 100,
     ];
 
-    // Field aliases for compatibility
-    public function getNamaAttribute()
+    // ── Kategori constants ─────────────────────────────────────────────────
+
+    const KATEGORI_PERSIAPAN   = 'persiapan';
+    const KATEGORI_PELAKSANAAN = 'pelaksanaan';
+    const KATEGORI_HASIL       = 'hasil';
+    const KATEGORI_SIKAP       = 'sikap';
+
+    const TINGKAT_X   = 'X';
+    const TINGKAT_XI  = 'XI';
+    const TINGKAT_XII = 'XII';
+
+    // ── Backward-compat accessors / mutators ───────────────────────────────
+
+    public function getNamaAttribute(): string
     {
-        return $this->name;
+        return $this->attributes['name'] ?? '';
     }
 
-    public function setNamaAttribute($value)
+    public function setNamaAttribute($value): void
     {
         $this->attributes['name'] = $value;
     }
 
-    public function getDeskripsiAttribute()
+    public function getDeskripsiAttribute(): ?string
     {
-        return $this->description;
+        return $this->attributes['description'] ?? null;
     }
 
-    public function setDeskripsiAttribute($value)
+    public function setDeskripsiAttribute($value): void
     {
         $this->attributes['description'] = $value;
     }
 
-    public function getBobotAttribute()
+    /** bobot → weight (integer %) */
+    public function getBobotAttribute(): int
     {
-        return $this->weight;
+        return (int) ($this->attributes['weight'] ?? 0);
     }
 
-    public function setBobotAttribute($value)
+    public function setBobotAttribute($value): void
     {
-        $this->attributes['weight'] = $value;
+        $this->attributes['weight'] = (int) $value;
     }
 
-    public function getStatusAttribute()
+    public function getStatusAttribute(): bool
     {
-        return $this->is_active;
+        return (bool) ($this->attributes['is_active'] ?? true);
     }
 
-    public function setStatusAttribute($value)
+    public function setStatusAttribute($value): void
     {
-        $this->attributes['is_active'] = $value;
+        $this->attributes['is_active'] = (bool) $value;
     }
 
-    // Kategori penilaian yang tersedia
-    const KATEGORI_PERSIAPAN = 'persiapan';
-    const KATEGORI_PELAKSANAAN = 'pelaksanaan';
-    const KATEGORI_HASIL = 'hasil';
-    const KATEGORI_SIKAP = 'sikap';
+    // ── Computed attributes ────────────────────────────────────────────────
 
-    // Tingkat kelas
-    const TINGKAT_X = 'X';
-    const TINGKAT_XI = 'XI';
-    const TINGKAT_XII = 'XII';
+    /** Bobot dalam format "20%" */
+    public function getBobotPersenAttribute(): string
+    {
+        return $this->bobot . '%';
+    }
 
-    /**
-     * Relationship dengan NilaiPraktik
-     */
+    /** Jumlah item SOP checklist */
+    public function getJumlahChecklistAttribute(): int
+    {
+        return is_array($this->sop_checklist) ? count($this->sop_checklist) : 0;
+    }
+
+    /** Label kategori dalam Bahasa Indonesia */
+    public function getKategoriLabelAttribute(): string
+    {
+        return self::getKategoriList()[$this->kategori] ?? ucfirst($this->kategori ?? '');
+    }
+
+    // ── Relationships ──────────────────────────────────────────────────────
+
     public function nilaiPraktik(): HasMany
     {
+        // Tabel detail_penilaian mungkin belum ada; diakses hanya setelah cek Schema
         return $this->hasMany(DetailPenilaian::class, 'kriteria_id');
     }
 
-    /**
-     * Scope untuk kriteria aktif
-     */
+    // ── Scopes ────────────────────────────────────────────────────────────
+
     public function scopeActive($query)
     {
-        return $query->where('status', true);
+        return $query->where('is_active', true);
     }
 
-    /**
-     * Scope berdasarkan kategori
-     */
-    public function scopeByKategori($query, $kategori)
+    public function scopeByKategori($query, string $kategori)
     {
         return $query->where('kategori', $kategori);
     }
 
-    /**
-     * Scope berdasarkan mata praktik
-     */
-    public function scopeByMataPraktik($query, $mataPraktik)
+    public function scopeByMataPraktik($query, string $mataPraktik)
     {
         return $query->where('mata_praktik', $mataPraktik);
     }
 
-    /**
-     * Scope berdasarkan tingkat kelas
-     */
-    public function scopeByTingkatKelas($query, $tingkat)
+    public function scopeByTingkatKelas($query, string $tingkat)
     {
         return $query->where('tingkat_kelas', $tingkat);
     }
 
-    /**
-     * Get list kategori yang tersedia
-     */
-    public static function getKategoriList()
+    // ── Static helpers ─────────────────────────────────────────────────────
+
+    public static function getKategoriList(): array
     {
         return [
-            self::KATEGORI_PERSIAPAN => 'Persiapan',
+            self::KATEGORI_PERSIAPAN   => 'Persiapan',
             self::KATEGORI_PELAKSANAAN => 'Pelaksanaan',
-            self::KATEGORI_HASIL => 'Hasil',
-            self::KATEGORI_SIKAP => 'Sikap Profesional'
+            self::KATEGORI_HASIL       => 'Hasil',
+            self::KATEGORI_SIKAP       => 'Sikap Profesional',
         ];
     }
 
-    /**
-     * Get list tingkat kelas
-     */
-    public static function getTingkatKelasList()
+    public static function getTingkatKelasList(): array
     {
         return [
-            self::TINGKAT_X => 'Kelas X',
-            self::TINGKAT_XI => 'Kelas XI',
-            self::TINGKAT_XII => 'Kelas XII'
+            self::TINGKAT_X   => 'Kelas X',
+            self::TINGKAT_XI  => 'Kelas XI',
+            self::TINGKAT_XII => 'Kelas XII',
         ];
     }
 
-    /**
-     * Get bobot dalam persen
-     */
-    public function getBobotPersenAttribute()
-    {
-        return $this->bobot . '%'; // Bobot already in integer format (45 = 45%)
-    }
+    // ── Seed defaults ──────────────────────────────────────────────────────
 
-    /**
-     * Get SOP checklist count
-     */
-    public function getJumlahChecklistAttribute()
+    public static function seedDefault(): void
     {
-        if (is_array($this->sop_checklist)) {
-            return count($this->sop_checklist);
+        $all = array_merge(
+            self::getDefaultKriteriaKeperawatan(),
+            self::getDefaultKriteriaFarmasi()
+        );
+
+        foreach ($all as $k) {
+            self::updateOrCreate(
+                [
+                    'name'          => $k['name'],
+                    'mata_praktik'  => $k['mata_praktik'],
+                    'tingkat_kelas' => $k['tingkat_kelas'],
+                ],
+                [
+                    'kategori'      => $k['kategori'],
+                    'description'   => $k['description'] ?? null,
+                    'weight'        => $k['weight'],
+                    'max_score'     => $k['max_score'] ?? 100,
+                    'is_active'     => true,
+                    'sop_checklist' => $k['sop_checklist'] ?? [],
+                ]
+            );
         }
-        return 0;
     }
 
-    /**
-     * Default kriteria untuk praktik keperawatan
-     */
-    public static function getDefaultKriteriaKeperawatan()
+    public static function getDefaultKriteriaKeperawatan(): array
     {
         return [
             [
-                'nama' => 'Persiapan Alat dan Bahan',
-                'kategori' => self::KATEGORI_PERSIAPAN,
-                'bobot' => 20,
-                'deskripsi' => 'Kelengkapan dan kesesuaian alat serta bahan yang disiapkan',
-                'mata_praktik' => 'Keperawatan Dasar',
+                'name'          => 'Persiapan Alat dan Bahan',
+                'kategori'      => self::KATEGORI_PERSIAPAN,
+                'weight'        => 20,
+                'description'   => 'Kelengkapan dan kesesuaian alat serta bahan yang disiapkan',
+                'mata_praktik'  => 'Keperawatan Dasar',
                 'tingkat_kelas' => self::TINGKAT_X,
                 'sop_checklist' => [
                     'Menyiapkan alat sesuai prosedur',
                     'Memeriksa kelengkapan alat',
                     'Memastikan sterilitas alat',
                     'Menyiapkan bahan habis pakai',
-                    'Mengatur posisi alat dengan ergonomis'
-                ]
+                    'Mengatur posisi alat dengan ergonomis',
+                ],
             ],
             [
-                'nama' => 'Pelaksanaan Tindakan Keperawatan',
-                'kategori' => self::KATEGORI_PELAKSANAAN,
-                'bobot' => 40,
-                'deskripsi' => 'Ketepatan dan keterampilan dalam melaksanakan tindakan',
-                'mata_praktik' => 'Keperawatan Dasar',
+                'name'          => 'Pelaksanaan Tindakan Keperawatan',
+                'kategori'      => self::KATEGORI_PELAKSANAAN,
+                'weight'        => 40,
+                'description'   => 'Ketepatan dan keterampilan dalam melaksanakan tindakan',
+                'mata_praktik'  => 'Keperawatan Dasar',
                 'tingkat_kelas' => self::TINGKAT_X,
                 'sop_checklist' => [
                     'Melakukan cuci tangan sebelum tindakan',
                     'Menggunakan APD sesuai prosedur',
                     'Melaksanakan tindakan sesuai SOP',
                     'Mengaplikasikan prinsip steril/aseptik',
-                    'Menunjukkan keterampilan yang tepat'
-                ]
+                    'Menunjukkan keterampilan yang tepat',
+                ],
             ],
             [
-                'nama' => 'Hasil dan Evaluasi',
-                'kategori' => self::KATEGORI_HASIL,
-                'bobot' => 25,
-                'deskripsi' => 'Kualitas hasil tindakan dan kemampuan evaluasi',
-                'mata_praktik' => 'Keperawatan Dasar',
+                'name'          => 'Hasil dan Evaluasi',
+                'kategori'      => self::KATEGORI_HASIL,
+                'weight'        => 25,
+                'description'   => 'Kualitas hasil tindakan dan kemampuan evaluasi',
+                'mata_praktik'  => 'Keperawatan Dasar',
                 'tingkat_kelas' => self::TINGKAT_X,
                 'sop_checklist' => [
                     'Hasil tindakan sesuai standar',
                     'Melakukan evaluasi hasil',
                     'Mendokumentasikan dengan benar',
                     'Memberikan edukasi kepada pasien/keluarga',
-                    'Melakukan tindak lanjut yang tepat'
-                ]
+                    'Melakukan tindak lanjut yang tepat',
+                ],
             ],
             [
-                'nama' => 'Sikap Profesional',
-                'kategori' => self::KATEGORI_SIKAP,
-                'bobot' => 15,
-                'deskripsi' => 'Sikap dan perilaku profesional selama praktik',
-                'mata_praktik' => 'Keperawatan Dasar',
+                'name'          => 'Sikap Profesional Keperawatan',
+                'kategori'      => self::KATEGORI_SIKAP,
+                'weight'        => 15,
+                'description'   => 'Sikap dan perilaku profesional selama praktik',
+                'mata_praktik'  => 'Keperawatan Dasar',
                 'tingkat_kelas' => self::TINGKAT_X,
                 'sop_checklist' => [
                     'Berkomunikasi dengan baik',
                     'Menunjukkan empati dan caring',
                     'Menjaga privacy dan confidentiality',
                     'Bekerja sama dalam tim',
-                    'Menunjukkan tanggung jawab profesional'
-                ]
-            ]
+                    'Menunjukkan tanggung jawab profesional',
+                ],
+            ],
         ];
     }
 
-    /**
-     * Default kriteria untuk praktik farmasi
-     */
-    public static function getDefaultKriteriaFarmasi()
+    public static function getDefaultKriteriaFarmasi(): array
     {
         return [
             [
-                'nama' => 'Persiapan dan Identifikasi',
-                'kategori' => self::KATEGORI_PERSIAPAN,
-                'bobot' => 25,
-                'deskripsi' => 'Persiapan workspace dan identifikasi obat/bahan',
-                'mata_praktik' => 'Farmasetika',
+                'name'          => 'Persiapan dan Identifikasi',
+                'kategori'      => self::KATEGORI_PERSIAPAN,
+                'weight'        => 25,
+                'description'   => 'Persiapan workspace dan identifikasi obat/bahan',
+                'mata_praktik'  => 'Farmasi Dasar',
                 'tingkat_kelas' => self::TINGKAT_XI,
                 'sop_checklist' => [
                     'Menyiapkan area kerja yang bersih',
                     'Mengidentifikasi obat/bahan dengan benar',
                     'Memeriksa tanggal kadaluwarsa',
                     'Menyiapkan alat timbang dan ukur',
-                    'Menggunakan APD yang sesuai'
-                ]
+                    'Menggunakan APD yang sesuai',
+                ],
             ],
             [
-                'nama' => 'Teknik Pembuatan/Peracikan',
-                'kategori' => self::KATEGORI_PELAKSANAAN,
-                'bobot' => 35,
-                'deskripsi' => 'Keterampilan dalam pembuatan/peracikan obat',
-                'mata_praktik' => 'Farmasetika',
+                'name'          => 'Teknik Pembuatan/Peracikan',
+                'kategori'      => self::KATEGORI_PELAKSANAAN,
+                'weight'        => 35,
+                'description'   => 'Keterampilan dalam pembuatan/peracikan obat',
+                'mata_praktik'  => 'Farmasi Dasar',
                 'tingkat_kelas' => self::TINGKAT_XI,
                 'sop_checklist' => [
                     'Menerapkan teknik aseptik',
                     'Melakukan penimbangan dengan akurat',
                     'Menggunakan teknik pencampuran yang benar',
                     'Mengikuti formula yang ditetapkan',
-                    'Menjaga stabilitas sediaan'
-                ]
+                    'Menjaga stabilitas sediaan',
+                ],
             ],
             [
-                'nama' => 'Kontrol Kualitas dan Kemasan',
-                'kategori' => self::KATEGORI_HASIL,
-                'bobot' => 25,
-                'deskripsi' => 'Pemeriksaan kualitas dan pengemasan hasil',
-                'mata_praktik' => 'Farmasetika',
+                'name'          => 'Kontrol Kualitas dan Kemasan',
+                'kategori'      => self::KATEGORI_HASIL,
+                'weight'        => 25,
+                'description'   => 'Pemeriksaan kualitas dan pengemasan hasil',
+                'mata_praktik'  => 'Farmasi Dasar',
                 'tingkat_kelas' => self::TINGKAT_XI,
                 'sop_checklist' => [
                     'Memeriksa organoleptik sediaan',
                     'Melakukan uji kualitas dasar',
                     'Mengemas dengan benar',
                     'Membuat etiket yang sesuai',
-                    'Menyimpan sediaan dengan tepat'
-                ]
+                    'Menyimpan sediaan dengan tepat',
+                ],
             ],
             [
-                'nama' => 'Etika dan Keselamatan Kerja',
-                'kategori' => self::KATEGORI_SIKAP,
-                'bobot' => 15,
-                'deskripsi' => 'Penerapan etika profesi dan K3',
-                'mata_praktik' => 'Farmasetika',
+                'name'          => 'Etika dan Keselamatan Kerja',
+                'kategori'      => self::KATEGORI_SIKAP,
+                'weight'        => 15,
+                'description'   => 'Penerapan etika profesi dan K3',
+                'mata_praktik'  => 'Farmasi Dasar',
                 'tingkat_kelas' => self::TINGKAT_XI,
                 'sop_checklist' => [
                     'Mematuhi prinsip K3 laboratorium',
                     'Menerapkan Good Manufacturing Practice',
                     'Menjaga kerahasiaan resep',
                     'Bekerja dengan teliti dan hati-hati',
-                    'Mengelola limbah dengan benar'
-                ]
-            ]
+                    'Mengelola limbah dengan benar',
+                ],
+            ],
         ];
-    }
-
-    /**
-     * Seed default criteria
-     */
-    public static function seedDefault()
-    {
-        $kriteriaKeperawatan = self::getDefaultKriteriaKeperawatan();
-        $kriteriaFarmasi = self::getDefaultKriteriaFarmasi();
-        
-        $allKriteria = array_merge($kriteriaKeperawatan, $kriteriaFarmasi);
-        
-        foreach ($allKriteria as $kriteria) {
-            self::updateOrCreate([
-                'name' => $kriteria['nama'],
-                'mata_praktik' => $kriteria['mata_praktik'],
-                'tingkat_kelas' => $kriteria['tingkat_kelas']
-            ], [
-                'name' => $kriteria['nama'],
-                'description' => $kriteria['deskripsi'] ?? null,
-                'weight' => $kriteria['bobot'] ?? 0.10,
-                'max_score' => $kriteria['max_score'] ?? 100,
-                'subject_id' => null,
-                'code' => null,
-                'is_active' => true,
-                'mata_praktik' => $kriteria['mata_praktik'],
-                'tingkat_kelas' => $kriteria['tingkat_kelas'],
-                'sop_checklist' => $kriteria['sop_checklist'] ?? []
-            ]);
-        }
     }
 }

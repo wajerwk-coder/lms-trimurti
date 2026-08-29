@@ -10,11 +10,11 @@
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background-color: #007bff; color: white; }
         .badge { padding: 5px 10px; border-radius: 20px; color: white; font-weight: bold; }
-        .badge-success { background-color: #28a745; }
-        .badge-primary { background-color: #007bff; }
-        .badge-info { background-color: #17a2b8; }
-        .badge-warning { background-color: #ffc107; }
-        .badge-danger { background-color: #dc3545; }
+        .bg-success { background-color: #28a745; }
+        .bg-primary { background-color: #007bff; }
+        .bg-info { background-color: #17a2b8; }
+        .bg-warning text-dark { background-color: #ffc107; }
+        .bg-danger { background-color: #dc3545; }
         .footer { text-align: center; margin-top: 50px; color: #666; font-size: 12px; }
     </style>
 </head>
@@ -57,19 +57,19 @@
                     @if(isset($scoreData['final_grade']))
                         @php
                             $grade = $scoreData['final_grade'];
-                            $badgeClass = 'badge-danger';
+                            $badgeClass = 'bg-danger';
                             $gradeLetter = 'E';
                             if ($grade >= 90) {
-                                $badgeClass = 'badge-success';
+                                $badgeClass = 'bg-success';
                                 $gradeLetter = 'A';
                             } elseif ($grade >= 80) {
-                                $badgeClass = 'badge-primary';
+                                $badgeClass = 'bg-primary';
                                 $gradeLetter = 'B';
                             } elseif ($grade >= 70) {
-                                $badgeClass = 'badge-info';
+                                $badgeClass = 'bg-info';
                                 $gradeLetter = 'C';
                             } elseif ($grade >= 60) {
-                                $badgeClass = 'badge-warning';
+                                $badgeClass = 'bg-warning text-dark';
                                 $gradeLetter = 'D';
                             }
                         @endphp

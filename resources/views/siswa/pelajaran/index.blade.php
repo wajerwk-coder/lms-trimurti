@@ -1,179 +1,248 @@
-@extends('siswa.layouts.app')
+@extends('layouts.siswa')
 
-@section('title', 'Daftar Pelajaran')
+@section('title', 'Mata Pelajaran')
+@section('page-title', 'Mata Pelajaran')
+@section('page-subtitle', 'Daftar mata pelajaran untuk kelas Anda.')
 
-@section('content')
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Daftar Pelajaran</h1>
-        <div class="text-muted">
-            Mata pelajaran yang tersedia untuk Anda
-        </div>
-    </div>
-
-    <!-- Student Info Card -->
-    @if($siswaData)
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Informasi Siswa</h6>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong>Nama:</strong> {{ $siswaData['name'] }}</p>
-                    <p><strong>NIS:</strong> {{ $siswaData['nis_nip'] ?? '-' }}</p>
-                    <p><strong>Email:</strong> {{ $siswaData['email'] }}</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>Kelas:</strong> {{ $siswaData['kelas'] }}</p>
-                    <p><strong>Jurusan:</strong> {{ $siswaData['jurusan'] }}</p>
-                    <p><strong>Wali Kelas:</strong> {{ $siswaData['wali_kelas'] }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
-
-    <!-- Subjects Grid -->
-    @if($subjects->count() > 0)
-        <div class="row">
-            @foreach($subjects as $subject)
-                <div class="col-xl-4 col-lg-6 mb-4">
-                    <div class="card shadow h-100">
-                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                            <h6 class="m-0 font-weight-bold text-primary">{{ $subject->name }}</h6>
-                            <div class="dropdown no-arrow">
-                                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
-                                    <a class="dropdown-item" href="{{ route('siswa.pelajaran.show', $subject->id) }}">Lihat Detail</a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <!-- Subject Info -->
-                            <div class="mb-3">
-                                <p class="text-muted small mb-2">
-                                    @if($subject->jurusan)
-                                        Jurusan: {{ $subject->jurusan->name }}
-                                    @endif
-                                </p>
-                                @if($subject->description)
-                                    <p class="text-muted">{{ Str::limit($subject->description, 100) }}</p>
-                                @endif
-                            </div>
-
-                            <!-- Activities Summary -->
-                            <div class="row text-center">
-                                <div class="col-4">
-                                    <div class="mb-2">
-                                        <i class="fas fa-book fa-2x text-info"></i>
-                                    </div>
-                                    <div class="small text-gray-500">{{ $subject->material_count }}</div>
-                                    <div class="text-xs text-gray-500">Materi</div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="mb-2">
-                                        <i class="fas fa-tasks fa-2x text-warning"></i>
-                                    </div>
-                                    <div class="small text-gray-500">{{ $subject->assignment_count }}</div>
-                                    <div class="text-xs text-gray-500">Tugas</div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="mb-2">
-                                        <i class="fas fa-flask fa-2x text-success"></i>
-                                    </div>
-                                    <div class="small text-gray-500">{{ $subject->practical_count }}</div>
-                                    <div class="text-xs text-gray-500">Praktikum</div>
-                                </div>
-                            </div>
-
-                            <!-- Total Activities -->
-                            <div class="mt-3 pt-3 border-top">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="text-muted">Total Aktivitas:</span>
-                                    <span class="badge badge-primary badge-pill">{{ $subject->total_activities }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    @else
-        <!-- Empty State -->
-        <div class="text-center py-5">
-            <div class="mb-4">
-                <i class="fas fa-book-open fa-4x text-gray-300"></i>
-            </div>
-            <h5 class="text-gray-400 mb-3">Belum Ada Pelajaran</h5>
-            <p class="text-gray-500 mb-4">
-                Belum ada mata pelajaran yang tersedia untuk Anda.
-                @if($siswaData['kelas'] === 'Belum ada kelas')
-                    Silakan hubungi admin untuk ditugaskan ke kelas terlebih dahulu.
-                @endif
-            </p>
-            @if($siswaData['kelas'] === 'Belum ada kelas')
-                <a href="{{ route('siswa.profile.edit') }}" class="btn btn-primary">
-                    <i class="fas fa-user-edit mr-2"></i>Update Profil
-                </a>
-            @endif
-        </div>
-    @endif
-</div>
-
-<!-- Custom Styles -->
+@push('css')
 <style>
-.card-header {
-    background-color: #f8f9fc;
-    border-bottom: 1px solid #e3e6f0;
+.subject-card {
+    border: 1px solid #e8edf2 !important;
+    border-radius: 14px !important;
+    transition: transform .18s, box-shadow .18s, border-color .18s;
+    overflow: hidden;
 }
-
-.text-gray-800 {
-    color: #5a5c69 !important;
+.subject-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 28px rgba(0,0,0,.10) !important;
+    border-color: #c7d2fe !important;
 }
-
-.text-primary {
-    color: #4e73df !important;
+.subject-top-bar {
+    height: 4px;
+    border-radius: 14px 14px 0 0;
 }
-
-.text-gray-500 {
-    color: #858796 !important;
+.subject-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; flex-shrink: 0;
 }
-
-.text-gray-400 {
-    color: #b7b7b7 !important;
+.stat-mini {
+    text-align: center;
+    padding: .4rem 0;
+    border-right: 1px solid #f1f5f9;
 }
+.stat-mini:last-child { border-right: none; }
+.stat-mini .val { font-weight: 700; font-size: .95rem; line-height: 1; }
+.stat-mini .lbl { font-size: .65rem; color: #94a3b8; margin-top: 2px; }
 
-.text-info {
-    color: #36b9cc !important;
+.search-bar .input-group {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    transition: border-color .15s, box-shadow .15s;
 }
-
-.text-warning {
-    color: #f6c23e !important;
+.search-bar .input-group:focus-within {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124,58,237,.1);
 }
-
-.text-success {
-    color: #1cc88a !important;
-}
-
-.badge-primary {
-    background-color: #4e73df;
-}
-
-.card {
-    transition: transform 0.2s;
-}
-
-.card:hover {
-    transform: translateY(-2px);
-}
-
-.dropdown-menu-right {
-    right: 0;
-    left: auto;
+.search-bar .input-group-text,
+.search-bar .form-control {
+    border: none; background: transparent; box-shadow: none;
 }
 </style>
+@endpush
+
+@section('content')
+
+@if(session('success'))
+<div class="alert alert-success alert-dismissible fade show mb-4 border-0 shadow-sm" style="border-radius:12px;">
+    <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+@endif
+
+{{-- ── Banner kelas ──────────────────────────────── --}}
+@if($kelas)
+<div class="card border-0 shadow-sm mb-4 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="p-4"
+             style="background:linear-gradient(135deg,#1e3a8a 0%,#4f46e5 60%,#7c3aed 100%);">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:54px;height:54px;background:rgba(255,255,255,.15);">
+                        <i class="fas fa-graduation-cap text-white fa-lg"></i>
+                    </div>
+                    <div>
+                        <div class="text-white fw-bold fs-5 mb-0">{{ $siswaData['kelas'] }}</div>
+                        <div class="text-white opacity-75 small">{{ $siswaData['jurusan'] }}</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-4">
+                    <div class="text-center">
+                        <div class="text-white fw-bold fs-4 lh-1">{{ $subjects->count() }}</div>
+                        <div class="text-white opacity-75" style="font-size:.72rem;">Mata Pelajaran</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-white fw-bold fs-4 lh-1">{{ $subjects->sum('total_activities') }}</div>
+                        <div class="text-white opacity-75" style="font-size:.72rem;">Total Aktivitas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- ── Search ──────────────────────────────────────── --}}
+@if($subjects->isNotEmpty())
+<div class="search-bar mb-4">
+    <div class="input-group">
+        <span class="input-group-text ps-3">
+            <i class="fas fa-search text-muted" style="font-size:.85rem;"></i>
+        </span>
+        <input type="text" id="subjectSearch" class="form-control"
+               placeholder="Cari mata pelajaran…" autocomplete="off">
+    </div>
+</div>
+@endif
+
+{{-- ── Empty state ──────────────────────────────────── --}}
+@if($subjects->isEmpty())
+<div class="card border-0 shadow-sm" style="border-radius:14px;">
+    <div class="card-body text-center py-5">
+        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+             style="width:72px;height:72px;background:rgba(124,58,237,.08);">
+            <i class="fas fa-book-open fa-2x" style="color:#7c3aed;opacity:.6;"></i>
+        </div>
+        <h5 class="fw-semibold mb-2">Belum ada mata pelajaran</h5>
+        <p class="text-muted mb-0">
+            @if(!$kelas)
+                Anda belum terdaftar di kelas manapun. Hubungi admin.
+            @else
+                Belum ada mata pelajaran yang tersedia untuk kelas Anda.
+            @endif
+        </p>
+    </div>
+</div>
+
+@else
+
+{{-- ── Grid mata pelajaran ──────────────────────────── --}}
+<div class="row g-4" id="subjectGrid">
+    @foreach($subjects as $subject)
+    @php
+        $typeMap = [
+            'teori'     => ['color'=>'#3b82f6', 'bg'=>'rgba(59,130,246,.08)',  'icon'=>'fa-chalkboard-teacher', 'label'=>'Teori'],
+            'praktikum' => ['color'=>'#d97706', 'bg'=>'rgba(217,119,6,.08)',   'icon'=>'fa-flask',              'label'=>'Praktikum'],
+            'campuran'  => ['color'=>'#16a34a', 'bg'=>'rgba(22,163,74,.08)',   'icon'=>'fa-layer-group',        'label'=>'Campuran'],
+        ];
+        $tm = $typeMap[$subject->type ?? ''] ?? ['color'=>'#7c3aed','bg'=>'rgba(124,58,237,.08)','icon'=>'fa-book','label'=>'Umum'];
+    @endphp
+    <div class="col-sm-6 col-xl-4 subject-col">
+        <div class="card subject-card shadow-sm h-100" data-name="{{ strtolower($subject->name) }}">
+
+            {{-- Top color bar --}}
+            <div style="height:4px;background:{{ $tm['color'] }};"></div>
+
+            {{-- Card body --}}
+            <div class="card-body p-4">
+                <div class="d-flex align-items-start justify-content-between mb-3">
+                    <div class="subject-icon"
+                         style="background:{{ $tm['bg'] }};">
+                        <i class="fas {{ $tm['icon'] }}" style="color:{{ $tm['color'] }};"></i>
+                    </div>
+                    <span class="badge fw-semibold"
+                          style="background:{{ $tm['bg'] }};color:{{ $tm['color'] }};border-radius:20px;font-size:.7rem;padding:.25rem .7rem;">
+                        {{ $tm['label'] }}
+                    </span>
+                </div>
+
+                <h6 class="fw-bold mb-1 lh-sm" style="font-size:.95rem;">{{ $subject->name }}</h6>
+
+                @if($subject->code)
+                    <span class="badge bg-light text-muted border"
+                          style="font-size:.68rem;border-radius:20px;">{{ $subject->code }}</span>
+                @endif
+
+                @if($subject->description)
+                    <p class="text-muted mt-2 mb-0"
+                       style="font-size:.78rem;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                        {{ $subject->description }}
+                    </p>
+                @endif
+            </div>
+
+            {{-- Stats bar --}}
+            <div class="border-top mx-3 mb-3"></div>
+            <div class="d-flex px-3 pb-3">
+                @foreach([
+                    [$subject->material_count,   '#3b82f6', 'Materi'],
+                    [$subject->assignment_count, '#16a34a', 'Tugas'],
+                    [$subject->practical_count,  '#d97706', 'Praktikum'],
+                ] as [$cnt, $clr, $lbl])
+                <div class="stat-mini flex-fill">
+                    <div class="val" style="color:{{ $clr }};">{{ $cnt }}</div>
+                    <div class="lbl">{{ $lbl }}</div>
+                </div>
+                @endforeach
+            </div>
+
+            @if($subject->total_activities === 0)
+            <div class="px-4 pb-3">
+                <div class="text-center py-1 rounded-2 border"
+                     style="font-size:.72rem;color:#94a3b8;background:#f8fafc;">
+                    <i class="fas fa-hourglass-half me-1"></i>Konten belum tersedia
+                </div>
+            </div>
+            @endif
+
+            {{-- Action --}}
+            <div class="px-4 pb-4">
+                <a href="{{ route('siswa.pelajaran.show', $subject->id) }}"
+                   class="btn w-100 fw-semibold"
+                   style="background:{{ $tm['color'] }};color:#fff;border-radius:10px;border:none;">
+                    <i class="fas fa-book-open me-2"></i>Buka Pelajaran
+                </a>
+            </div>
+
+        </div>
+    </div>
+    @endforeach
+</div>
+
+{{-- Empty search result --}}
+<div id="emptySearch" class="d-none text-center py-5">
+    <i class="fas fa-search fa-2x text-muted opacity-25 mb-3 d-block"></i>
+    <p class="text-muted">Tidak ada mata pelajaran yang cocok.</p>
+</div>
+
+@endif
+
 @endsection
+
+@push('js')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const input = document.getElementById('subjectSearch');
+    const grid  = document.getElementById('subjectGrid');
+    const empty = document.getElementById('emptySearch');
+    if (!input || !grid) return;
+
+    input.addEventListener('input', function () {
+        const q = this.value.toLowerCase().trim();
+        let visible = 0;
+        grid.querySelectorAll('.subject-col').forEach(function (col) {
+            const card  = col.querySelector('.subject-card');
+            const match = !q || (card?.dataset.name ?? '').includes(q);
+            col.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        if (empty) empty.classList.toggle('d-none', visible > 0);
+        if (grid)  grid.style.display = visible > 0 ? '' : 'none';
+    });
+});
+</script>
+@endpush

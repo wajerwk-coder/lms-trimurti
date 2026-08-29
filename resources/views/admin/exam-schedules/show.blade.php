@@ -1,17 +1,29 @@
 @extends('layouts.admin')
 
 @section('title', 'Detail Jadwal')
-@section('page-title', 'Detail Jadwal')
-@section('page-subtitle', 'Informasi lengkap jadwal')
+@section('page-title', 'Detail Jadwal Ujian')
+@section('page-subtitle', $examSchedule->title . ' — ' . strtoupper($examSchedule->exam_type))
 
-@section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('admin.exam-schedules.index') }}">Jadwal</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{ $examSchedule->title }}</li>
+@section('page-actions')
+    <a href="{{ route('admin.exam-schedules.edit', $examSchedule) }}" class="btn btn-warning btn-sm">
+        <i class="fas fa-edit me-1"></i>Edit
+    </a>
+    @if(!$examSchedule->is_published)
+        <form method="POST" action="{{ route('admin.exam-schedules.publish', $examSchedule) }}" class="d-inline ms-1">
+            @csrf
+            <button type="submit" class="btn btn-success btn-sm"
+                    onclick="return confirm('Publikasikan jadwal ini? Notifikasi akan dikirim.')">
+                <i class="fas fa-bell me-1"></i>Publikasikan
+            </button>
+        </form>
+    @endif
+    <a href="{{ route('admin.exam-schedules.index') }}" class="btn btn-outline-secondary btn-sm ms-1">
+        <i class="fas fa-arrow-left me-1"></i>Kembali
+    </a>
 @endsection
 
 @section('content')
-<div class="container-fluid px-0">
+<div>
     <div class="row">
         <div class="col-lg-8">
             <!-- Main Info Card -->
@@ -28,11 +40,11 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label text-muted">Mata Pelajaran</label>
-                            <div class="fw-medium">{{ $examSchedule->subject->nama ?? '-' }}</div>
+                            <div class="fw-medium">{{ $examSchedule->subject->name ?? '-' }}</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted">Kelas</label>
-                            <div class="fw-medium">{{ $examSchedule->kelas->nama ?? 'Semua Kelas' }}</div>
+                            <div class="fw-medium">{{ $examSchedule->kelas->name ?? 'Semua Kelas' }}</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted">Waktu Mulai</label>
@@ -64,7 +76,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted">Dibuat oleh</label>
-                            <div class="fw-medium">{{ $examSchedule->creator->name }}</div>
+                            <div class="fw-medium">{{ $examSchedule->creator?->name ?? '—' }}</div>
                         </div>
                         @if($examSchedule->description)
                         <div class="col-12">
@@ -74,23 +86,22 @@
                         @endif
                     </div>
                 </div>
-                <div class="card-footer">
-                    <div class="d-flex gap-2">
-                        <a href="{{ route('admin.exam-schedules.edit', $examSchedule) }}" class="btn btn-primary">
-                            <i class="fas fa-edit me-2"></i>Edit
-                        </a>
-                        @if(!$examSchedule->is_published)
-                            <form method="POST" action="{{ route('admin.exam-schedules.publish', $examSchedule) }}" class="d-inline">
-                                @csrf
-                                <button type="submit" class="btn btn-success" onclick="return confirm('Publikasikan jadwal ini? Notifikasi akan dikirim ke guru dan siswa.')">
-                                    <i class="fas fa-bell me-2"></i>Publikasikan
-                                </button>
-                            </form>
-                        @endif
-                        <a href="{{ route('admin.exam-schedules.index') }}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left me-2"></i>Kembali
-                        </a>
-                    </div>
+                <div class="card-footer border-top d-flex gap-2">
+                    <a href="{{ route('admin.exam-schedules.edit', $examSchedule) }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </a>
+                    @if(!$examSchedule->is_published)
+                        <form method="POST" action="{{ route('admin.exam-schedules.publish', $examSchedule) }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-success btn-sm"
+                                    onclick="return confirm('Publikasikan jadwal ini? Notifikasi akan dikirim ke guru dan siswa.')">
+                                <i class="fas fa-bell me-1"></i>Publikasikan
+                            </button>
+                        </form>
+                    @endif
+                    <a href="{{ route('admin.exam-schedules.index') }}" class="btn btn-outline-secondary btn-sm ms-auto">
+                        <i class="fas fa-arrow-left me-1"></i>Kembali
+                    </a>
                 </div>
             </div>
         </div>
@@ -143,7 +154,7 @@
                         <label class="form-label">Penerima Notifikasi:</label>
                         <div class="small">
                             @if($examSchedule->kelas_id)
-                                <i class="fas fa-users me-1"></i>Siswa dan guru kelas {{ $examSchedule->kelas->nama }}
+                                <i class="fas fa-users me-1"></i>Siswa dan guru kelas {{ $examSchedule->kelas->name }}
                             @else
                                 <i class="fas fa-users me-1"></i>Semua siswa dan guru
                             @endif
@@ -160,7 +171,7 @@
                     <div>
                         <label class="form-label">Isi Notifikasi:</label>
                         <div class="small text-muted">
-                            "Jadwal {{ strtoupper($examSchedule->exam_type) }} untuk mata pelajaran {{ $examSchedule->subject->nama }} akan dimulai pada {{ $examSchedule->start_time->format('d M Y H:i') }}{{ $examSchedule->location ? " di {$examSchedule->location}" : "" }}"
+                            "Jadwal {{ strtoupper($examSchedule->exam_type) }} untuk mata pelajaran {{ $examSchedule->subject->name ?? '—' }} akan dimulai pada {{ $examSchedule->start_time->format('d M Y H:i') }}{{ $examSchedule->location ? " di {$examSchedule->location}" : "" }}"
                         </div>
                     </div>
                 </div>
@@ -190,6 +201,7 @@
     </div>
 </div>
 
+@push('js')
 <script>
 function copyLink() {
     const url = window.location.href;
@@ -198,4 +210,5 @@ function copyLink() {
     });
 }
 </script>
+@endpush
 @endsection

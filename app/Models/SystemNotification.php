@@ -32,7 +32,7 @@ class SystemNotification extends Model
     // Relationships
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(UserCentral::class, 'user_id');
     }
 
     // Scopes

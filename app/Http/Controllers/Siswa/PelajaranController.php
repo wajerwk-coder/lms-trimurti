@@ -5,205 +5,126 @@ namespace App\Http\Controllers\Siswa;
 use App\Http\Controllers\Controller;
 use App\Models\Subject;
 use App\Models\Kelas;
-use App\Models\User;
-use App\Models\ClassSubject;
 use App\Models\Assignment;
 use App\Models\Material;
 use App\Models\Practical;
+use App\Models\Siswa;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class PelajaranController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware(['auth', 'siswa']);
     }
 
-    /**
-     * Display daftar pelajaran untuk siswa
-     */
-    public function index(Request $request): View
+    // ── Helper: ambil profil siswa + kelas_id ────────────────────────────
+
+    private function getSiswaProfile(): array
     {
-        $siswa = Auth::user();
-        $siswaId = $siswa->id;
-        
-        // Get kelas siswa (jika ada)
-        $kelasId = null;
-        $kelas = null;
-        
-        // Coba dapatkan kelas dari berbagai cara
-        try {
-            // Cek apakah ada field kelas_id di user
-            if (isset($siswa->kelas_id)) {
-                $kelasId = $siswa->kelas_id;
-            }
-            
-            if ($kelasId) {
-                $kelas = Kelas::with(['jurusan'])->find($kelasId);
-            }
-        } catch (\Exception $e) {
-            // Abaikan error jika field tidak ada
-        }
-        
-        // Get mata pelajaran yang tersedia
-        $subjectsQuery = Subject::with(['jurusan']);
-        
-        // Jika ada kelas_id, filter berdasarkan class_subjects
-        if ($kelasId) {
-            try {
-                $subjectIds = ClassSubject::where('kelas_id', $kelasId)
-                    ->pluck('subject_id')
-                    ->toArray();
-                
-                if (!empty($subjectIds)) {
-                    $subjectsQuery->whereIn('id', $subjectIds);
-                }
-            } catch (\Exception $e) {
-                // Abaikan error jika ClassSubject tidak ada
-            }
-        }
-        
-        // Filter hanya mata pelajaran aktif
-        $subjects = $subjectsQuery->get();
-        
-        // Enrich subjects dengan data tambahan
-        foreach ($subjects as $subject) {
-            try {
-                // Hitung jumlah materi
-                $materialCount = Material::where('subject_id', $subject->id)
-                    ->where(function($query) use ($kelasId) {
-                        if ($kelasId) {
-                            $query->where('kelas_id', $kelasId);
-                        }
-                        $query->orWhereNull('kelas_id');
-                    })
-                    ->whereNotNull('published_at')
-                    ->count();
-                
-                // Hitung jumlah tugas
-                $assignmentCount = Assignment::where('subject_id', $subject->id)
-                    ->where(function($query) use ($kelasId) {
-                        if ($kelasId) {
-                            $query->where('kelas_id', $kelasId);
-                        }
-                        $query->orWhereNull('kelas_id');
-                    })
-                    ->where('is_published', true)
-                    ->count();
-                
-                // Hitung jumlah praktikum
-                $practicalCount = Practical::where('subject_id', $subject->id)
-                    ->where(function($query) use ($kelasId) {
-                        if ($kelasId) {
-                            $query->where('kelas_id', $kelasId);
-                        }
-                        $query->orWhereNull('kelas_id');
-                    })
-                    ->whereNotNull('published_at')
-                    ->count();
-                
-                $subject->material_count = $materialCount;
-                $subject->assignment_count = $assignmentCount;
-                $subject->practical_count = $practicalCount;
-                $subject->total_activities = $materialCount + $assignmentCount + $practicalCount;
-            } catch (\Exception $e) {
-                // Set default jika error
-                $subject->material_count = 0;
-                $subject->assignment_count = 0;
-                $subject->practical_count = 0;
-                $subject->total_activities = 0;
-            }
-        }
-        
-        // Get data siswa lengkap
-        $siswaData = [
-            'id' => $siswa->id,
-            'name' => $siswa->name,
-            'email' => $siswa->email,
-            'nis_nip' => $siswa->nis_nip ?? '',
-            'kelas' => $kelas ? $kelas->name : 'Belum ada kelas',
-            'kelas_lengkap' => $kelas ? $kelas->name : 'Belum ada kelas',
-            'jurusan' => $kelas && $kelas->jurusan ? $kelas->jurusan->name : 'Belum ada jurusan',
-            'wali_kelas' => 'Belum ada wali kelas', // Tidak ada relationship guru
+        $user = Auth::user();
+        $siswaProfile = Siswa::with(['kelas.jurusan', 'user'])
+            ->where('user_id', $user->id)
+            ->first();
+
+        return [
+            'profile'  => $siswaProfile,
+            'kelasId'  => $siswaProfile?->kelas_id,
+            'kelas'    => $siswaProfile?->kelas,
         ];
-        
-        return view('siswa.pelajaran.index', compact(
-            'subjects',
-            'siswaData',
-            'kelas'
-        ));
     }
-    
-    /**
-     * Show detail mata pelajaran
-     */
-    public function show($id): View
+
+    // ── Index: daftar mata pelajaran ─────────────────────────────────────
+
+    public function index(): View
     {
-        $siswa = Auth::user();
-        $kelasId = null;
-        
-        // Coba dapatkan kelas_id
-        try {
-            if (isset($siswa->kelas_id)) {
-                $kelasId = $siswa->kelas_id;
+        ['profile' => $siswaProfile, 'kelasId' => $kelasId, 'kelas' => $kelas] = $this->getSiswaProfile();
+
+        // Ambil subject_id yang ada di class_subjects untuk kelas siswa
+        $subjectIds = [];
+        if ($kelasId) {
+            $subjectIds = DB::table('class_subjects')
+                ->where('class_id', $kelasId)   // kolom class_id, bukan kelas_id
+                ->pluck('subject_id')
+                ->toArray();
+        }
+
+        // Query subjects — jika ada class_subjects, filter; jika tidak tampilkan semua aktif
+        $subjectsQuery = Subject::where('is_active', true)->orderBy('name');
+        if (!empty($subjectIds)) {
+            $subjectsQuery->whereIn('id', $subjectIds);
+        }
+        $subjects = $subjectsQuery->get();
+
+        // Enrich: hitung materi, tugas, praktikum per subject
+        $subjects->each(function ($subject) use ($kelasId) {
+            $baseM = Material::where('subject_id', $subject->id)->whereNotNull('published_at');
+            $baseA = Assignment::where('subject_id', $subject->id)->where('is_published', true);
+            $baseP = Practical::where('subject_id', $subject->id)->where('is_published', true);
+
+            if ($kelasId) {
+                $baseM->where(fn($q) => $q->where('kelas_id', $kelasId)->orWhereNull('kelas_id'));
+                $baseA->where(fn($q) => $q->where('kelas_id', $kelasId)->orWhereNull('kelas_id'));
+                $baseP->where(fn($q) => $q->where('kelas_id', $kelasId)->orWhereNull('kelas_id'));
             }
-        } catch (\Exception $e) {
-            // Abaikan error
+
+            $subject->material_count    = (clone $baseM)->count();
+            $subject->assignment_count  = (clone $baseA)->count();
+            $subject->practical_count   = (clone $baseP)->count();
+            $subject->total_activities  = $subject->material_count + $subject->assignment_count + $subject->practical_count;
+        });
+
+        $siswaData = [
+            'name'    => Auth::user()->name,
+            'kelas'   => $kelas?->name ?? 'Belum ada kelas',
+            'jurusan' => $kelas?->jurusan?->name ?? '—',
+        ];
+
+        return view('siswa.pelajaran.index', compact('subjects', 'siswaData', 'kelas'));
+    }
+
+    // ── Show: detail satu mata pelajaran ────────────────────────────────
+
+    public function show(int $id): View
+    {
+        ['kelasId' => $kelasId] = $this->getSiswaProfile();
+
+        $subject = Subject::findOrFail($id);
+
+        $ucId = Auth::id();   // users_central.id — dipakai untuk filter submission & score
+
+        // Materi
+        $materialsQ = Material::where('subject_id', $subject->id)->whereNotNull('published_at');
+        if ($kelasId) {
+            $materialsQ->where(fn($q) => $q->where('kelas_id', $kelasId)->orWhereNull('kelas_id'));
         }
-        
-        $subject = Subject::with([
-            'jurusan'
-        ])->findOrFail($id);
-        
-        // Load materials, assignments, dan practicals secara manual
-        try {
-            $materials = Material::where('subject_id', $subject->id)
-                ->where(function($query) use ($kelasId) {
-                    if ($kelasId) {
-                        $query->where('kelas_id', $kelasId);
-                    }
-                    $query->orWhereNull('kelas_id');
-                })
-                ->whereNotNull('published_at')
-                ->orderBy('created_at', 'desc')
-                ->get();
-            
-            $assignments = Assignment::where('subject_id', $subject->id)
-                ->where(function($query) use ($kelasId) {
-                    if ($kelasId) {
-                        $query->where('kelas_id', $kelasId);
-                    }
-                    $query->orWhereNull('kelas_id');
-                })
-                ->where('is_published', true)
-                ->orderBy('created_at', 'desc')
-                ->get();
-            
-            $practicals = Practical::where('subject_id', $subject->id)
-                ->where(function($query) use ($kelasId) {
-                    if ($kelasId) {
-                        $query->where('kelas_id', $kelasId);
-                    }
-                    $query->orWhereNull('kelas_id');
-                })
-                ->whereNotNull('published_at')
-                ->orderBy('created_at', 'desc')
-                ->get();
-                
-        } catch (\Exception $e) {
-            $materials = collect();
-            $assignments = collect();
-            $practicals = collect();
+        $materials = $materialsQ->orderByDesc('created_at')->get();
+
+        // Tugas — eager-load submissions milik siswa ini
+        $assignmentsQ = Assignment::where('subject_id', $subject->id)->where('is_published', true);
+        if ($kelasId) {
+            $assignmentsQ->where(fn($q) => $q->where('kelas_id', $kelasId)->orWhereNull('kelas_id'));
         }
-        
+        $assignments = $assignmentsQ
+            ->with(['submissions' => fn($q) => $q->where('siswa_id', $ucId)])
+            ->orderByDesc('created_at')
+            ->get();
+
+        // Praktikum — eager-load scores milik siswa ini (NilaiPraktik.siswa_id = uc.id)
+        $practicalsQ = Practical::where('subject_id', $subject->id)->where('is_published', true);
+        if ($kelasId) {
+            $practicalsQ->where(fn($q) => $q->where('kelas_id', $kelasId)->orWhereNull('kelas_id'));
+        }
+        $practicals = $practicalsQ
+            ->with(['scores' => fn($q) => $q->where('siswa_id', $ucId)->whereNull('criteria_id')])
+            ->orderByDesc('created_at')
+            ->get();
+
         return view('siswa.pelajaran.show', compact(
-            'subject',
-            'materials',
-            'assignments',
-            'practicals',
-            'kelasId'
+            'subject', 'materials', 'assignments', 'practicals', 'kelasId'
         ));
     }
 }

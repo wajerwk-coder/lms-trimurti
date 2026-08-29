@@ -1,30 +1,35 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 
-@section('title', 'Jadwal')
-@section('page-title', 'Manajemen Jadwal')
-@section('page-subtitle', 'Buat dan kelola jadwal dengan notifikasi otomatis')
+@section('title', 'Jadwal Ujian')
+@section('page-title', 'Jadwal Ujian')
+@section('page-subtitle', 'Buat dan kelola jadwal dengan notifikasi otomatis.')
+
+@section('page-actions')
+    <a href="{{ route('admin.exam-schedules.create') }}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i>Buat Jadwal Baru
+    </a>
+@endsection
 
 @section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Beranda</a></li>
     <li class="breadcrumb-item active" aria-current="page">Jadwal</li>
 @endsection
 
 @section('content')
-<div class="container-fluid px-0">
-    <!-- Header Card -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-3 p-md-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h5 class="card-title mb-0">Jadwal</h5>
-                    <p class="text-muted mb-0">Kelola jadwal dan kirim notifikasi otomatis ke guru dan siswa</p>
-                </div>
-                <a href="{{ route('admin.exam-schedules.create') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Buat Jadwal Baru
-                </a>
-            </div>
-        </div>
+<div>
+
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
 
     <!-- Filter Card -->
     <div class="card border-0 shadow-sm mb-4">
@@ -50,8 +55,8 @@
                         <label class="form-label">Kelas</label>
                         <select name="kelas_id" class="form-select">
                             <option value="">Semua</option>
-                            @foreach(\App\Models\Kelas::all() as $kelas)
-                                <option value="{{ $kelas->id }}" {{ request('kelas_id') == $kelas->id ? 'selected' : '' }}>{{ $kelas->nama }}</option>
+                            @foreach($kelas as $k)
+                                <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -74,9 +79,13 @@
 
     <!-- Schedules Table -->
     <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+            <h6 class="mb-0 fw-semibold"><i class="fas fa-calendar-alt me-2 text-primary"></i>Daftar Jadwal Ujian</h6>
+            <span class="badge bg-secondary">{{ $schedules->total() }} jadwal</span>
+        </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
+                <table class="table table-hover mb-0 align-middle small">
                     <thead class="table-light">
                         <tr>
                             <th>Judul</th>
@@ -103,7 +112,7 @@
                                 </span>
                             </td>
                             <td>{{ $schedule->subject->name ?? '-' }}</td>
-                            <td>{{ $schedule->kelas->nama ?? 'Semua Kelas' }}</td>
+                            <td>{{ $schedule->kelas->name ?? 'Semua Kelas' }}</td>
                             <td>
                                 <div class="small">
                                     <div><i class="fas fa-calendar me-1"></i>{{ $schedule->start_time->format('d M Y') }}</div>

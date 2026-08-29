@@ -229,7 +229,8 @@ body {
     list-style: none;
 }
 
-.nav-link {
+/* Scoped to navbar only — avoid overriding Bootstrap nav-pills */
+.navbar-nav .nav-link {
     color: var(--dark);
     text-decoration: none;
     padding: 0.5rem 1rem;
@@ -237,12 +238,12 @@ body {
     transition: var(--transition);
 }
 
-.nav-link:hover {
+.navbar-nav .nav-link:hover {
     background: var(--light);
     color: var(--primary);
 }
 
-.nav-link.active {
+.navbar-nav .nav-link.active {
     background: var(--primary);
     color: white;
 }

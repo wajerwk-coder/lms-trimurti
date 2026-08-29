@@ -1,17 +1,17 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 
 @section('title', 'Buat Jadwal')
 @section('page-title', 'Buat Jadwal')
 @section('page-subtitle', 'Buat jadwal baru dan kirim notifikasi ke guru dan siswa')
 
 @section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Beranda</a></li>
     <li class="breadcrumb-item"><a href="{{ route('admin.exam-schedules.index') }}">Jadwal</a></li>
     <li class="breadcrumb-item active" aria-current="page">Buat Jadwal</li>
 @endsection
 
 @section('content')
-<div class="container-fluid px-0">
+<div>
     <div class="row">
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm">
@@ -91,7 +91,7 @@
                                 <select name="subject_id" class="form-select @error('subject_id') is-invalid @enderror" required>
                                     <option value="">Pilih Mata Pelajaran</option>
                                     @foreach($subjects as $subject)
-                                        <option value="{{ $subject->id }}" {{ old('subject_id') == $subject->id ? 'selected' : '' }}>{{ $subject->nama }}</option>
+                                        <option value="{{ $subject->id }}" {{ old('subject_id') == $subject->id ? 'selected' : '' }}>{{ $subject->name }}</option>
                                     @endforeach
                                 </select>
                                 @error('subject_id')
@@ -104,7 +104,7 @@
                                 <select name="kelas_id" class="form-select @error('kelas_id') is-invalid @enderror">
                                     <option value="">Semua Kelas</option>
                                     @foreach($kelas as $k)
-                                        <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->nama }}</option>
+                                        <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
                                     @endforeach
                                 </select>
                                 <small class="text-muted">Kosongkan jika ujian berlaku untuk semua kelas</small>

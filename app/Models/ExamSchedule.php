@@ -47,7 +47,7 @@ class ExamSchedule extends Model
 
     public function creator()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(UserCentral::class, 'created_by');
     }
 
     // Scopes
@@ -78,7 +78,7 @@ class ExamSchedule extends Model
         }
 
         if ($this->end_time > now()) {
-            return 'Sedang Berlangsung';
+            return 'Berlangsung';
         }
 
         return 'Selesai';
@@ -87,11 +87,11 @@ class ExamSchedule extends Model
     public function getStatusColorAttribute()
     {
         return match($this->status) {
-            'Draft' => 'secondary',
-            'Akan Datang' => 'info',
-            'Sedang Berlangsung' => 'warning',
-            'Selesai' => 'success',
-            default => 'secondary'
+            'Draft'          => 'secondary',
+            'Akan Datang'    => 'warning',
+            'Berlangsung'    => 'success',
+            'Selesai'        => 'secondary',
+            default          => 'secondary',
         };
     }
 

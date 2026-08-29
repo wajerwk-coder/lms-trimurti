@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Siswa;
 
 use App\Http\Controllers\Controller;
 use App\Models\Practical;
-use App\Models\PracticalScore;
-use App\Models\Criteria;
+use App\Models\NilaiPraktik;
+use App\Models\Siswa;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
@@ -16,53 +16,66 @@ class PracticalController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware(['auth', 'siswa']);
     }
 
     /**
      * Display a listing of practicals.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
-        $student = \App\Models\Student::where('user_id', Auth::id())->first();
-        $kelasId = $student->kelas_id ?? null;
+        $ucId    = Auth::id();
+        $student = Siswa::where('user_id', $ucId)->first();
+        $kelasId = $student?->kelas_id;
+        $status  = $request->get('status', '');
+        $search  = $request->get('search', '');
 
         $practicals = Practical::where('is_published', true)
-            ->where(function ($query) use ($kelasId) {
+            ->where(function ($q) use ($kelasId) {
                 if ($kelasId) {
-                    $query->where('kelas_id', $kelasId)
-                          ->orWhereNull('kelas_id');
+                    $q->where('kelas_id', $kelasId)->orWhereNull('kelas_id');
                 } else {
-                    $query->whereNull('kelas_id');
+                    $q->whereNull('kelas_id');
                 }
             })
-            ->with(['guru', 'kelas', 'scores' => function($query) {
-                $query->where('siswa_id', Auth::id());
-            }])
-            ->withCount(['scores as graded' => function($query) {
-                $query->where('siswa_id', Auth::id());
-            }])
-            ->latest('date')
-            ->paginate(10);
+            ->with([
+                'subject',
+                'kelas',
+                'guru',
+                'scores' => fn($q) => $q->where('siswa_id', $ucId)->whereNull('criteria_id'),
+            ])
+            ->when($search, fn($q) => $q->where('title', 'like', "%{$search}%"))
+            ->when($status === 'upcoming', fn($q) => $q->where('due_date', '>', now()))
+            ->when($status === 'past',     fn($q) => $q->where('due_date', '<=', now()))
+            ->when($status === 'graded',   fn($q) => $q->whereHas('scores', fn($s) => $s->where('siswa_id', $ucId)->whereNull('criteria_id')))
+            ->when($status === 'ungraded', fn($q) => $q->whereDoesntHave('scores', fn($s) => $s->where('siswa_id', $ucId)->whereNull('criteria_id')))
+            ->orderBy('due_date', 'asc')
+            ->paginate(12);
 
-        // ✅ Optimasi: Gunakan collection untuk statistik
-        $gradedPracticals = $practicals->getCollection()
-            ->filter(fn($p) => $p->graded > 0)
-            ->count();
+        // Stats dari aggregate — bukan dari paginator
+        $baseQ   = Practical::where('is_published', true)
+            ->where(function ($q) use ($kelasId) {
+                if ($kelasId) {
+                    $q->where('kelas_id', $kelasId)->orWhereNull('kelas_id');
+                } else {
+                    $q->whereNull('kelas_id');
+                }
+            });
 
-        $allScores = PracticalScore::where('siswa_id', Auth::id())
-            ->whereIn('practical_id', $practicals->pluck('id'))
-            ->get();
+        $totalAll      = (clone $baseQ)->count();
+        $gradedCount   = (clone $baseQ)->whereHas('scores', fn($s) => $s->where('siswa_id', $ucId)->whereNull('criteria_id'))->count();
+        $upcomingCount = (clone $baseQ)->where('due_date', '>', now())->count();
 
-        $averageScore = $allScores->avg('score') ?? 0;
+        $avgScore = \App\Models\NilaiPraktik::where('siswa_id', $ucId)
+            ->whereNull('criteria_id')
+            ->whereNotNull('score')
+            ->avg('score');
+        $averageScore = $avgScore ? round($avgScore, 1) : 0;
 
-        $stats = [
-            'total_practicals' => $practicals->total(),
-            'graded_practicals' => $gradedPracticals,
-            'average_score' => $averageScore,
-        ];
-
-        return view('siswa.praktikum.index', compact('practicals', 'stats'));
+        return view('siswa.praktikum.index', compact(
+            'practicals', 'status', 'search',
+            'totalAll', 'gradedCount', 'upcomingCount', 'averageScore'
+        ));
     }
 
     /**
@@ -70,7 +83,7 @@ class PracticalController extends Controller
      */
     public function show($id): View
     {
-        $student = \App\Models\Student::where('user_id', Auth::id())->first();
+        $student = Siswa::where('user_id', Auth::id())->first();
         $kelasId = $student->kelas_id ?? null;
 
         $practical = Practical::where('is_published', true)
@@ -134,7 +147,7 @@ class PracticalController extends Controller
      */
     public function getScores($practicalId): JsonResponse
     {
-        $student = \App\Models\Student::where('user_id', Auth::id())->first();
+        $student = Siswa::where('user_id', Auth::id())->first();
         $kelasId = $student->kelas_id ?? null;
 
         $practical = Practical::where('is_published', true)
@@ -166,7 +179,7 @@ class PracticalController extends Controller
      */
     public function getProgress(): JsonResponse
     {
-        $student = \App\Models\Student::where('user_id', Auth::id())->first();
+        $student = Siswa::where('user_id', Auth::id())->first();
         $kelasId = $student->kelas_id ?? null;
 
         $totalPracticals = Practical::where('is_published', true)
@@ -204,7 +217,7 @@ class PracticalController extends Controller
      */
     public function upcoming(): JsonResponse
     {
-        $student = \App\Models\Student::where('user_id', Auth::id())->first();
+        $student = Siswa::where('user_id', Auth::id())->first();
         $kelasId = $student->kelas_id ?? null;
 
         $upcomingPracticals = Practical::where('is_published', true)

@@ -4,306 +4,137 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * Model untuk tabel `practical_scores`.
+ */
 class NilaiPraktik extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'practical_scores';
 
     protected $fillable = [
         'practical_id',
         'siswa_id',
+        'criteria_id',
         'score',
         'feedback',
         'graded_by',
-        'graded_at'
+        'guru_id',
+        'graded_at',
     ];
 
     protected $casts = [
-        'graded_at' => 'date',
-        'score' => 'decimal:2'
+        'score'      => 'decimal:2',
+        'graded_at'  => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
-    const STATUS_DRAFT = 'draft';
-    const STATUS_FINAL = 'final';
+    // ── Relationships ──────────────────────────────────────────────────────────
 
-    const GRADE_A = 'A';
-    const GRADE_B = 'B';
-    const GRADE_C = 'C';
-    const GRADE_D = 'D';
-    const GRADE_E = 'E';
-
-    protected $attributes = [
-        'status' => self::STATUS_DRAFT
-    ];
-
-    /**
-     * Relationship dengan siswa
-     */
-    public function siswa(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'siswa_id', 'id');
-    }
-
-    /**
-     * Relationship dengan guru yang memberi nilai
-     */
-    public function guru(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'graded_by');
-    }
-
-    /**
-     * Relationship dengan practical
-     */
     public function practical(): BelongsTo
     {
         return $this->belongsTo(Practical::class, 'practical_id');
     }
 
-    /**
-     * Relationship dengan detail penilaian per kriteria
-     */
-    public function detailPenilaian(): HasMany
+    public function siswa(): BelongsTo
     {
-        return $this->hasMany(DetailPenilaian::class);
+        return $this->belongsTo(UserCentral::class, 'siswa_id');
+    }
+
+    public function guru(): BelongsTo
+    {
+        return $this->belongsTo(UserCentral::class, 'guru_id');
     }
 
     /**
-     * Scope untuk nilai final
+     * Relasi ke KriteriaPenilaian (tabel assessment_criteria).
+     * Kolom criteria_id ada di DB practical_scores.
      */
-    public function scopeFinal($query)
+    public function criteria(): BelongsTo
     {
-        return $query->where('status', self::STATUS_FINAL);
+        return $this->belongsTo(KriteriaPenilaian::class, 'criteria_id');
+    }
+
+    /** Alias Bahasa Indonesia */
+    public function kriteria(): BelongsTo
+    {
+        return $this->criteria();
     }
 
     /**
-     * Scope berdasarkan siswa
+     * gradedBy — siapa yang memberi nilai (bisa guru_id atau graded_by).
+     * DB punya kolom graded_by dan guru_id — keduanya ada.
      */
-    public function scopeBySiswa($query, $siswaId)
+    public function gradedBy(): BelongsTo
+    {
+        return $this->belongsTo(UserCentral::class, 'graded_by');
+    }
+
+    // ── Scopes ─────────────────────────────────────────────────────────────────
+
+    public function scopeBySiswa($query, int $siswaId)
     {
         return $query->where('siswa_id', $siswaId);
     }
 
-    /**
-     * Scope berdasarkan guru
-     */
-    public function scopeByGuru($query, $guruId)
+    public function scopeByGuru($query, int $guruId)
     {
-        return $query->where('graded_by', $guruId);
+        // DB punya dua kolom: guru_id dan graded_by — keduanya bisa berisi guru
+        return $query->where(function ($q) use ($guruId) {
+            $q->where('guru_id', $guruId)
+              ->orWhere('graded_by', $guruId);
+        });
     }
 
-    /**
-     * Scope berdasarkan practical
-     */
-    public function scopeByPractical($query, $practicalId)
+    public function scopeByPractical($query, int $practicalId)
     {
         return $query->where('practical_id', $practicalId);
     }
 
-    /**
-     * Get grade list
-     */
-    public static function getGradeList()
+    /** Backward compat — dulu ada status 'final', sekarang semua dianggap final */
+    public function scopeFinal($query)
     {
-        return [
-            self::GRADE_A => 'A (90-100)',
-            self::GRADE_B => 'B (80-89)',
-            self::GRADE_C => 'C (70-79)',
-            self::GRADE_D => 'D (60-69)',
-            self::GRADE_E => 'E (<60)'
-        ];
+        return $query->whereNotNull('score');
     }
 
-    /**
-     * Get status list
-     */
-    public static function getStatusList()
+    // ── Accessors ─────────────────────────────────────────────────────────────
+
+    public function getGradeAttribute(): string
     {
-        return [
-            self::STATUS_DRAFT => 'Draft',
-            self::STATUS_FINAL => 'Final'
-        ];
+        $s = (float) ($this->score ?? 0);
+        if ($s >= 90) return 'A';
+        if ($s >= 80) return 'B';
+        if ($s >= 70) return 'C';
+        if ($s >= 60) return 'D';
+        return 'E';
     }
 
-    /**
-     * Determine grade berdasarkan total nilai
-     */
-    public static function determineGrade($totalNilai)
+    public function getGradeColorAttribute(): string
     {
-        if ($totalNilai >= 90) return self::GRADE_A;
-        if ($totalNilai >= 80) return self::GRADE_B;
-        if ($totalNilai >= 70) return self::GRADE_C;
-        if ($totalNilai >= 60) return self::GRADE_D;
-        return self::GRADE_E;
+        return match ($this->grade) {
+            'A' => 'success',
+            'B' => 'primary',
+            'C' => 'info',
+            'D' => 'warning',
+            default => 'danger',
+        };
     }
 
-    /**
-     * Calculate total nilai berdasarkan detail penilaian
-     */
-    public function calculateTotalNilai()
+    public function getCheckedSopAttribute(): array
     {
-        $totalNilai = 0;
-        
-        foreach ($this->detailPenilaian as $detail) {
-            $kriteria = $detail->kriteria;
-            $skorNormalized = ($detail->skor / 4) * 100; // Convert 1-4 scale to 0-100
-            $nilaiTerbobot = $skorNormalized * ($kriteria->bobot / 100); // Convert integer bobot to percentage
-            $totalNilai += $nilaiTerbobot;
-        }
-        
-        return round($totalNilai, 2);
+        if (empty($this->feedback)) return [];
+        $decoded = json_decode($this->feedback, true);
+        return is_array($decoded) ? $decoded : [];
     }
 
-    /**
-     * Generate auto feedback berdasarkan nilai per kriteria
-     */
-    public function generateAutoFeedback()
+    public function isPassing(): bool
     {
-        $feedback = "🎯 **Nilai Praktik: {$this->total_nilai}/100 (Grade: {$this->grade})**\n\n";
-        $feedback .= "📊 **Detail Penilaian:**\n";
-        
-        foreach ($this->detailPenilaian as $detail) {
-            $kriteria = $detail->kriteria;
-            $skorLevel = $this->getScoreLevel($detail->skor);
-            $skorPersen = round(($detail->skor / 4) * 100);
-            
-            $feedback .= "• **{$kriteria->nama}**: {$detail->skor}/4 ({$skorPersen}%) - {$skorLevel}\n";
-            
-            if ($detail->catatan) {
-                $feedback .= "  📝 *{$detail->catatan}*\n";
-            }
-        }
-        
-        $feedback .= "\n💡 **Saran Perbaikan:**\n";
-        $feedback .= $this->generateImprovementSuggestions();
-        
-        $feedback .= "\n🏆 **Kesimpulan:**\n";
-        $feedback .= $this->generateOverallConclusion();
-        
-        return $feedback;
-    }
-
-    /**
-     * Get score level description
-     */
-    private function getScoreLevel($skor)
-    {
-        switch ($skor) {
-            case 4: return 'Sangat Baik';
-            case 3: return 'Baik';
-            case 2: return 'Cukup';
-            case 1: return 'Kurang';
-            default: return 'Tidak Dinilai';
-        }
-    }
-
-    /**
-     * Generate improvement suggestions
-     */
-    private function generateImprovementSuggestions()
-    {
-        $suggestions = [];
-        
-        foreach ($this->detailPenilaian as $detail) {
-            $kriteria = $detail->kriteria;
-            
-            if ($detail->skor < 3) {
-                switch ($kriteria->kategori) {
-                    case 'persiapan':
-                        $suggestions[] = "• Perbaiki persiapan alat dan bahan untuk {$kriteria->nama}";
-                        break;
-                    case 'pelaksanaan':
-                        $suggestions[] = "• Tingkatkan keterampilan teknis dalam {$kriteria->nama}";
-                        break;
-                    case 'hasil':
-                        $suggestions[] = "• Perhatikan kualitas hasil dan dokumentasi pada {$kriteria->nama}";
-                        break;
-                    case 'sikap':
-                        $suggestions[] = "• Kembangkan sikap profesional dalam {$kriteria->nama}";
-                        break;
-                }
-            }
-        }
-        
-        if (empty($suggestions)) {
-            return "Pertahankan kinerja yang sudah baik dan terus tingkatkan kualitas praktik.";
-        }
-        
-        return implode("\n", $suggestions);
-    }
-
-    /**
-     * Generate overall conclusion
-     */
-    private function generateOverallConclusion()
-    {
-        $grade = $this->grade;
-        
-        switch ($grade) {
-            case self::GRADE_A:
-                return "Excellent! Anda menunjukkan kemampuan praktik yang sangat baik. Pertahankan standar ini.";
-            case self::GRADE_B:
-                return "Good job! Kemampuan praktik Anda sudah baik. Sedikit perbaikan akan membuat Anda sempurna.";
-            case self::GRADE_C:
-                return "Cukup baik. Masih ada beberapa area yang perlu diperbaiki. Terus berlatih dan konsultasi dengan pembimbing.";
-            case self::GRADE_D:
-                return "Perlu perbaikan. Fokus pada area yang masih lemah dan lakukan latihan tambahan.";
-            case self::GRADE_E:
-                return "Perlu perbaikan menyeluruh. Disarankan untuk latihan intensif dan bimbingan khusus.";
-            default:
-                return "Lanjutkan usaha dan terus berlatih untuk meningkatkan kemampuan praktik.";
-        }
-    }
-
-    /**
-     * Get grade badge color
-     */
-    public function getGradeBadgeAttribute()
-    {
-        $colors = [
-            self::GRADE_A => 'success',
-            self::GRADE_B => 'primary',
-            self::GRADE_C => 'warning',
-            self::GRADE_D => 'danger',
-            self::GRADE_E => 'dark'
-        ];
-        
-        return $colors[$this->grade] ?? 'secondary';
-    }
-
-    /**
-     * Check if nilai is passing
-     */
-    public function isPassing()
-    {
-        return $this->total_nilai >= 70; // Minimal C
-    }
-
-    /**
-     * Get formatted nilai with status
-     */
-    public function getNilaiFormattedAttribute()
-    {
-        $status = $this->isPassing() ? 'LULUS' : 'TIDAK LULUS';
-        return "{$this->total_nilai} ({$this->grade}) - {$status}";
-    }
-
-    /**
-     * Event handlers
-     */
-    protected static function booted()
-    {
-        // Auto calculate dan generate feedback ketika status berubah ke final
-        static::updating(function ($nilai) {
-            if ($nilai->isDirty('status') && $nilai->status === self::STATUS_FINAL) {
-                $nilai->total_nilai = $nilai->calculateTotalNilai();
-                $nilai->grade = self::determineGrade($nilai->total_nilai);
-                $nilai->feedback_otomatis = $nilai->generateAutoFeedback();
-            }
-        });
+        return (float) ($this->score ?? 0) >= 70;
     }
 }

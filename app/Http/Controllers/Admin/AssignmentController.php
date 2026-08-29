@@ -4,16 +4,24 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
-use App\Models\User;
+use App\Models\UserCentral;
+use App\Models\Subject;
+use App\Models\Kelas;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AssignmentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function __construct()
+    {
+        $this->middleware(['auth', 'admin']);
+    }
+
+    // ── Index ─────────────────────────────────────────────────────────────
+
     public function index()
     {
         $assignments = Assignment::with(['guru', 'submissions'])
@@ -23,158 +31,228 @@ class AssignmentController extends Controller
         return view('admin.assignments.index', compact('assignments'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
+    // ── Create ────────────────────────────────────────────────────────────
+
     public function create()
     {
-        $gurus = User::where('role', 'guru')->get();
-        return view('admin.assignments.create', compact('gurus'));
+        return view('admin.assignments.create', [
+            'gurus'    => UserCentral::where('role', 'guru')->where('is_active', true)->orderBy('name')->get(),
+            'subjects' => Subject::where('is_active', true)->orderBy('name')->get(),
+            'kelas'    => Kelas::orderBy('name')->get(),
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    // ── Store ─────────────────────────────────────────────────────────────
+
+    public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'title' => 'required|string|max:255',
+            'title'       => 'required|string|max:255',
             'description' => 'required|string',
-            'guru_id' => 'required|exists:users,id',
-            'due_date' => 'required|date|after:now',
-            'max_score' => 'required|numeric|min:0|max:100',
-            'attachment' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx|max:10240',
+            'instructions'=> 'nullable|string',
+            'guru_id'     => 'required|exists:users_central,id',
+            'subject_id'  => 'required|exists:subjects,id',
+            'kelas_id'    => 'nullable|exists:classes,id',
+            'due_date'    => 'required|date|after:now',
+            'max_score'   => 'required|integer|min:1|max:1000',
+            'allow_late'  => 'boolean',
+            'attachment'  => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx|max:10240',
+        ], [
+            'title.required'    => 'Judul tugas wajib diisi.',
+            'guru_id.required'  => 'Guru wajib dipilih.',
+            'subject_id.required' => 'Mata pelajaran wajib dipilih.',
+            'due_date.after'    => 'Batas waktu harus setelah sekarang.',
+            'max_score.max'     => 'Nilai maksimal tidak boleh lebih dari 1000.',
+            'attachment.mimes'  => 'Format lampiran harus PDF, DOC, DOCX, PPT, atau PPTX.',
+            'attachment.max'    => 'Ukuran lampiran maksimal 10 MB.',
         ]);
 
-        $data = $request->all();
-        
-        // Map due_date to deadline for model compatibility
-        $data['deadline'] = $data['due_date'];
-        unset($data['due_date']);
-        
-        if ($request->hasFile('attachment')) {
-            $file = $request->file('attachment');
-            $filename = time() . '_' . Str::slug($request->title) . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('assignments', $filename, 'public');
-            $data['file'] = $filename; // Store just filename, not full path
+        try {
+            $data = [
+                'title'        => $request->title,
+                'description'  => $request->description,
+                'instructions' => $request->instructions,
+                'guru_id'      => $request->guru_id,
+                'subject_id'   => $request->subject_id,
+                'kelas_id'     => $request->kelas_id,
+                'due_date'     => $request->due_date,
+                'max_score'    => $request->max_score,
+                'allow_late'   => $request->boolean('allow_late', false),
+                'is_published' => $request->boolean('publish_now'),
+            ];
+
+            if ($request->hasFile('attachment')) {
+                $file     = $request->file('attachment');
+                $filename = time() . '_' . Str::slug($request->title) . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('assignments', $filename, 'public');
+                $data['file_url'] = $filename;
+            }
+
+            $assignment = Assignment::create($data);
+
+            Log::info('Assignment created by admin', ['id' => $assignment->id, 'admin_id' => auth()->id()]);
+
+            return redirect()->route('admin.assignments.index')
+                ->with('success', "Tugas '{$assignment->title}' berhasil dibuat.");
+
+        } catch (\Throwable $e) {
+            Log::error('Admin assignment create failed: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal membuat tugas: ' . $e->getMessage());
         }
-
-        $data['is_published'] = $request->has('is_published');
-
-        Assignment::create($data);
-
-        return redirect()->route('admin.assignments.index')
-            ->with('success', 'Tugas berhasil dibuat.');
     }
 
-    /**
-     * Display the specified resource.
-     */
+    // ── Show ──────────────────────────────────────────────────────────────
+
     public function show(Assignment $assignment)
     {
         $assignment->load(['guru', 'submissions.siswa']);
         return view('admin.assignments.show', compact('assignment'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
+    // ── Edit ──────────────────────────────────────────────────────────────
+
     public function edit(Assignment $assignment)
     {
-        $gurus = User::where('role', 'guru')->get();
-        return view('admin.assignments.edit', compact('assignment', 'gurus'));
+        return view('admin.assignments.edit', [
+            'assignment' => $assignment,
+            'gurus'      => UserCentral::where('role', 'guru')->where('is_active', true)->orderBy('name')->get(),
+            'subjects'   => Subject::where('is_active', true)->orderBy('name')->get(),
+            'kelas'      => Kelas::orderBy('name')->get(),
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Assignment $assignment)
+    // ── Update ────────────────────────────────────────────────────────────
+
+    public function update(Request $request, Assignment $assignment): RedirectResponse
     {
         $request->validate([
-            'title' => 'required|string|max:255',
+            'title'       => 'required|string|max:255',
             'description' => 'required|string',
-            'guru_id' => 'required|exists:users,id',
-            'due_date' => 'required|date|after:now',
-            'max_score' => 'required|numeric|min:0|max:100',
-            'attachment' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx|max:10240',
+            'instructions'=> 'nullable|string',
+            'guru_id'     => 'required|exists:users_central,id',
+            'subject_id'  => 'required|exists:subjects,id',
+            'kelas_id'    => 'nullable|exists:classes,id',
+            'due_date'    => 'required|date',
+            'max_score'   => 'required|integer|min:1|max:1000',
+            'allow_late'  => 'boolean',
+            'attachment'  => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx|max:10240',
+        ], [
+            'attachment.mimes' => 'Format lampiran harus PDF, DOC, DOCX, PPT, atau PPTX.',
+            'attachment.max'   => 'Ukuran lampiran maksimal 10 MB.',
         ]);
 
-        $data = $request->all();
-        
-        // Map due_date to deadline for model compatibility
-        $data['deadline'] = $data['due_date'];
-        unset($data['due_date']);
-        
-        if ($request->hasFile('attachment')) {
-            // Delete old attachment
-            if ($assignment->file) {
-                Storage::disk('public')->delete('assignments/' . $assignment->file);
+        try {
+            $data = [
+                'title'        => $request->title,
+                'description'  => $request->description,
+                'instructions' => $request->instructions,
+                'guru_id'      => $request->guru_id,
+                'subject_id'   => $request->subject_id,
+                'kelas_id'     => $request->kelas_id,
+                'due_date'     => $request->due_date,
+                'max_score'    => $request->max_score,
+                'allow_late'   => $request->boolean('allow_late', false),
+                // Selalu set is_published dari checkbox — boolean() false saat unchecked
+                'is_published' => $request->boolean('publish_now'),
+            ];
+
+            if ($request->hasFile('attachment')) {
+                if ($assignment->file_url) {
+                    Storage::disk('public')->delete('assignments/' . $assignment->file_url);
+                }
+                $file     = $request->file('attachment');
+                $filename = time() . '_' . Str::slug($request->title) . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('assignments', $filename, 'public');
+                $data['file_url'] = $filename;
             }
-            
-            $file = $request->file('attachment');
-            $filename = time() . '_' . Str::slug($request->title) . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('assignments', $filename, 'public');
-            $data['file'] = $filename; // Store just filename, not full path
+
+            $assignment->update($data);
+
+            Log::info('Assignment updated by admin', ['id' => $assignment->id, 'admin_id' => auth()->id()]);
+
+            return redirect()->route('admin.assignments.index')
+                ->with('success', "Tugas '{$assignment->title}' berhasil diperbarui.");
+
+        } catch (\Throwable $e) {
+            Log::error('Admin assignment update failed: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal memperbarui tugas: ' . $e->getMessage());
         }
-
-        $data['is_published'] = $request->has('is_published');
-
-        $assignment->update($data);
-
-        return redirect()->route('admin.assignments.index')
-            ->with('success', 'Tugas berhasil diperbarui.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Assignment $assignment)
+    // ── Destroy ───────────────────────────────────────────────────────────
+
+    public function destroy(Assignment $assignment): RedirectResponse
     {
-        // Delete attachment if exists
-        if ($assignment->file) {
-            Storage::disk('public')->delete('assignments/' . $assignment->file);
+        try {
+            if ($assignment->file_url) {
+                Storage::disk('public')->delete('assignments/' . $assignment->file_url);
+            }
+            $nama = $assignment->title;
+            $assignment->delete();
+
+            return redirect()->route('admin.assignments.index')
+                ->with('success', "Tugas '{$nama}' berhasil dihapus.");
+
+        } catch (\Throwable $e) {
+            Log::error('Admin assignment destroy failed: ' . $e->getMessage());
+            return back()->with('error', 'Gagal menghapus tugas: ' . $e->getMessage());
         }
-
-        $assignment->delete();
-
-        return redirect()->route('admin.assignments.index')
-            ->with('success', 'Tugas berhasil dihapus.');
     }
 
-    /**
-     * Toggle publish status
-     */
-    public function togglePublish(Assignment $assignment)
+    // ── Toggle Publish ────────────────────────────────────────────────────
+
+    public function togglePublish(Assignment $assignment): RedirectResponse
     {
         $assignment->update(['is_published' => !$assignment->is_published]);
-        
-        $status = $assignment->is_published ? 'dipublikasikan' : 'tidak dipublikasikan';
-        return redirect()->back()
-            ->with('success', "Tugas berhasil {$status}.");
+        $assignment->refresh();
+        $status = $assignment->is_published ? 'dipublikasikan' : 'disembunyikan';
+
+        return back()->with('success', "Tugas '{$assignment->title}' berhasil {$status}.");
     }
 
-    /**
-     * Bulk delete assignments
-     */
+    // ── Bulk Delete ───────────────────────────────────────────────────────
+
     public function bulkDelete(Request $request)
     {
         $request->validate([
-            'assignment_ids' => 'required|array',
-            'assignment_ids.*' => 'exists:assignments,id'
+            'assignment_ids'   => 'required|array',
+            'assignment_ids.*' => 'exists:assignments,id',
         ]);
 
-        $assignments = Assignment::whereIn('id', $request->assignment_ids);
-        
-        // Delete attachments
-        foreach ($assignments->get() as $assignment) {
-            if ($assignment->file) {
-                Storage::disk('public')->delete('assignments/' . $assignment->file);
+        try {
+            $assignments = Assignment::whereIn('id', $request->assignment_ids)->get();
+            $deleted = 0;
+            foreach ($assignments as $assignment) {
+                if ($assignment->file_url) {
+                    Storage::disk('public')->delete('assignments/' . $assignment->file_url);
+                }
+                $assignment->delete();
+                $deleted++;
             }
-        }
-        
-        $assignments->delete();
 
-        return redirect()->route('admin.assignments.index')
-            ->with('success', 'Tugas yang dipilih berhasil dihapus.');
+            // Jika AJAX / JSON request → return JsonResponse (konsisten dengan MaterialController)
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "{$deleted} tugas berhasil dihapus.",
+                    'deleted' => $deleted,
+                ]);
+            }
+
+            return redirect()->route('admin.assignments.index')
+                ->with('success', "{$deleted} tugas berhasil dihapus.");
+
+        } catch (\Throwable $e) {
+            Log::error('Admin bulk assignment delete failed: ' . $e->getMessage());
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menghapus tugas: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', 'Gagal menghapus tugas: ' . $e->getMessage());
+        }
     }
 }

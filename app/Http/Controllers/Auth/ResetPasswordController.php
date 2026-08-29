@@ -33,7 +33,7 @@ class ResetPasswordController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'token' => 'required',
-            'email' => 'required|email|exists:users,email',
+            'email' => 'required|email|exists:users_central,email',
             'password' => [
                 'required',
                 'confirmed',

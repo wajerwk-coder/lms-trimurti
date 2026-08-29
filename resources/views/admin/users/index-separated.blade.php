@@ -1,417 +1,288 @@
-@extends('admin.layouts.admin-layout')
+@extends('layouts.admin')
 
-@section('title')
-    Manajemen Pengguna
-@endsection
+@section('title', 'Semua Pengguna')
+@section('page-title', 'Semua Pengguna')
+@section('page-subtitle', 'Ringkasan seluruh pengguna sistem')
 
-@section('page-title')
-    Manajemen Pengguna Terpisah
+@section('page-actions')
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.users.create.admin') }}" class="btn btn-danger btn-sm">
+            <i class="fas fa-user-shield me-1"></i>Admin
+        </a>
+        <a href="{{ route('admin.users.create.guru') }}" class="btn btn-success btn-sm">
+            <i class="fas fa-chalkboard-teacher me-1"></i>Guru
+        </a>
+        <a href="{{ route('admin.users.create.siswa') }}" class="btn btn-warning btn-sm">
+            <i class="fas fa-user-graduate me-1"></i>Siswa
+        </a>
+    </div>
 @endsection
 
 @section('content')
-<div class="container-fluid">
-    <!-- Page Heading -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Manajemen Pengguna</h1>
-        <div class="d-flex gap-2">
-            <a href="{{ route('admin.users.create.admin') }}" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i>Tambah Admin
-            </a>
-            <a href="{{ route('admin.users.create.guru') }}" class="btn btn-success">
-                <i class="fas fa-plus me-2"></i>Tambah Guru
-            </a>
-            <a href="{{ route('admin.users.create.siswa') }}" class="btn btn-warning">
-                <i class="fas fa-plus me-2"></i>Tambah Siswa
-            </a>
-        </div>
-    </div>
 
-    <!-- Alerts -->
-    @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="fas fa-check-circle me-2"></i>
-        {{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    @endif
+@php
+    $admins = \App\Models\UserCentral::where('role','admin')->latest()->get();
+    $gurus  = \App\Models\UserCentral::where('role','guru')->with('guruProfile')->latest()->get();
+    $siswas = \App\Models\UserCentral::where('role','siswa')->with('siswaProfile.kelas')->latest()->get();
+@endphp
 
-    @if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="fas fa-exclamation-circle me-2"></i>
-        {{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    @endif
-
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="bg-primary bg-opacity-10 rounded-3 p-3">
-                                <i class="fas fa-users text-primary fs-3"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <div class="text-muted small fw-semibold text-uppercase tracking-wider">Total Pengguna</div>
-                            <div class="h3 mb-0 fw-bold text-dark">{{ \App\Models\UserCentral::count() }}</div>
-                        </div>
+{{-- Stats --}}
+<div class="row g-3 mb-4">
+    @foreach([
+        ['danger',  'fa-user-shield',            $admins->count(),  'Administrator', route('admin.users.index')],
+        ['success', 'fa-chalkboard-teacher',     $gurus->count(),   'Guru',          route('admin.users.guru')],
+        ['warning', 'fa-user-graduate',          $siswas->count(),  'Siswa',         route('admin.users.siswa')],
+        ['primary', 'fa-users',                  $admins->count() + $gurus->count() + $siswas->count(), 'Total', '#'],
+    ] as [$color, $icon, $count, $label, $link])
+    <div class="col-6 col-md-3">
+        <a href="{{ $link }}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm h-100 hover-card">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-3 p-3 bg-{{ $color }} bg-opacity-10 flex-shrink-0">
+                        <i class="fas {{ $icon }} text-{{ $color }} fa-lg"></i>
+                    </div>
+                    <div>
+                        <div class="h4 fw-bold mb-0 text-dark">{{ $count }}</div>
+                        <small class="text-muted">{{ $label }}</small>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Admin
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ \App\Models\UserCentral::where('role', 'admin')->count() }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-user-shield fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                Guru
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ \App\Models\UserCentral::where('role', 'guru')->count() }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-chalkboard-teacher fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Siswa
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{ \App\Models\UserCentral::where('role', 'siswa')->count() }}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-user-graduate fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </a>
     </div>
+    @endforeach
+</div>
 
-    <!-- Admin Table -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-user-shield me-2"></i>Data Administrator
-            </h6>
-            <div class="d-flex align-items-center gap-2">
-                <input type="text" class="form-control form-control-sm" placeholder="Cari admin..." id="adminSearch" style="width: 200px;">
-                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="resetAdminSearch()">
-                    <i class="fas fa-undo"></i>
+{{-- Nav tabs --}}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom p-0">
+        <ul class="nav nav-tabs border-0 px-3" id="userTabs">
+            <li class="nav-item">
+                <button class="nav-link active fw-semibold" data-bs-toggle="tab" data-bs-target="#tabAdmin">
+                    <i class="fas fa-user-shield me-1 text-danger"></i>Admin
+                    <span class="badge bg-danger ms-1">{{ $admins->count() }}</span>
                 </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tabGuru">
+                    <i class="fas fa-chalkboard-teacher me-1 text-success"></i>Guru
+                    <span class="badge bg-success ms-1">{{ $gurus->count() }}</span>
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tabSiswa">
+                    <i class="fas fa-user-graduate me-1 text-warning"></i>Siswa
+                    <span class="badge bg-warning text-dark ms-1">{{ $siswas->count() }}</span>
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="tab-content">
+
+        {{-- Tab Admin --}}
+        <div class="tab-pane fade show active" id="tabAdmin">
+            <div class="p-3 border-bottom">
+                <input type="text" class="form-control form-control-sm" style="max-width:260px;"
+                       placeholder="Cari admin..." onkeyup="filterTable('admin-row', this.value)">
             </div>
-        </div>
-        <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered" id="adminTable" width="100%" cellspacing="0">
-                    <thead>
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
                         <tr>
-                            <th>No</th>
-                            <th>Nama</th>
+                            <th class="ps-4">#</th>
+                            <th>Admin</th>
                             <th>Email</th>
                             <th>Username</th>
-                            <th>Telepon</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center pe-4">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @php
-                            $admins = \App\Models\UserCentral::where('role', 'admin')->get();
-                            $adminNo = 1;
-                        @endphp
-                        @foreach($admins as $admin)
+                        @forelse($admins as $i => $u)
                         <tr class="admin-row">
-                            <td>{{ $adminNo++ }}</td>
+                            <td class="ps-4 text-muted">{{ $i+1 }}</td>
                             <td>
-                                <div class="d-flex align-items-center">
-                                    <img src="{{ $admin->photo_url }}" class="rounded-circle me-2" width="32" height="32">
-                                    <div>
-                                        <div class="fw-bold">{{ $admin->name }}</div>
-                                        @if($admin->adminProfile)
-                                            <small class="text-muted">{{ $admin->adminProfile->address }}</small>
-                                        @endif
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white flex-shrink-0"
+                                         style="width:32px;height:32px;font-size:.8rem;background:linear-gradient(135deg,#ef4444,#dc2626);">
+                                        {{ strtoupper(substr($u->name,0,1)) }}
                                     </div>
+                                    <span class="fw-semibold">{{ $u->name }}</span>
                                 </div>
                             </td>
-                            <td>{{ $admin->email }}</td>
-                            <td>{{ $admin->username }}</td>
-                            <td>{{ $admin->phone ?? '-' }}</td>
-                            <td>
-                                @if($admin->is_active)
-                                    <span class="badge bg-success">Aktif</span>
-                                @else
-                                    <span class="badge bg-danger">Tidak Aktif</span>
-                                @endif
+                            <td class="text-muted">{{ $u->email }}</td>
+                            <td><code class="text-secondary">{{ $u->username ?? '—' }}</code></td>
+                            <td class="text-center">
+                                <span class="badge bg-{{ $u->is_active ? 'success' : 'secondary' }}">
+                                    {{ $u->is_active ? 'Aktif' : 'Nonaktif' }}
+                                </span>
                             </td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <a href="{{ route('admin.users.edit', $admin->id) }}" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteUser({{ $admin->id }}, 'admin')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                            <td class="text-center pe-4">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a href="{{ route('admin.users.edit', $u->id) }}" class="btn btn-outline-warning btn-sm"><i class="fas fa-edit"></i></a>
+                                    @if($u->id !== auth()->id())
+                                    <form action="{{ route('admin.users.destroy', $u->id) }}" method="POST" class="d-inline"
+                                          onsubmit="return confirm('Hapus {{ addslashes($u->name) }}?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                    </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
-                        @endforeach
+                        @empty
+                        <tr><td colspan="6" class="text-center py-4 text-muted">Belum ada admin</td></tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
-    </div>
 
-    <!-- Guru Table -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-info">
-                <i class="fas fa-chalkboard-teacher me-2"></i>Data Guru
-            </h6>
-            <div class="d-flex align-items-center gap-2">
-                <input type="text" class="form-control form-control-sm" placeholder="Cari guru..." id="guruSearch" style="width: 200px;">
-                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="resetGuruSearch()">
-                    <i class="fas fa-undo"></i>
-                </button>
+        {{-- Tab Guru --}}
+        <div class="tab-pane fade" id="tabGuru">
+            <div class="p-3 border-bottom">
+                <input type="text" class="form-control form-control-sm" style="max-width:260px;"
+                       placeholder="Cari guru..." onkeyup="filterTable('guru-row', this.value)">
             </div>
-        </div>
-        <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered" id="guruTable" width="100%" cellspacing="0">
-                    <thead>
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
                         <tr>
-                            <th>No</th>
-                            <th>Nama</th>
+                            <th class="ps-4">#</th>
+                            <th>Guru</th>
+                            <th>Email</th>
                             <th>NIP</th>
-                            <th>Email</th>
                             <th>Mata Pelajaran</th>
-                            <th>Telepon</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center pe-4">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @php
-                            $gurus = \App\Models\UserCentral::where('role', 'guru')->get();
-                            $guruNo = 1;
-                        @endphp
-                        @foreach($gurus as $guru)
+                        @forelse($gurus as $i => $u)
                         <tr class="guru-row">
-                            <td>{{ $guruNo++ }}</td>
+                            <td class="ps-4 text-muted">{{ $i+1 }}</td>
                             <td>
-                                <div class="d-flex align-items-center">
-                                    <img src="{{ $guru->photo_url }}" class="rounded-circle me-2" width="32" height="32">
-                                    <div>
-                                        <div class="fw-bold">{{ $guru->name }}</div>
-                                        @if($guru->guruProfile)
-                                            <small class="text-muted">{{ $guru->guruProfile->pendidikan_terakhir }}</small>
-                                        @endif
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white flex-shrink-0"
+                                         style="width:32px;height:32px;font-size:.8rem;background:linear-gradient(135deg,#22c55e,#16a34a);">
+                                        {{ strtoupper(substr($u->name,0,1)) }}
                                     </div>
+                                    <span class="fw-semibold">{{ $u->name }}</span>
                                 </div>
                             </td>
-                            <td>{{ $guru->guruProfile->nip ?? '-' }}</td>
-                            <td>{{ $guru->email }}</td>
-                            <td>{{ $guru->guruProfile->mata_pelajaran ?? '-' }}</td>
-                            <td>{{ $guru->phone ?? '-' }}</td>
-                            <td>
-                                @if($guru->is_active)
-                                    <span class="badge bg-success">Aktif</span>
-                                @else
-                                    <span class="badge bg-danger">Tidak Aktif</span>
-                                @endif
+                            <td class="text-muted">{{ $u->email }}</td>
+                            <td class="text-muted">{{ $u->guruProfile?->nip ?? '—' }}</td>
+                            <td class="text-muted">{{ $u->guruProfile?->mata_pelajaran ?? '—' }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-{{ $u->is_active ? 'success' : 'secondary' }}">
+                                    {{ $u->is_active ? 'Aktif' : 'Nonaktif' }}
+                                </span>
                             </td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <a href="{{ route('admin.users.edit', $guru->id) }}" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteUser({{ $guru->id }}, 'guru')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                            <td class="text-center pe-4">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a href="{{ route('admin.users.edit', $u->id) }}" class="btn btn-outline-warning btn-sm"><i class="fas fa-edit"></i></a>
+                                    <form action="{{ route('admin.users.destroy', $u->id) }}" method="POST" class="d-inline"
+                                          onsubmit="return confirm('Hapus {{ addslashes($u->name) }}?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
-                        @endforeach
+                        @empty
+                        <tr><td colspan="7" class="text-center py-4 text-muted">Belum ada guru</td></tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
-    </div>
 
-    <!-- Siswa Table -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-warning">
-                <i class="fas fa-user-graduate me-2"></i>Data Siswa
-            </h6>
-            <div class="d-flex align-items-center gap-2">
-                <input type="text" class="form-control form-control-sm" placeholder="Cari siswa..." id="siswaSearch" style="width: 200px;">
-                <button class="btn btn-outline-secondary btn-sm" type="button" onclick="resetSiswaSearch()">
-                    <i class="fas fa-undo"></i>
-                </button>
+        {{-- Tab Siswa --}}
+        <div class="tab-pane fade" id="tabSiswa">
+            <div class="p-3 border-bottom">
+                <input type="text" class="form-control form-control-sm" style="max-width:260px;"
+                       placeholder="Cari siswa..." onkeyup="filterTable('siswa-row', this.value)">
             </div>
-        </div>
-        <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered" id="siswaTable" width="100%" cellspacing="0">
-                    <thead>
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
                         <tr>
-                            <th>No</th>
-                            <th>Nama</th>
-                            <th>NIS</th>
-                            <th>NISN</th>
+                            <th class="ps-4">#</th>
+                            <th>Siswa</th>
                             <th>Email</th>
+                            <th>NIS</th>
                             <th>Kelas</th>
-                            <th>Telepon</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
+                            <th>Jurusan</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center pe-4">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @php
-                            $siswas = \App\Models\UserCentral::where('role', 'siswa')->get();
-                            $siswaNo = 1;
-                        @endphp
-                        @foreach($siswas as $siswa)
+                        @forelse($siswas as $i => $u)
                         <tr class="siswa-row">
-                            <td>{{ $siswaNo++ }}</td>
+                            <td class="ps-4 text-muted">{{ $i+1 }}</td>
                             <td>
-                                <div class="d-flex align-items-center">
-                                    <img src="{{ $siswa->photo_url }}" class="rounded-circle me-2" width="32" height="32">
-                                    <div>
-                                        <div class="fw-bold">{{ $siswa->name }}</div>
-                                        @if($siswa->siswaProfile)
-                                            <small class="text-muted">{{ $siswa->siswaProfile->major }}</small>
-                                        @endif
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white flex-shrink-0"
+                                         style="width:32px;height:32px;font-size:.8rem;background:linear-gradient(135deg,#f59e0b,#d97706);">
+                                        {{ strtoupper(substr($u->name,0,1)) }}
                                     </div>
+                                    <span class="fw-semibold">{{ $u->name }}</span>
                                 </div>
                             </td>
-                            <td>{{ $siswa->siswaProfile->nis ?? '-' }}</td>
-                            <td>{{ $siswa->siswaProfile->nisn ?? '-' }}</td>
-                            <td>{{ $siswa->email }}</td>
-                            <td>{{ $siswa->siswaProfile->kelas->name ?? '-' }}</td>
-                            <td>{{ $siswa->phone ?? '-' }}</td>
+                            <td class="text-muted">{{ $u->email }}</td>
+                            <td class="text-muted">{{ $u->siswaProfile?->nis ?? '—' }}</td>
                             <td>
-                                @if($siswa->is_active)
-                                    <span class="badge bg-success">Aktif</span>
+                                @if($u->siswaProfile?->kelas?->name)
+                                    <span class="badge bg-success bg-opacity-10 text-success">
+                                        {{ $u->siswaProfile->kelas->name }}
+                                    </span>
                                 @else
-                                    <span class="badge bg-danger">Tidak Aktif</span>
+                                    <span class="text-muted">—</span>
                                 @endif
                             </td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <a href="{{ route('admin.users.edit', $siswa->id) }}" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteUser({{ $siswa->id }}, 'siswa')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                            <td class="text-muted">{{ $u->siswaProfile?->major ?? '—' }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-{{ $u->is_active ? 'success' : 'secondary' }}">
+                                    {{ $u->is_active ? 'Aktif' : 'Nonaktif' }}
+                                </span>
+                            </td>
+                            <td class="text-center pe-4">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a href="{{ route('admin.users.edit', $u->id) }}" class="btn btn-outline-warning btn-sm"><i class="fas fa-edit"></i></a>
+                                    <form action="{{ route('admin.users.destroy', $u->id) }}" method="POST" class="d-inline"
+                                          onsubmit="return confirm('Hapus {{ addslashes($u->name) }}?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
-                        @endforeach
+                        @empty
+                        <tr><td colspan="8" class="text-center py-4 text-muted">Belum ada siswa</td></tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
+
     </div>
 </div>
 
+@push('css')
+<style>
+.hover-card { transition: transform .2s, box-shadow .2s; }
+.hover-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,.1) !important; }
+</style>
+@endpush
+
+@push('js')
 <script>
-// Admin Search
-document.getElementById('adminSearch').addEventListener('keyup', function() {
-    const searchValue = this.value.toLowerCase();
-    const rows = document.querySelectorAll('.admin-row');
-    
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchValue) ? '' : 'none';
+function filterTable(rowClass, q) {
+    document.querySelectorAll('.' + rowClass).forEach(r => {
+        r.style.display = !q || r.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
     });
-});
-
-function resetAdminSearch() {
-    document.getElementById('adminSearch').value = '';
-    const rows = document.querySelectorAll('.admin-row');
-    rows.forEach(row => row.style.display = '');
-}
-
-// Guru Search
-document.getElementById('guruSearch').addEventListener('keyup', function() {
-    const searchValue = this.value.toLowerCase();
-    const rows = document.querySelectorAll('.guru-row');
-    
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchValue) ? '' : 'none';
-    });
-});
-
-function resetGuruSearch() {
-    document.getElementById('guruSearch').value = '';
-    const rows = document.querySelectorAll('.guru-row');
-    rows.forEach(row => row.style.display = '');
-}
-
-// Siswa Search
-document.getElementById('siswaSearch').addEventListener('keyup', function() {
-    const searchValue = this.value.toLowerCase();
-    const rows = document.querySelectorAll('.siswa-row');
-    
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchValue) ? '' : 'none';
-    });
-});
-
-function resetSiswaSearch() {
-    document.getElementById('siswaSearch').value = '';
-    const rows = document.querySelectorAll('.siswa-row');
-    rows.forEach(row => row.style.display = '');
-}
-
-// Delete User
-function deleteUser(userId, role) {
-    if (confirm('Apakah Anda yakin ingin menghapus ' + role + ' ini?')) {
-        // Implement delete functionality
-        console.log('Deleting user:', userId, role);
-        // You can add AJAX call here
-    }
 }
 </script>
+@endpush
 @endsection

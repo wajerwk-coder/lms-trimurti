@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SystemNotification;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\View\View;
 
 class NotificationController extends Controller
 {
@@ -13,52 +14,74 @@ class NotificationController extends Controller
         $this->middleware('auth');
     }
 
-    public function index(Request $request)
+    /**
+     * Tampilkan semua notifikasi user yang sedang login.
+     */
+    public function index(Request $request): View
     {
-        $notifications = SystemNotification::where('user_id', auth()->id())
-            ->with(['user'])
+        $userId = auth()->id();
+
+        $notifications = Notification::where(function ($q) use ($userId) {
+                $q->where('penerima_id', $userId)
+                  ->orWhere('tipe_penerima', 'semua');
+            })
             ->latest()
-            ->paginate(10);
+            ->paginate(20);
 
         return view('notifications.index', compact('notifications'));
     }
 
+    /**
+     * Jumlah notifikasi yang belum dibaca (AJAX).
+     */
     public function unreadCount(): JsonResponse
     {
-        $count = SystemNotification::where('user_id', auth()->id())
-            ->where('is_read', false)
+        $userId = auth()->id();
+
+        $count = Notification::where(function ($q) use ($userId) {
+                $q->where('penerima_id', $userId)
+                  ->orWhere('tipe_penerima', 'semua');
+            })
+            ->whereNull('read_at')
             ->count();
 
         return response()->json(['count' => $count]);
     }
 
+    /**
+     * 5 notifikasi terbaru yang belum dibaca (AJAX untuk bell dropdown).
+     */
     public function recent(): JsonResponse
     {
-        $notifications = SystemNotification::where('user_id', auth()->id())
-            ->unread()
+        $userId = auth()->id();
+
+        $notifications = Notification::where(function ($q) use ($userId) {
+                $q->where('penerima_id', $userId)
+                  ->orWhere('tipe_penerima', 'semua');
+            })
+            ->whereNull('read_at')
             ->latest()
             ->take(5)
-            ->get(['id', 'title', 'message', 'type', 'action_url', 'created_at']);
+            ->get();
 
         return response()->json([
-            'notifications' => $notifications->map(function ($notification) {
-                return [
-                    'id' => $notification->id,
-                    'title' => $notification->title,
-                    'message' => $notification->message,
-                    'type' => $notification->type,
-                    'icon' => $notification->icon,
-                    'color' => $notification->color,
-                    'action_url' => $notification->action_url,
-                    'time_ago' => $notification->time_ago,
-                ];
-            })
+            'notifications' => $notifications->map(fn ($n) => [
+                'id'         => $n->id,
+                'title'      => $n->judul ?? $n->title ?? 'Notifikasi',
+                'message'    => $n->pesan ?? $n->message ?? '',
+                'type'       => $n->tipe ?? $n->type ?? 'info',
+                'action_url' => $n->url_aksi ?? $n->action_url ?? '#',
+                'time_ago'   => $n->created_at?->diffForHumans() ?? '',
+            ])
         ]);
     }
 
-    public function markAsRead(SystemNotification $notification): JsonResponse
+    /**
+     * Tandai notifikasi tertentu sudah dibaca.
+     */
+    public function markAsRead(Notification $notification): JsonResponse
     {
-        if ($notification->user_id !== auth()->id()) {
+        if ($notification->penerima_id !== auth()->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -67,21 +90,24 @@ class NotificationController extends Controller
         return response()->json(['success' => true]);
     }
 
+    /**
+     * Tandai semua notifikasi sudah dibaca.
+     */
     public function markAllAsRead(): JsonResponse
     {
-        SystemNotification::where('user_id', auth()->id())
-            ->unread()
-            ->update([
-                'is_read' => true,
-                'read_at' => now(),
-            ]);
+        Notification::where('penerima_id', auth()->id())
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
 
         return response()->json(['success' => true]);
     }
 
-    public function delete(SystemNotification $notification): JsonResponse
+    /**
+     * Hapus notifikasi.
+     */
+    public function delete(Notification $notification): JsonResponse
     {
-        if ($notification->user_id !== auth()->id()) {
+        if ($notification->penerima_id !== auth()->id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

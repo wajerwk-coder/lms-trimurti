@@ -1,583 +1,272 @@
-@extends('admin.layouts.admin-layout')
+@extends('layouts.admin')
 
-@section('title')
-    Manajemen Pengguna
+@section('title', 'Manajemen Admin')
+@section('page-title', 'Manajemen Admin')
+@section('page-subtitle', 'Kelola semua akun administrator sistem.')
+
+@section('page-actions')
+    <a href="{{ route('admin.users.create.admin') }}" class="btn btn-danger btn-sm">
+        <i class="fas fa-plus me-1"></i>Tambah Admin
+    </a>
 @endsection
 
 @section('content')
-<div class="card">
-    <div class="card-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">Manajemen Pengguna</h5>
-            <div class="d-flex gap-2">
-                <a href="{{ route('admin.users.separated') }}" class="btn btn-info">
-                    <i class="fas fa-table-columns me-2"></i>Tampilan Terpisah
-                </a>
-                <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Tambah Pengguna
-                </a>
-            </div>
-        </div>
-    </div>
-    <div class="card-body">
-        <!-- Alerts -->
-        @if(session('success'))
-<div class="alert alert-success alert-dismissible fade show" role="alert">
-    <i class="fas fa-check-circle me-2"></i>
-    {{ session('success') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-@endif
 
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
 @if(session('error'))
-<div class="alert alert-danger alert-dismissible fade show" role="alert">
-    <i class="fas fa-exclamation-circle me-2"></i>
-    {{ session('error') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 @endif
 
-        <!-- Statistics Cards -->
-        <div class="row mb-4">
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="bg-primary bg-opacity-10 rounded-3 p-3">
-                                    <i class="fas fa-users text-primary fs-3"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <div class="text-muted small fw-semibold text-uppercase tracking-wider">Total Pengguna</div>
-                                <div class="h3 mb-0 fw-bold text-dark">{{ $users->total() ?? 0 }}</div>
-                            </div>
-                        </div>
-                    </div>
+{{-- Tab Navigasi Role --}}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-2 px-3">
+        <ul class="nav nav-pills gap-1">
+            <li class="nav-item">
+                <a class="nav-link active" href="{{ route('admin.users.index') }}">
+                    <i class="fas fa-user-shield me-1"></i>Admin
+                    <span class="badge bg-danger bg-opacity-25 text-danger ms-1">{{ $users->total() }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-muted" href="{{ route('admin.users.guru') }}">
+                    <i class="fas fa-chalkboard-teacher me-1"></i>Guru
+                    <span class="badge bg-secondary ms-1">{{ \App\Models\UserCentral::where('role','guru')->count() }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-muted" href="{{ route('admin.users.siswa') }}">
+                    <i class="fas fa-user-graduate me-1"></i>Siswa
+                    <span class="badge bg-secondary ms-1">{{ \App\Models\UserCentral::where('role','siswa')->count() }}</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+{{-- Stats --}}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-danger bg-opacity-10 flex-shrink-0">
+                    <i class="fas fa-user-shield text-danger fa-lg"></i>
                 </div>
-            </div>
-    
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-success shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                            Admin
-                        </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            {{ \App\Models\User::where('role', 'admin')->count() }}
-                        </div>
-                    </div>
-                    <div class="col-auto">
-                        <i class="fas fa-user-shield fa-2x text-gray-300"></i>
-                    </div>
+                <div>
+                    <div class="h4 fw-bold mb-0">{{ $users->total() }}</div>
+                    <small class="text-muted">Total Admin</small>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-info shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                            Guru
-                        </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            {{ \App\Models\User::where('role', 'guru')->count() }}
-                        </div>
-                    </div>
-                    <div class="col-auto">
-                        <i class="fas fa-chalkboard-teacher fa-2x text-gray-300"></i>
-                    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-success bg-opacity-10 flex-shrink-0">
+                    <i class="fas fa-user-check text-success fa-lg"></i>
+                </div>
+                <div>
+                    <div class="h4 fw-bold mb-0">{{ \App\Models\UserCentral::where('role','admin')->where('is_active',true)->count() }}</div>
+                    <small class="text-muted">Admin Aktif</small>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-warning shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                            Siswa
-                        </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            {{ \App\Models\User::where('role', 'siswa')->count() }}
-                        </div>
-                    </div>
-                    <div class="col-auto">
-                        <i class="fas fa-user-graduate fa-2x text-gray-300"></i>
-                    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-warning bg-opacity-10 flex-shrink-0">
+                    <i class="fas fa-user-graduate text-warning fa-lg"></i>
+                </div>
+                <div>
+                    <div class="h4 fw-bold mb-0">{{ \App\Models\UserCentral::where('role','siswa')->count() }}</div>
+                    <small class="text-muted">Siswa</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-primary bg-opacity-10 flex-shrink-0">
+                    <i class="fas fa-users text-primary fa-lg"></i>
+                </div>
+                <div>
+                    <div class="h4 fw-bold mb-0">{{ \App\Models\UserCentral::count() }}</div>
+                    <small class="text-muted">Total User</small>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Users Management Card -->
-<div class="card shadow mb-4">
-    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-        <h6 class="m-0 font-weight-bold text-primary">Data Pengguna</h6>
-        <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-outline-secondary btn-sm" type="button" id="resetFiltersBtn">
-                <i class="fas fa-undo me-1"></i> Reset
-            </button>
-            <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse" aria-expanded="false">
-                <i class="fas fa-filter me-1"></i> Filter
-            </button>
-        </div>
-    </div>
-    
-    <!-- Filters -->
-    <div class="collapse" id="filtersCollapse">
-        <div class="card-body border-bottom">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Cari Pengguna</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" class="form-control" placeholder="Nama, email, NIP/NIS..." id="searchInput">
-                    </div>
+{{-- Pencarian --}}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small fw-semibold mb-1">Cari Admin</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" id="adminSearch" class="form-control"
+                           placeholder="Nama, email, atau username...">
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">Filter Role</label>
-                    <select class="form-control" id="roleFilter">
-                        <option value="">Semua Role</option>
-                        <option value="admin">Admin</option>
-                        <option value="guru">Guru</option>
-                        <option value="siswa">Siswa</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Filter Status</label>
-                    <select class="form-control" id="statusFilter">
-                        <option value="">Semua Status</option>
-                        <option value="active">Aktif</option>
-                        <option value="inactive">Nonaktif</option>
-                    </select>
-                </div>
+            </div>
+            <div class="col-md-2">
+                <button onclick="resetSearch()" class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-undo me-1"></i>Reset
+                </button>
             </div>
         </div>
     </div>
-    
-    <!-- Bulk Actions -->
-    <div class="card-body border-bottom d-none" id="bulkActionsContainer">
-        <form id="bulkForm" method="POST" action="{{ route('admin.users.bulk-action') }}" class="d-flex align-items-center gap-3">
-            @csrf
-            <span id="selectedCount" class="text-muted small">0 pengguna dipilih</span>
-            <select name="action" id="bulkAction" class="form-control form-control-sm" style="width: auto;" required>
-                <option value="">Pilih Aksi</option>
-                <option value="activate">Aktifkan</option>
-                <option value="deactivate">Nonaktifkan</option>
-                <option value="delete">Hapus</option>
-            </select>
-            <button type="submit" class="btn btn-primary btn-sm">
-                <i class="fas fa-check me-1"></i>Terapkan
-            </button>
-            <button type="button" id="cancelBulk" class="btn btn-secondary btn-sm">
-                <i class="fas fa-times me-1"></i>Batal
-            </button>
-        </form>
-    </div>
+</div>
 
-    <div class="card-body">
+{{-- Tabel Admin --}}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold">
+            <i class="fas fa-user-shield me-2 text-danger"></i>Daftar Administrator
+        </h6>
+        <span class="badge bg-secondary">{{ $users->total() }} admin</span>
+    </div>
+    <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover" id="usersTable">
-                <thead class="table-dark">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
                     <tr>
-                        <th width="50">
-                            <div class="form-check">
-                                <input type="checkbox" id="selectAll" class="form-check-input">
-                            </div>
-                        </th>
-                        <th>Pengguna</th>
-                        <th>Email/Kontak</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Kelas/Jurusan</th>
+                        <th class="ps-4">Admin</th>
+                        <th>Email</th>
+                        <th>Username</th>
+                        <th class="text-center">Status</th>
                         <th>Bergabung</th>
-                        <th width="120">Aksi</th>
+                        <th class="text-center pe-4">Aksi</th>
                     </tr>
                 </thead>
-                <tbody id="usersTableBody">
+                <tbody id="adminTableBody">
                     @forelse($users as $user)
-                    <tr class="user-row" data-role="{{ $user->role }}" data-status="{{ $user->status }}" data-kelas="{{ $user->kelas?->name ?? '' }}" data-jurusan="{{ $user->jurusan?->nama ?? ($user->kelas?->major ?? '') }}">
-                        <td>
-                            <div class="form-check">
-                                <input type="checkbox" name="user_ids[]" value="{{ $user->id }}" class="user-checkbox form-check-input">
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <img class="rounded-circle me-3" src="{{ $user->photo ? asset('storage/' . $user->photo) : asset('images/default-avatar.svg') }}" alt="{{ $user->name }}" width="40" height="40" style="object-fit: cover;">
-                                <div>
-                                    <div class="fw-bold">{{ $user->name }}</div>
-                                    <small class="text-muted">
-                                        @if($user->username)
-                                            Username: {{ $user->username }}
-                                        @else
-                                            ID: {{ $user->id }}
+                        <tr class="admin-row">
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center gap-3">
+                                    {{-- Avatar dengan inisial --}}
+                                    @if($user->photo)
+                                        <img src="{{ asset('storage/'.$user->photo) }}"
+                                             class="rounded-circle flex-shrink-0"
+                                             style="width:40px;height:40px;object-fit:cover;"
+                                             alt="{{ $user->name }}">
+                                    @else
+                                        <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center fw-bold text-white"
+                                             style="width:40px;height:40px;font-size:1rem;background:linear-gradient(135deg,#ef4444,#dc2626);">
+                                            {{ strtoupper(substr($user->name, 0, 1)) }}
+                                        </div>
+                                    @endif
+                                    <div>
+                                        <div class="fw-semibold">{{ $user->name }}</div>
+                                        @if($user->id === auth()->id())
+                                            <span class="badge bg-primary bg-opacity-15 text-primary"
+                                                  style="font-size:10px;">Anda</span>
                                         @endif
-                                    </small>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div>{{ $user->email }}</div>
-                            @if($user->phone)
-                            <small class="text-muted">{{ $user->phone }}</small>
-                            @endif
-                        </td>
-                        <td>
-                            @if($user->role === 'admin')
-                                <span class="badge bg-primary">Admin</span>
-                            @elseif($user->role === 'guru')
-                                <span class="badge bg-success">Guru</span>
-                            @elseif($user->role === 'siswa')
-                                <span class="badge bg-info">Siswa</span>
-                            @else
-                                <span class="badge bg-secondary">{{ ucfirst($user->role) }}</span>
-                            @endif
-                        </td>
-                        <td>
-                            @if($user->status === 'active')
-                                <span class="badge bg-success">Aktif</span>
-                            @elseif($user->status === 'inactive')
-                                <span class="badge bg-secondary">Nonaktif</span>
-                            @elseif($user->status === 'suspended')
-                                <span class="badge bg-danger">Suspended</span>
-                            @else
-                                <span class="badge bg-light text-dark">{{ ucfirst($user->status) }}</span>
-                            @endif
-                        </td>
-                        <td>
-                            @if($user->role === 'siswa')
-                                <div class="small">
-                                    <div class="fw-semibold">{{ $user->kelas?->name ?? '-' }}</div>
-                                    <div class="text-muted">{{ $user->jurusan?->nama ?? ($user->kelas?->major ?? '-') }}</div>
+                            </td>
+                            <td class="text-muted">{{ $user->email }}</td>
+                            <td>
+                                <code class="text-secondary" style="font-size:12px;">{{ $user->username ?? '—' }}</code>
+                            </td>
+                            <td class="text-center">
+                                @if($user->is_active)
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-circle me-1" style="font-size:7px;"></i>Aktif
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-circle me-1" style="font-size:7px;"></i>Nonaktif
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="text-muted">
+                                <div>{{ $user->created_at->format('d M Y') }}</div>
+                                <small class="opacity-75">{{ $user->created_at->diffForHumans() }}</small>
+                            </td>
+                            <td class="text-center pe-4">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <a href="{{ route('admin.users.show', $user->id) }}"
+                                       class="btn btn-outline-info btn-sm" title="Detail">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ route('admin.users.edit', $user->id) }}"
+                                       class="btn btn-outline-warning btn-sm" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    @if($user->id !== auth()->id())
+                                        <form action="{{ route('admin.users.destroy', $user->id) }}"
+                                              method="POST" class="d-inline"
+                                              onsubmit="return confirm('Hapus admin {{ addslashes($user->name) }}? Tindakan ini tidak dapat dibatalkan.')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Hapus">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    @else
+                                        <button class="btn btn-outline-secondary btn-sm" disabled
+                                                title="Tidak dapat menghapus akun sendiri">
+                                            <i class="fas fa-lock"></i>
+                                        </button>
+                                    @endif
                                 </div>
-                            @else
-                                <span class="text-muted">-</span>
-                            @endif
-                        </td>
-                        <td>
-                            <div>{{ $user->created_at->format('d/m/Y') }}</div>
-                            <small class="text-muted">{{ $user->created_at->diffForHumans() }}</small>
-                        </td>
-                        <td>
-                            <div class="btn-group" role="group">
-                                <a href="{{ route('admin.users.show', $user->id) }}" class="btn btn-sm btn-outline-info" title="Lihat Detail">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-sm btn-outline-warning" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pengguna ini?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
+                            </td>
+                        </tr>
                     @empty
-                    <tr>
-                        <td colspan="7" class="text-center py-4">
-                            <div class="d-flex flex-column align-items-center">
-                                <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">Belum ada pengguna</h5>
-                                <p class="text-muted mb-0">Data pengguna akan ditampilkan di sini</p>
-                            </div>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="mb-3">
+                                    <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex
+                                                align-items-center justify-content-center"
+                                         style="width:64px;height:64px;">
+                                        <i class="fas fa-user-shield text-danger fa-xl"></i>
+                                    </div>
+                                </div>
+                                <h6 class="text-muted fw-semibold">Belum ada administrator</h6>
+                                <p class="text-muted small mb-3">Tambahkan administrator pertama untuk mengelola sistem.</p>
+                                <a href="{{ route('admin.users.create.admin') }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus me-1"></i>Tambah Admin
+                                </a>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        
-        <!-- Pagination -->
-        @if($users->hasPages())
-        <div class="d-flex justify-content-between align-items-center mt-3">
-            <div>
-                <small class="text-muted">
-                    Menampilkan {{ $users->firstItem() }} - {{ $users->lastItem() }} dari {{ $users->total() }} pengguna
-                </small>
-            </div>
-            <div>
-                {{ $users->links('pagination::bootstrap-4') }}
-            </div>
-        </div>
-        @endif
     </div>
+    @if($users->hasPages())
+        <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+                Menampilkan {{ $users->firstItem() }}–{{ $users->lastItem() }} dari {{ $users->total() }}
+            </small>
+            {{ $users->links() }}
+        </div>
+    @endif
 </div>
 
-</div>
-@endsection
-
-@push('styles')
-<style>
-.border-left-primary {
-    border-left: 0.25rem solid #4e73df !important;
-}
-
-.border-left-success {
-    border-left: 0.25rem solid #1cc88a !important;
-}
-
-.border-left-info {
-    border-left: 0.25rem solid #36b9cc !important;
-}
-
-.border-left-warning {
-    border-left: 0.25rem solid #f6c23e !important;
-}
-
-.text-xs {
-    font-size: 0.75rem;
-}
-
-.text-gray-800 {
-    color: #5a5c69 !important;
-}
-
-.text-gray-300 {
-    color: #dddfeb !important;
-}
-
-.card {
-    border: none;
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-}
-
-.table th {
-    border-top: none;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    letter-spacing: 1px;
-}
-
-.btn-group .btn {
-    margin-right: 0;
-}
-
-.table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.02);
-}
-
-.badge {
-    font-weight: 500;
-}
-
-.gap-3 {
-    gap: 1rem;
-}
-
-#usersTable {
-    font-size: 0.9rem;
-}
-</style>
-@endpush
-
-@push('scripts')
+@push('js')
 <script>
-$(document).ready(function() {
-    // Initialize DataTable - Simplified version without external dependencies
-    // if ($.fn.DataTable) {
-    //     $('#usersTable').DataTable({
-    //         "order": [[ 5, "desc" ]],
-    //         "pageLength": 25,
-    //         "responsive": true,
-    //         "columnDefs": [
-    //             { "orderable": false, "targets": [0, 6] },
-    //             { "searchable": false, "targets": [0, 6] }
-    //         ]
-    //     });
-    // }
-    
-    // Search functionality
-    const searchInput = document.getElementById('searchInput');
-    const roleFilter = document.getElementById('roleFilter');
-    const statusFilter = document.getElementById('statusFilter');
-    const resetFiltersBtn = document.getElementById('resetFiltersBtn');
-    const userRows = document.querySelectorAll('.user-row');
-    
-    function filterUsers() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const roleValue = roleFilter.value;
-        const statusValue = statusFilter.value;
-        
-        let hasVisibleRows = false;
-        
-        userRows.forEach(row => {
-            const name = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-            const email = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
-            const kelas = (row.getAttribute('data-kelas') || '').toLowerCase();
-            const jurusan = (row.getAttribute('data-jurusan') || '').toLowerCase();
-            const role = row.getAttribute('data-role');
-            const status = row.getAttribute('data-status');
-            
-            const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm) || kelas.includes(searchTerm) || jurusan.includes(searchTerm);
-            const matchesRole = !roleValue || role === roleValue;
-            const matchesStatus = !statusValue || status === statusValue;
-            
-            if (matchesSearch && matchesRole && matchesStatus) {
-                row.style.display = '';
-                hasVisibleRows = true;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-        
-        // Show/hide no results message
-        const noResultsRow = document.getElementById('noResultsRow');
-        if (noResultsRow) {
-            noResultsRow.style.display = hasVisibleRows ? 'none' : '';
-        }
-    }
-    
-    // Event listeners for filters
-    if (searchInput) searchInput.addEventListener('input', filterUsers);
-    if (roleFilter) roleFilter.addEventListener('change', filterUsers);
-    if (statusFilter) statusFilter.addEventListener('change', filterUsers);
-    if (resetFiltersBtn) resetFiltersBtn.addEventListener('click', function() {
-        if (searchInput) searchInput.value = '';
-        if (roleFilter) roleFilter.value = '';
-        if (statusFilter) statusFilter.value = '';
-        filterUsers();
+const rows = document.querySelectorAll('.admin-row');
+document.getElementById('adminSearch').addEventListener('input', function () {
+    const q = this.value.toLowerCase();
+    rows.forEach(r => {
+        r.style.display = !q || r.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
-    
-    // Bulk actions functionality
-    const selectAll = document.getElementById('selectAll');
-    const userCheckboxes = document.querySelectorAll('.user-checkbox');
-    const bulkActionsContainer = document.getElementById('bulkActionsContainer');
-    const selectedCount = document.getElementById('selectedCount');
-    const bulkForm = document.getElementById('bulkForm');
-    const cancelBulk = document.getElementById('cancelBulk');
-    
-    function updateBulkActions() {
-        const selectedCountValue = document.querySelectorAll('.user-checkbox:checked').length;
-        if (selectedCount) {
-            selectedCount.textContent = `${selectedCountValue} pengguna dipilih`;
-        }
-        
-        if (bulkActionsContainer) {
-            if (selectedCountValue > 0) {
-                bulkActionsContainer.classList.remove('d-none');
-            } else {
-                bulkActionsContainer.classList.add('d-none');
-            }
-        }
-    }
-    
-    // Select all functionality
-    if (selectAll) {
-        selectAll.addEventListener('change', function() {
-            userCheckboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
-            });
-            updateBulkActions();
-        });
-    }
-    
-    // Individual checkbox functionality
-    userCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            updateBulkActions();
-            
-            // Update select all checkbox
-            const checkedCount = document.querySelectorAll('.user-checkbox:checked').length;
-            if (selectAll) {
-                selectAll.checked = checkedCount === userCheckboxes.length;
-                selectAll.indeterminate = checkedCount > 0 && checkedCount < userCheckboxes.length;
-            }
-        });
-    });
-    
-    // Cancel bulk selection
-    if (cancelBulk) {
-        cancelBulk.addEventListener('click', function() {
-            userCheckboxes.forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            if (selectAll) {
-                selectAll.checked = false;
-                selectAll.indeterminate = false;
-            }
-            updateBulkActions();
-        });
-    }
-    
-    // Bulk form submission
-    if (bulkForm) {
-        bulkForm.addEventListener('submit', function(e) {
-            const selectedUsers = document.querySelectorAll('.user-checkbox:checked');
-            const action = document.getElementById('bulkAction').value;
-            
-            if (selectedUsers.length === 0) {
-                e.preventDefault();
-                showAlert('Pilih setidaknya satu pengguna untuk melakukan aksi bulk', 'warning');
-                return;
-            }
-            
-            if (!action) {
-                e.preventDefault();
-                showAlert('Pilih aksi yang akan dilakukan', 'warning');
-                return;
-            }
-            
-            let confirmMessage = '';
-            switch(action) {
-                case 'activate':
-                    confirmMessage = `Aktifkan ${selectedUsers.length} pengguna yang dipilih?`;
-                    break;
-                case 'deactivate':
-                    confirmMessage = `Nonaktifkan ${selectedUsers.length} pengguna yang dipilih?`;
-                    break;
-                case 'delete':
-                    confirmMessage = `Hapus ${selectedUsers.length} pengguna yang dipilih? Tindakan ini tidak dapat dibatalkan!`;
-                    break;
-            }
-            
-            if (!confirm(confirmMessage)) {
-                e.preventDefault();
-            }
-        });
-    }
-    
-    // Initialize bulk actions state
-    updateBulkActions();
-    
-    // Alert helper function
-    function showAlert(message, type = 'info') {
-        const alertHtml = `
-            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
-        
-        // Insert alert at the top of the content
-        const firstCard = document.querySelector('.row.mb-4');
-        if (firstCard) {
-            firstCard.insertAdjacentHTML('beforebegin', alertHtml);
-        }
-        
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            const alert = document.querySelector('.alert:not(.show)');
-            if (alert) {
-                alert.remove();
-            }
-        }, 5000);
-    }
 });
+function resetSearch() {
+    document.getElementById('adminSearch').value = '';
+    rows.forEach(r => r.style.display = '');
+}
 </script>
 @endpush
+@endsection

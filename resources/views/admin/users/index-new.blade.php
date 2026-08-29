@@ -99,53 +99,42 @@
 <!-- Filter Card -->
 <div class="card shadow mb-4">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">
+        <h6 class="m-0 fw-semibold text-primary">
             <i class="fas fa-filter me-2"></i>Filter dan Pencarian
         </h6>
     </div>
     <div class="card-body">
-        <div class="row">
+        <div class="row g-2 align-items-end">
             <div class="col-md-4">
-                <div class="form-group">
-                    <label for="searchInput">Cari Pengguna</label>
-                    <div class="input-group">
-                        <input type="text" id="searchInput" class="form-control" placeholder="Nama, email, atau NIP/NIS...">
-                        <button class="btn btn-outline-secondary" type="button">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
+                <label for="searchInput" class="form-label small fw-semibold">Cari Pengguna</label>
+                <div class="input-group">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Nama, email, atau NIP/NIS...">
+                    <button class="btn btn-outline-secondary" type="button">
+                        <i class="fas fa-search"></i>
+                    </button>
                 </div>
             </div>
             <div class="col-md-2">
-                <div class="form-group">
-                    <label for="roleFilter">Role</label>
-                    <select id="roleFilter" class="form-control">
-                        <option value="">Semua Role</option>
-                        <option value="admin">Admin</option>
-                        <option value="guru">Guru</option>
-                        <option value="siswa">Siswa</option>
-                    </select>
-                </div>
+                <label for="roleFilter" class="form-label small fw-semibold">Role</label>
+                <select id="roleFilter" class="form-select">
+                    <option value="">Semua Role</option>
+                    <option value="admin">Admin</option>
+                    <option value="guru">Guru</option>
+                    <option value="siswa">Siswa</option>
+                </select>
             </div>
             <div class="col-md-2">
-                <div class="form-group">
-                    <label for="statusFilter">Status</label>
-                    <select id="statusFilter" class="form-control">
-                        <option value="">Semua Status</option>
-                        <option value="active">Aktif</option>
-                        <option value="inactive">Nonaktif</option>
-                    </select>
-                </div>
+                <label for="statusFilter" class="form-label small fw-semibold">Status</label>
+                <select id="statusFilter" class="form-select">
+                    <option value="">Semua Status</option>
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Nonaktif</option>
+                </select>
             </div>
             <div class="col-md-2">
-                <div class="form-group">
-                    <label>&nbsp;</label>
-                    <div>
-                        <button type="button" class="btn btn-secondary" id="resetFilters">
-                            <i class="fas fa-undo me-2"></i>Reset
-                        </button>
-                    </div>
-                </div>
+                <button type="button" class="btn btn-secondary" id="resetFilters">
+                    <i class="fas fa-undo me-1"></i>Reset
+                </button>
             </div>
         </div>
     </div>
@@ -184,9 +173,9 @@
 <!-- Users Table -->
 <div class="card shadow">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">
+        <h6 class="m-0 fw-semibold text-primary">
             <i class="fas fa-users me-2"></i>Daftar Pengguna
-            <span class="badge badge-primary ms-2">{{ $users->total() }}</span>
+            <span class="badge bg-primary ms-2">{{ $users->total() }}</span>
         </h6>
     </div>
     <div class="card-body">
@@ -289,7 +278,7 @@
                     @empty
                     <tr>
                         <td colspan="7" class="text-center py-4">
-                            <i class="fas fa-users fa-3x text-gray-300 mb-3"></i>
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
                             <p class="text-muted">Tidak ada pengguna yang ditemukan</p>
                         </td>
                     </tr>

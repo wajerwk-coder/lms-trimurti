@@ -5,8 +5,8 @@
 <div class="bg-white rounded-lg shadow border border-gray-200">
     <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
         <div>
-            <h3 class="text-lg font-semibold text-gray-800">Checklist SOP Penilaian Praktik</h3>
-            <p class="text-sm text-gray-500">Centang indikator yang tercapai. Nilai akan dihitung otomatis.</p>
+            <h3 class="text-lg font-semibold text-dark">Checklist SOP Penilaian Praktik</h3>
+            <p class="text-sm text-muted">Centang indikator yang tercapai. Nilai akan dihitung otomatis.</p>
         </div>
     </div>
 
@@ -20,11 +20,11 @@
                            name="scores_checklist[]"
                            value="{{ $criteria->id }}"
                            class="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                    <span class="ml-3">
+                    <span class="ms-3">
                         <span class="block text-sm font-medium text-gray-900">{{ $criteria->name ?? ('Kriteria #' . $criteria->id) }}</span>
-                        <span class="block text-xs text-gray-500">Bobot maksimum: {{ $criteria->max_score }}</span>
+                        <span class="block text-xs text-muted">Bobot maksimum: {{ $criteria->max_score }}</span>
                         @if(!empty($criteria->description))
-                            <span class="block text-xs text-gray-500 mt-1">{{ $criteria->description }}</span>
+                            <span class="block text-xs text-muted mt-1">{{ $criteria->description }}</span>
                         @endif
                     </span>
                 </label>
@@ -55,7 +55,7 @@
 
         <div class="pt-3 border-t border-gray-200 flex items-center justify-end">
             <button type="submit" class="btn-primary">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
                 Generate Nilai Otomatis

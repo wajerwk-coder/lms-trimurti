@@ -1,17 +1,17 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 
 @section('title', 'Edit Jadwal')
 @section('page-title', 'Edit Jadwal')
 @section('page-subtitle', 'Perbarui informasi jadwal')
 
 @section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Beranda</a></li>
     <li class="breadcrumb-item"><a href="{{ route('admin.exam-schedules.index') }}">Jadwal</a></li>
     <li class="breadcrumb-item active" aria-current="page">Edit Jadwal</li>
 @endsection
 
 @section('content')
-<div class="container-fluid px-0">
+<div>
     <div class="row">
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm">
@@ -21,6 +21,22 @@
                     </h5>
                 </div>
                 <div class="card-body">
+                    @if($errors->any())
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <strong>{{ $errors->count() }} kesalahan:</strong>
+                            <ul class="mb-0 mt-1 ps-3 small">
+                                @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+                    @if(session('error'))
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
                     <form method="POST" action="{{ route('admin.exam-schedules.update', $examSchedule) }}">
                         @csrf
                         @method('PUT')
@@ -64,7 +80,7 @@
                                 <select name="subject_id" class="form-select @error('subject_id') is-invalid @enderror" required>
                                     <option value="">Pilih Mata Pelajaran</option>
                                     @foreach($subjects as $subject)
-                                        <option value="{{ $subject->id }}" {{ old('subject_id', $examSchedule->subject_id) == $subject->id ? 'selected' : '' }}>{{ $subject->nama }}</option>
+                                        <option value="{{ $subject->id }}" {{ old('subject_id', $examSchedule->subject_id) == $subject->id ? 'selected' : '' }}>{{ $subject->name }}</option>
                                     @endforeach
                                 </select>
                                 @error('subject_id')
@@ -77,7 +93,7 @@
                                 <select name="kelas_id" class="form-select @error('kelas_id') is-invalid @enderror">
                                     <option value="">Semua Kelas</option>
                                     @foreach($kelas as $k)
-                                        <option value="{{ $k->id }}" {{ old('kelas_id', $examSchedule->kelas_id) == $k->id ? 'selected' : '' }}>{{ $k->nama }}</option>
+                                        <option value="{{ $k->id }}" {{ old('kelas_id', $examSchedule->kelas_id) == $k->id ? 'selected' : '' }}>{{ $k->name }}</option>
                                     @endforeach
                                 </select>
                                 <small class="text-muted">Kosongkan jika ujian berlaku untuk semua kelas</small>
@@ -196,7 +212,7 @@
                         </div>
                         <div class="col-12">
                             <small class="text-muted">Dibuat oleh:</small>
-                            <div class="small">{{ $examSchedule->creator->name }}</div>
+                            <div class="small">{{ $examSchedule->creator?->name ?? '—' }}</div>
                         </div>
                         <div class="col-12">
                             <small class="text-muted">Dibuat pada:</small>

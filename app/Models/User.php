@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasUserProfile;
+use App\Models\Siswa;
 
 class User extends Authenticatable
 {
@@ -51,12 +52,14 @@ class User extends Authenticatable
     // Relationships
     public function siswa(): HasOne
     {
-        return $this->hasOne(Student::class, 'id', 'id');
+        // FK: siswa.user_id → users_central.id
+        return $this->hasOne(Siswa::class, 'user_id');
     }
 
     public function guru(): HasOne
     {
-        return $this->hasOne(Guru::class);
+        // FK: gurus.user_id → users_central.id
+        return $this->hasOne(Guru::class, 'user_id');
     }
 
     public function attendances(): HasMany
@@ -324,34 +327,36 @@ class User extends Authenticatable
                 $tahunAjaran = $kelas?->academic_year
                     ?? (date('Y') . '/' . (date('Y') + 1));
 
-                Student::create([
-                    'user_id' => $user->id,
-                    'nis' => 'SIS' . str_pad($user->id, 6, '0', STR_PAD_LEFT),
-                    'nisn' => '000' . str_pad($user->id, 7, '0', STR_PAD_LEFT),
-                    'jenis_kelamin' => $user->gender ?? 'L',
+                // Buat profil siswa di tabel siswa (BUKAN tabel users)
+                \App\Models\Siswa::create([
+                    'user_id'      => $user->id,
+                    'nis'          => 'SIS' . str_pad($user->id, 6, '0', STR_PAD_LEFT),
+                    'nisn'         => '000' . str_pad($user->id, 7, '0', STR_PAD_LEFT),
+                    'jenis_kelamin'=> $user->gender ?? 'L',
                     'tempat_lahir' => 'Ambon',
-                    'tanggal_lahir' => now()->subYears(18)->format('Y-m-d'),
-                    'alamat' => $user->address ?? 'Alamat tidak tersedia',
-                    'no_telepon' => $user->phone ?? '0000000000',
-                    'kelas_id' => $kelasId ?? \App\Models\Kelas::first()?->id,
-                    'major' => $major,
+                    'tanggal_lahir'=> now()->subYears(18)->format('Y-m-d'),
+                    'alamat'       => $user->address ?? 'Alamat tidak tersedia',
+                    'no_telepon'   => $user->phone ?? '0000000000',
+                    'kelas_id'     => $kelasId ?? \App\Models\Kelas::first()?->id,
+                    'major'        => $major,
                     'tahun_ajaran' => $tahunAjaran,
-                    'status' => 'aktif'
+                    'status'       => 'aktif'
                 ]);
             } elseif ($user->isGuru()) {
                 Guru::create([
-                    'user_id' => $user->id,
-                    'nip' => 'GUR' . str_pad($user->id, 6, '0', STR_PAD_LEFT),
-                    'nama' => $user->name,
-                    'jenis_kelamin' => $user->gender ?? 'L',
+                    'user_id'      => $user->id,
+                    'nip'          => 'GUR' . str_pad($user->id, 6, '0', STR_PAD_LEFT),
+                    'nama'         => $user->name,
+                    'name'         => $user->name,
+                    'jenis_kelamin'=> $user->gender ?? 'L',
                     'tempat_lahir' => 'Ambon',
-                    'tanggal_lahir' => now()->subYears(30)->format('Y-m-d'),
-                    'alamat' => $user->address ?? 'Alamat tidak tersedia',
-                    'no_telepon' => $user->phone ?? '0000000000',
-                    'email' => $user->email,
-                    'mata_pelajaran' => 'Mata Pelajaran Umum',
+                    'tanggal_lahir'=> now()->subYears(30)->format('Y-m-d'),
+                    'alamat'       => $user->address ?? 'Alamat tidak tersedia',
+                    'no_telepon'   => $user->phone ?? '0000000000',
+                    'email'        => $user->email,
+                    'mata_pelajaran'   => 'Mata Pelajaran Umum',
                     'pendidikan_terakhir' => 'S1',
-                    'status' => 'aktif'
+                    'status'       => 'aktif'
                 ]);
             }
         });

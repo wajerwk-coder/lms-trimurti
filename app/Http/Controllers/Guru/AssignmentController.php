@@ -5,12 +5,10 @@ namespace App\Http\Controllers\Guru;
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
-use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
@@ -105,7 +103,7 @@ class AssignmentController extends Controller
         // Calculate statistics for history tab
         if ($tab === 'history') {
             $assignments->getCollection()->transform(function ($assignment) {
-                $graded = $assignment->submissions->where('score', '!==', null);
+                $graded = $assignment->submissions->filter(fn($s) => $s->score !== null);
                 $assignment->average_score = $graded->count() > 0 ? round($graded->avg('score'), 1) : null;
                 $assignment->completion_rate = $assignment->submissions_count > 0 
                     ? round(($assignment->graded_count / $assignment->submissions_count) * 100, 1)
@@ -131,6 +129,15 @@ class AssignmentController extends Controller
             ->distinct()
             ->orderBy('classes.name')
             ->get();
+
+        // Fallback: semua kelas jika guru belum terdaftar di class_subjects
+        if ($classes->isEmpty()) {
+            $classes = \DB::table('classes')
+                ->whereNull('deleted_at')
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get();
+        }
         
         // Calculate stats for dashboard
         $totalStats = [
@@ -156,23 +163,15 @@ class AssignmentController extends Controller
      */
     public function create()
     {
-        $guruId = Auth::id();
-        
-        // Get subjects assigned to this guru
-        $classSubjects = \DB::table('class_subjects')
-            ->join('subjects', 'class_subjects.subject_id', '=', 'subjects.id')
-            ->where('subjects.is_active', true)
-            ->where('class_subjects.teacher_id', $guruId)
-            ->select('class_subjects.id', 'subjects.name as subject_name', 'class_subjects.class_id')
-            ->get();
-        
-        // Get classes where this guru teaches
+        $guruId      = Auth::id();
+        $guruProfile = Auth::user()->guruProfile;
+
+        $classSubjects = $this->getGuruSubjects($guruId, $guruProfile);
+
         $classes = \DB::table('classes')
-            ->join('class_subjects', 'classes.id', '=', 'class_subjects.class_id')
-            ->where('class_subjects.teacher_id', $guruId)
-            ->distinct()
-            ->select('classes.id', 'classes.name')
-            ->orderBy('classes.name')
+            ->whereNull('deleted_at')
+            ->select('id', 'name')
+            ->orderBy('name')
             ->get();
 
         return view('guru.assignments.create', compact('classSubjects', 'classes'));
@@ -183,55 +182,35 @@ class AssignmentController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
+        $request->validate([
+            'title'        => 'required|string|max:255',
+            'description'  => 'required|string',
             'instructions' => 'nullable|string',
-            'class_id' => 'required|exists:classes,id',
-            'subject_id' => 'required|exists:class_subjects,id',
-            'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,zip,rar|max:20480',
-            'deadline' => 'required|date|after:now',
-            'max_score' => 'required|numeric|min:1|max:1000',
-            'allow_late' => 'boolean',
-            'is_published' => 'boolean',
+            'class_id'     => 'required|exists:classes,id',
+            'subject_id'   => 'required|exists:subjects,id',
+            'file'         => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,zip,rar|max:20480',
+            'deadline'     => 'required|date|after:now',
+            'max_score'    => 'required|numeric|min:1|max:1000',
         ], [
-            'deadline.after' => 'Deadline harus setelah waktu sekarang',
-            'max_score.min' => 'Nilai maksimal minimal 1',
-            'file.max' => 'Ukuran file maksimal 20MB',
-            'subject_id.exists' => 'Mata pelajaran yang dipilih tidak valid',
+            'class_id.required'   => 'Kelas wajib dipilih.',
+            'subject_id.required' => 'Mata pelajaran wajib dipilih.',
+            'subject_id.exists'   => 'Mata pelajaran yang dipilih tidak valid.',
+            'deadline.after'      => 'Batas waktu harus setelah sekarang.',
+            'file.max'            => 'Ukuran file maksimal 20 MB.',
         ]);
 
-        if ($validator->fails()) {
-            Log::warning('Assignment creation validation failed', [
-                'errors' => $validator->errors()->toArray(),
-                'input' => $request->except(['file']),
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-            
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput()
-                ->with('error', 'Terdapat kesalahan dalam pengisian form');
-        }
-
-        Log::info('Assignment creation attempt', [
-            'input' => $request->except(['file']),
-            'guru_id' => Auth::id(),
-            'ip' => $request->ip()
-        ]);
-        
         try {
             $assignment = new Assignment();
-            $assignment->guru_id = Auth::id();
-            $assignment->title = $request->title;
-            $assignment->description = $request->description;
+            $assignment->guru_id      = Auth::id();
+            $assignment->title        = $request->title;
+            $assignment->description  = $request->description;
             $assignment->instructions = $request->instructions;
-            $assignment->due_date = $request->deadline;
-            $assignment->max_score = $request->max_score;
-            $assignment->class_subject_id = $request->subject_id;
-                        $assignment->allow_late = $request->has('allow_late');
-            $assignment->is_published = $request->has('is_published');
+            $assignment->due_date     = $request->deadline;
+            $assignment->max_score    = $request->max_score;
+            $assignment->subject_id   = $request->subject_id;
+            $assignment->kelas_id     = $request->class_id;
+            $assignment->allow_late   = $request->boolean('allow_late');
+            $assignment->is_published = $request->boolean('is_published');
 
             if ($request->hasFile('file')) {
                 $fileData = $this->handleFileUpload($request->file('file'));
@@ -242,22 +221,17 @@ class AssignmentController extends Controller
 
             Log::info('Assignment created', [
                 'assignment_id' => $assignment->id,
-                'guru_id' => Auth::id(),
-                'title' => $assignment->title,
-                'ip' => $request->ip()
+                'guru_id'       => Auth::id(),
+                'title'         => $assignment->title,
+                'ip'            => $request->ip(),
             ]);
 
             return redirect()->route('guru.assignments.index')
-                ->with('success', 'Tugas berhasil ditambahkan!');
+                ->with('success', "Tugas '{$assignment->title}' berhasil ditambahkan.");
 
         } catch (\Exception $e) {
-            Log::error('Assignment creation failed: ' . $e->getMessage(), [
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return redirect()->back()
-                ->withInput()
+            Log::error('Assignment creation failed: ' . $e->getMessage(), ['guru_id' => Auth::id()]);
+            return back()->withInput()
                 ->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
         }
     }
@@ -267,28 +241,27 @@ class AssignmentController extends Controller
      */
     public function show(Assignment $assignment)
     {
-        // ✅ Security: Double-check ownership
         if ($assignment->guru_id !== Auth::id()) {
-            abort(403);
+            abort(403, 'Anda tidak memiliki akses ke tugas ini.');
         }
-
-        $this->authorize('view', $assignment);
 
         $submissions = AssignmentSubmission::with(['siswa', 'assignment'])
             ->where('assignment_id', $assignment->id)
             ->latest()
             ->paginate(15);
 
-        // ✅ Optimized: Use collection instead of new queries
+        // Alias yang diharapkan view lama
+        $recentSubmissions = $submissions->getCollection()->take(5);
+
         $gradedSubmissions = $submissions->getCollection()->filter(fn($s) => $s->score !== null);
 
         $stats = [
             'total_submissions' => $submissions->total(),
-            'graded_count' => $gradedSubmissions->count(),
-            'average_score' => round($gradedSubmissions->avg('score') ?: 0, 2),
+            'graded_count'      => $gradedSubmissions->count(),
+            'average_score'     => round($gradedSubmissions->avg('score') ?: 0, 2),
         ];
 
-        return view('guru.assignments.show', compact('assignment', 'submissions', 'stats'));
+        return view('guru.assignments.show', compact('assignment', 'submissions', 'recentSubmissions', 'stats'));
     }
 
     /**
@@ -297,12 +270,21 @@ class AssignmentController extends Controller
     public function edit(Assignment $assignment)
     {
         if ($assignment->guru_id !== Auth::id()) {
-            abort(403);
+            abort(403, 'Anda tidak memiliki akses ke tugas ini.');
         }
 
-        $this->authorize('update', $assignment);
-        $subjects = Subject::where('is_active', true)->get();
-        return view('guru.assignments.edit', compact('assignment', 'subjects'));
+        $guruId      = Auth::id();
+        $guruProfile = Auth::user()->guruProfile;
+
+        $classSubjects = $this->getGuruSubjects($guruId, $guruProfile);
+
+        $classes = \DB::table('classes')
+            ->whereNull('deleted_at')
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        return view('guru.assignments.edit', compact('assignment', 'classSubjects', 'classes'));
     }
 
     /**
@@ -311,42 +293,41 @@ class AssignmentController extends Controller
     public function update(Request $request, Assignment $assignment): RedirectResponse
     {
         if ($assignment->guru_id !== Auth::id()) {
-            abort(403);
+            abort(403, 'Anda tidak memiliki akses ke tugas ini.');
         }
 
-        $this->authorize('update', $assignment);
-
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
+        $request->validate([
+            'title'        => 'required|string|max:255',
+            'description'  => 'required|string',
             'instructions' => 'nullable|string',
-            'subject_id' => 'required|exists:subjects,id',
-            'class' => 'nullable|string|max:10',
-            'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,zip,rar|max:20480',
-            'deadline' => 'required|date|after:now',
-            'max_score' => 'required|numeric|min:1|max:1000',
-            'allow_late' => 'boolean',
-            'is_published' => 'boolean',
+            'subject_id'   => 'required|exists:subjects,id',
+            'file'         => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,zip,rar|max:20480',
+            'deadline'     => 'required|date',
+            'max_score'    => 'required|numeric|min:1|max:1000',
+        ], [
+            'subject_id.required' => 'Mata pelajaran wajib dipilih.',
+            'subject_id.exists'   => 'Mata pelajaran tidak valid.',
+            'deadline.required'   => 'Batas waktu wajib diisi.',
+            'file.max'            => 'Ukuran file maksimal 20 MB.',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
         try {
-            $assignment->title = $request->title;
-            $assignment->description = $request->description;
-            $assignment->instructions = $request->instructions;
-            $assignment->due_date = $request->deadline;
-            $assignment->max_score = $request->max_score;
-            $assignment->class_subject_id = $request->subject_id;
-                        $assignment->allow_late = $request->has('allow_late');
-            $assignment->is_published = $request->has('is_published');
+            $assignment->title          = $request->title;
+            $assignment->description    = $request->description;
+            $assignment->instructions   = $request->instructions;
+            $assignment->due_date       = $request->deadline;
+            $assignment->max_score      = $request->max_score;
+            $assignment->subject_id     = $request->subject_id;
+            $assignment->kelas_id       = $request->class_id ?? $assignment->kelas_id;
+            $assignment->allow_late     = $request->boolean('allow_late');
+            $assignment->is_published   = $request->boolean('is_published');
 
             if ($request->hasFile('file')) {
-                $fileData = $this->handleFileUpload($request->file('file'), $assignment->file);
+                // Hapus file lama jika ada
+                if ($assignment->file) {
+                    Storage::disk('public')->delete('assignments/' . $assignment->file);
+                }
+                $fileData = $this->handleFileUpload($request->file('file'));
                 $assignment->fill($fileData);
             }
 
@@ -354,23 +335,20 @@ class AssignmentController extends Controller
 
             Log::info('Assignment updated', [
                 'assignment_id' => $assignment->id,
-                'guru_id' => Auth::id(),
-                'title' => $assignment->title,
-                'ip' => $request->ip()
+                'guru_id'       => Auth::id(),
+                'title'         => $assignment->title,
+                'ip'            => $request->ip(),
             ]);
 
             return redirect()->route('guru.assignments.index')
-                ->with('success', 'Tugas berhasil diperbarui!');
+                ->with('success', "Tugas '{$assignment->title}' berhasil diperbarui.");
 
         } catch (\Exception $e) {
             Log::error('Assignment update failed: ' . $e->getMessage(), [
                 'assignment_id' => $assignment->id,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
+                'guru_id'       => Auth::id(),
             ]);
-
-            return redirect()->back()
-                ->withInput()
+            return back()->withInput()
                 ->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
         }
     }
@@ -381,26 +359,19 @@ class AssignmentController extends Controller
     public function destroy(Assignment $assignment): RedirectResponse
     {
         if ($assignment->guru_id !== Auth::id()) {
-            abort(403);
+            abort(403, 'Anda tidak memiliki akses ke tugas ini.');
         }
-
-        $this->authorize('delete', $assignment);
 
         try {
             if ($assignment->file) {
                 Storage::disk('public')->delete('assignments/' . $assignment->file);
             }
 
+            $nama = $assignment->title;
             $assignment->delete();
 
-            Log::info('Assignment deleted', [
-                'assignment_id' => $assignment->id,
-                'guru_id' => Auth::id(),
-                'ip' => request()->ip()
-            ]);
-
             return redirect()->route('guru.assignments.index')
-                ->with('success', 'Tugas berhasil dihapus!');
+                ->with('success', "Tugas '{$nama}' berhasil dihapus.");
 
         } catch (\Exception $e) {
             Log::error('Assignment deletion failed: ' . $e->getMessage(), [
@@ -415,56 +386,38 @@ class AssignmentController extends Controller
     }
 
     /**
-     * Grade a submission.
+     * Grade a submission (via gradeSubmission route).
      */
     public function gradeSubmission(Request $request, AssignmentSubmission $submission): RedirectResponse
     {
         $assignment = $submission->assignment;
 
         if ($assignment->guru_id !== Auth::id()) {
-            abort(403);
+            abort(403, 'Anda tidak memiliki akses.');
         }
 
-        $this->authorize('update', $assignment);
-
-        $validator = Validator::make($request->all(), [
-            'score' => 'required|numeric|min:0|max:' . $assignment->max_score,
+        $request->validate([
+            'score'    => 'required|numeric|min:0|max:' . $assignment->max_score,
             'feedback' => 'nullable|string|max:1000',
+        ], [
+            'score.required' => 'Nilai wajib diisi.',
+            'score.max'      => 'Nilai tidak boleh melebihi nilai maksimal (' . $assignment->max_score . ').',
         ]);
-
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
 
         try {
             $submission->update([
-                'score' => $request->score,
-                'feedback' => $request->feedback,
-                'status' => 'graded',
-                'graded_by' => Auth::id(),
+                'score'      => $request->score,
+                'feedback'   => $request->feedback,
+                'status'     => 'graded',
+                'graded_by'  => Auth::id(),
+                'graded_at'  => now(),
             ]);
-
-            // ✅ Touch assignment to update its timestamp
             $assignment->touch();
 
-            Log::info('Submission graded', [
-                'submission_id' => $submission->id,
-                'assignment_id' => $assignment->id,
-                'score' => $request->score,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return back()->with('success', 'Nilai berhasil disimpan!');
-
+            return back()->with('success', 'Nilai berhasil disimpan.');
         } catch (\Exception $e) {
-            Log::error('Submission grading failed: ' . $e->getMessage(), [
-                'submission_id' => $submission->id,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+            Log::error('gradeSubmission failed: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
@@ -474,25 +427,14 @@ class AssignmentController extends Controller
     public function togglePublish(Assignment $assignment): RedirectResponse
     {
         if ($assignment->guru_id !== Auth::id()) {
-            abort(403);
+            abort(403, 'Anda tidak memiliki akses ke tugas ini.');
         }
 
-        $this->authorize('update', $assignment);
-
-        $assignment->update([
-            'is_published' => !$assignment->is_published
-        ]);
-
+        $assignment->update(['is_published' => !$assignment->is_published]);
+        $assignment->refresh();
         $status = $assignment->is_published ? 'dipublikasikan' : 'disembunyikan';
 
-        Log::info('Assignment publish status toggled', [
-            'assignment_id' => $assignment->id,
-            'guru_id' => Auth::id(),
-            'is_published' => $assignment->is_published,
-            'ip' => request()->ip()
-            ]);
-
-        return back()->with('success', "Tugas berhasil $status!");
+        return back()->with('success', "Tugas '{$assignment->title}' berhasil {$status}.");
     }
 
     /**
@@ -501,10 +443,8 @@ class AssignmentController extends Controller
     public function submissions(Assignment $assignment)
     {
         if ($assignment->guru_id !== Auth::id()) {
-            abort(403);
+            abort(403, 'Anda tidak memiliki akses ke tugas ini.');
         }
-
-        $this->authorize('view', $assignment);
 
         $submissions = AssignmentSubmission::with(['siswa', 'assignment'])
             ->where('assignment_id', $assignment->id)
@@ -513,64 +453,89 @@ class AssignmentController extends Controller
 
         $stats = [
             'total_submissions' => $submissions->total(),
-            'graded_count' => $submissions->getCollection()->filter(fn($s) => $s->score !== null)->count(),
-            'average_score' => round($submissions->getCollection()->filter(fn($s) => $s->score !== null)->avg('score') ?: 0, 2),
+            'graded_count'      => $submissions->getCollection()->filter(fn($s) => $s->score !== null)->count(),
+            'average_score'     => round($submissions->getCollection()->filter(fn($s) => $s->score !== null)->avg('score') ?: 0, 2),
         ];
 
         return view('guru.assignments.submissions', compact('assignment', 'submissions', 'stats'));
     }
 
     /**
-     * Grade a specific submission.
+     * Grade a specific submission (via grade route with assignment + submission params).
      */
     public function grade(Request $request, Assignment $assignment, AssignmentSubmission $submission)
     {
         if ($assignment->guru_id !== Auth::id() || $submission->assignment_id !== $assignment->id) {
-            abort(403);
+            abort(403, 'Anda tidak memiliki akses.');
         }
 
-        $this->authorize('update', $assignment);
-
-        $validator = Validator::make($request->all(), [
-            'score' => 'required|numeric|min:0|max:' . $assignment->max_score,
+        $request->validate([
+            'score'    => 'required|numeric|min:0|max:' . $assignment->max_score,
             'feedback' => 'nullable|string|max:1000',
+        ], [
+            'score.required' => 'Nilai wajib diisi.',
+            'score.max'      => 'Nilai tidak boleh melebihi nilai maksimal (' . $assignment->max_score . ').',
         ]);
-
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
 
         try {
             $submission->update([
-                'score' => $request->score,
-                'feedback' => $request->feedback,
-                'status' => 'graded',
+                'score'     => $request->score,
+                'feedback'  => $request->feedback,
+                'status'    => 'graded',
                 'graded_by' => Auth::id(),
+                'graded_at' => now(),
             ]);
-
             $assignment->touch();
 
-            Log::info('Submission graded', [
-                'submission_id' => $submission->id,
-                'assignment_id' => $assignment->id,
-                'score' => $request->score,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return back()->with('success', 'Nilai berhasil disimpan!');
-
+            return back()->with('success', 'Nilai berhasil disimpan.');
         } catch (\Exception $e) {
-            Log::error('Submission grading failed: ' . $e->getMessage(), [
-                'submission_id' => $submission->id,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+            Log::error('grade failed: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
+
+    /**
+     * Get mata pelajaran yang diajarkan guru (via pivot guru_subjects, fallback ke subjects.guru_id).
+     */
+    private function getGuruSubjects(int $guruId, $guruProfile): \Illuminate\Support\Collection
+    {
+        // Prioritas 1: pivot guru_subjects
+        if ($guruProfile) {
+            $via = $guruProfile->subjects()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get()
+                ->map(fn($s) => (object)[
+                    'subject_id'   => $s->id,
+                    'subject_name' => $s->name,
+                    'class_id'     => null,
+                ]);
+            if ($via->isNotEmpty()) return $via;
+        }
+
+        // Prioritas 2: subjects.guru_id
+        $direct = \App\Models\Subject::where('is_active', true)
+            ->where('guru_id', $guruId)
+            ->orderBy('name')
+            ->get()
+            ->map(fn($s) => (object)[
+                'subject_id'   => $s->id,
+                'subject_name' => $s->name,
+                'class_id'     => null,
+            ]);
+        if ($direct->isNotEmpty()) return $direct;
+
+        // Last resort: semua
+        return \App\Models\Subject::where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn($s) => (object)[
+                'subject_id'   => $s->id,
+                'subject_name' => $s->name,
+                'class_id'     => null,
+            ]);
+    }
 
     /**
      * Handle file upload and cleanup.

@@ -26,7 +26,7 @@ trait PenilaianWithCriteriaTrait
         $subjects = Subject::where('is_active', true)->get();
         
         // Get active classes
-        $classes = Kelas::where('status', 'active')->get();
+        $classes = Kelas::aktif()->get();
         
         // Get assignments and practicals by this guru
         $assignments = Assignment::where('guru_id', $guruId)
@@ -43,7 +43,7 @@ trait PenilaianWithCriteriaTrait
         
         // Get students
         $students = User::where('role', 'siswa')
-            ->where('status', 'active')
+            ->where('is_active', true)
             ->with('kelas')
             ->orderBy('name')
             ->get();

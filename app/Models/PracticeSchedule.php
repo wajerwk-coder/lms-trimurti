@@ -48,12 +48,12 @@ class PracticeSchedule extends Model
 
     public function teacher(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'teacher_id');
+        return $this->belongsTo(UserCentral::class, 'teacher_id');
     }
 
     public function participants(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'practice_schedule_participants', 'practice_schedule_id', 'student_id')
+        return $this->belongsToMany(UserCentral::class, 'practice_schedule_participants', 'practice_schedule_id', 'student_id')
                     ->withPivot(['status', 'registered_at', 'notes'])
                     ->withTimestamps();
     }

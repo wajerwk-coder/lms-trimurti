@@ -28,7 +28,7 @@ class GuruStatsComposer
             'total_materials' => Material::where('guru_id', $guruId)->count(),
             'total_assignments' => Assignment::where('guru_id', $guruId)->count(),
             'total_practicals' => Practical::where('guru_id', $guruId)->count(),
-            'total_students' => DB::table('users')->where('role', 'siswa')->count(),
+            'total_students' => DB::table('users_central')->where('role', 'siswa')->count(),
             'pending_grading' => AssignmentSubmission::join('assignments', 'assignment_submissions.assignment_id', '=', 'assignments.id')
                 ->where('assignments.guru_id', $guruId)
                 ->whereNull('assignment_submissions.score')

@@ -78,8 +78,8 @@ class ListUsers extends Command
             'Admin' => User::where('role', 'admin')->count(),
             'Guru' => User::where('role', 'guru')->count(),
             'Siswa' => User::where('role', 'siswa')->count(),
-            'Active' => User::where('status', 'active')->count(),
-            'Inactive' => User::where('status', 'inactive')->count(),
+            'Active' => User::where('is_active', true)->count(),
+            'Inactive' => User::where('is_active', false)->count(),
         ];
         
         $this->line('');

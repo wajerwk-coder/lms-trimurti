@@ -1,6 +1,6 @@
 @extends('layouts.app-dashboard')
 
-@section('title', 'Siswa Dashboard')
+@section('title', 'LMS Siswa')
 
 @section('sidebar')
     <a href="{{ route('siswa.dashboard') }}" class="menu-item {{ request()->routeIs('siswa.dashboard') ? 'active' : '' }}">

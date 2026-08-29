@@ -1,286 +1,133 @@
 @extends('layouts.admin')
 
 @section('title', 'Detail Absensi')
+@section('page-title', 'Detail Absensi')
+@section('page-subtitle', 'Informasi lengkap data kehadiran siswa.')
 
-@section('content')
-<div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">Detail Absensi</h1>
-    <p class="text-gray-600">Informasi lengkap data absensi siswa</p>
-</div>
-
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Main Content -->
-    <div class="lg:col-span-2">
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-800">Informasi Absensi</h2>
-            </div>
-            <div class="p-6">
-                <dl class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Nama Siswa</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $attendance->siswa->name ?? 'N/A' }}</dd>
-                    </div>
-                    
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Email</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $attendance->siswa->email ?? 'N/A' }}</dd>
-                    </div>
-                    
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Tanggal</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $attendance->tanggal->format('d F Y') }}</dd>
-                    </div>
-                    
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Status</dt>
-                        <dd class="mt-1">
-                            @php
-                                $statusColors = [
-                                    'hadir' => 'bg-green-100 text-green-800',
-                                    'izin' => 'bg-blue-100 text-blue-800',
-                                    'sakit' => 'bg-yellow-100 text-yellow-800',
-                                    'alpha' => 'bg-red-100 text-red-800'
-                                ];
-                            @endphp
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {{ $statusColors[$attendance->status] ?? 'bg-gray-100 text-gray-800' }}">
-                                {{ ucfirst($attendance->status) }}
-                            </span>
-                        </dd>
-                    </div>
-                    
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Waktu Masuk</dt>
-                        <dd class="mt-1 text-sm text-gray-900">
-                            {{ $attendance->waktu_masuk ? $attendance->waktu_masuk->format('H:i') : '-' }}
-                        </dd>
-                    </div>
-                    
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Waktu Keluar</dt>
-                        <dd class="mt-1 text-sm text-gray-900">
-                            {{ $attendance->waktu_keluar ? $attendance->waktu_keluar->format('H:i') : '-' }}
-                        </dd>
-                    </div>
-                    
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Durasi</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $attendance->duration_formatted }}</dd>
-                    </div>
-                    
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Keterangan</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $attendance->keterangan ?? '-' }}</dd>
-                    </div>
-                </dl>
-            </div>
-        </div>
-
-        <!-- Student Information -->
-        @if($attendance->siswa)
-        <div class="bg-white rounded-lg shadow mt-6">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-800">Informasi Siswa</h2>
-            </div>
-            <div class="p-6">
-                <dl class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Nama Lengkap</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $attendance->siswa->name }}</dd>
-                    </div>
-                    
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Email</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $attendance->siswa->email }}</dd>
-                    </div>
-                    
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Role</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ ucfirst($attendance->siswa->role) }}</dd>
-                    </div>
-                    
-                    <div>
-                        <dt class="text-sm font-medium text-gray-500">Tanggal Dibuat</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ $attendance->siswa->created_at->format('d F Y H:i') }}</dd>
-                    </div>
-                </dl>
-            </div>
-        </div>
-        @endif
+@section('page-actions')
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.attendance.edit', $attendance) }}" class="btn btn-warning btn-sm">
+            <i class="fas fa-edit me-1"></i>Edit
+        </a>
+        <a href="{{ route('admin.attendance.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Kembali
+        </a>
     </div>
-
-    <!-- Sidebar -->
-    <div class="space-y-6">
-        <!-- Actions -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800">Aksi</h3>
-            </div>
-            <div class="p-6 space-y-3">
-                <a href="{{ route('admin.attendance.edit', $attendance) }}" 
-                   class="w-full flex items-center justify-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                    <i class="fas fa-edit mr-2"></i> Edit Absensi
-                </a>
-                
-                <a href="{{ route('admin.attendance.index') }}" 
-                   class="w-full flex items-center justify-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                    <i class="fas fa-arrow-left mr-2"></i> Kembali ke Daftar
-                </a>
-                
-                <button type="button" onclick="deleteAttendance({{ $attendance->id }})" 
-                        class="w-full flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
-                    <i class="fas fa-trash mr-2"></i> Hapus Absensi
-                </button>
-            </div>
-        </div>
-
-        <!-- Status Information -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800">Informasi Status</h3>
-            </div>
-            <div class="p-6">
-                @php
-                    $statusInfo = [
-                        'hadir' => [
-                            'color' => 'text-green-600',
-                            'icon' => 'fas fa-check-circle',
-                            'description' => 'Siswa hadir di sekolah pada tanggal yang ditentukan'
-                        ],
-                        'izin' => [
-                            'color' => 'text-blue-600',
-                            'icon' => 'fas fa-info-circle',
-                            'description' => 'Siswa tidak hadir dengan izin yang sah'
-                        ],
-                        'sakit' => [
-                            'color' => 'text-yellow-600',
-                            'icon' => 'fas fa-exclamation-triangle',
-                            'description' => 'Siswa tidak hadir karena sakit'
-                        ],
-                        'alpha' => [
-                            'color' => 'text-red-600',
-                            'icon' => 'fas fa-times-circle',
-                            'description' => 'Siswa tidak hadir tanpa keterangan'
-                        ]
-                    ];
-                    $currentStatus = $statusInfo[$attendance->status] ?? $statusInfo['alpha'];
-                @endphp
-                
-                <div class="flex items-start">
-                    <div class="flex-shrink-0">
-                        <i class="{{ $currentStatus['icon'] }} {{ $currentStatus['color'] }} text-2xl"></i>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm font-medium text-gray-900">{{ ucfirst($attendance->status) }}</p>
-                        <p class="text-sm text-gray-500 mt-1">{{ $currentStatus['description'] }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Time Information -->
-        @if($attendance->waktu_masuk || $attendance->waktu_keluar)
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800">Informasi Waktu</h3>
-            </div>
-            <div class="p-6">
-                @if($attendance->waktu_masuk)
-                <div class="flex items-center justify-between py-2">
-                    <span class="text-sm font-medium text-gray-500">Masuk:</span>
-                    <span class="text-sm text-gray-900">{{ $attendance->waktu_masuk->format('H:i') }}</span>
-                </div>
-                @endif
-                
-                @if($attendance->waktu_keluar)
-                <div class="flex items-center justify-between py-2">
-                    <span class="text-sm font-medium text-gray-500">Keluar:</span>
-                    <span class="text-sm text-gray-900">{{ $attendance->waktu_keluar->format('H:i') }}</span>
-                </div>
-                @endif
-                
-                @if($attendance->waktu_masuk && $attendance->waktu_keluar)
-                <div class="border-t border-gray-200 pt-2 mt-2">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-medium text-gray-500">Durasi:</span>
-                        <span class="text-sm font-semibold text-gray-900">{{ $attendance->duration_formatted }}</span>
-                    </div>
-                </div>
-                @endif
-            </div>
-        </div>
-        @endif
-
-        <!-- System Information -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800">Informasi Sistem</h3>
-            </div>
-            <div class="p-6 space-y-3">
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-500">Dibuat:</span>
-                    <span class="text-sm text-gray-900">{{ $attendance->created_at->format('d/m/Y H:i') }}</span>
-                </div>
-                
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-medium text-gray-500">Diperbarui:</span>
-                    <span class="text-sm text-gray-900">{{ $attendance->updated_at->format('d/m/Y H:i') }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
-                <i class="fas fa-exclamation-triangle text-red-600"></i>
-            </div>
-            <div class="mt-2 px-7 py-3">
-                <h3 class="text-lg font-medium text-gray-900">Konfirmasi Hapus</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">Apakah Anda yakin ingin menghapus data absensi ini?</p>
-                    <p class="text-xs text-red-500 mt-1">Tindakan ini tidak dapat dibatalkan.</p>
-                </div>
-            </div>
-            <div class="items-center px-4 py-3">
-                <div class="flex space-x-3">
-                    <button type="button" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300" onclick="closeDeleteModal()">
-                        Batal
-                    </button>
-                    <form id="deleteForm" method="POST" class="inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
-                            Hapus
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
 
-@push('js')
-<script>
-function deleteAttendance(id) {
-    document.getElementById('deleteForm').action = '{{ route("admin.attendance.destroy", ":id") }}'.replace(':id', id);
-    document.getElementById('deleteModal').classList.remove('hidden');
-}
+@section('content')
 
-function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden');
-}
+<div class="row g-4">
+    {{-- Informasi Absensi --}}
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-calendar-check me-2"></i>Informasi Absensi</h6>
+            </div>
+            <div class="card-body">
+                <dl class="row g-0">
+                    <dt class="col-sm-4 text-muted small py-2 border-bottom">Nama Siswa</dt>
+                    <dd class="col-sm-8 fw-semibold py-2 border-bottom">
+                        {{ $attendance->siswa->name ?? '—' }}
+                    </dd>
 
-// Close modal when clicking outside
-document.addEventListener('click', function(event) {
-    const deleteModal = document.getElementById('deleteModal');
-    if (event.target === deleteModal) {
-        closeDeleteModal();
-    }
-});
-</script>
-@endpush
+                    <dt class="col-sm-4 text-muted small py-2 border-bottom">NIS</dt>
+                    <dd class="col-sm-8 py-2 border-bottom">{{ $attendance->siswa->nis ?? '—' }}</dd>
+
+                    <dt class="col-sm-4 text-muted small py-2 border-bottom">Kelas</dt>
+                    <dd class="col-sm-8 py-2 border-bottom">{{ $attendance->kelas->name ?? '—' }}</dd>
+
+                    <dt class="col-sm-4 text-muted small py-2 border-bottom">Mata Pelajaran</dt>
+                    <dd class="col-sm-8 py-2 border-bottom">{{ $attendance->subject->name ?? '—' }}</dd>
+
+                    <dt class="col-sm-4 text-muted small py-2 border-bottom">Tanggal</dt>
+                    <dd class="col-sm-8 py-2 border-bottom">
+                        {{ \Carbon\Carbon::parse($attendance->date)->translatedFormat('l, d F Y') }}
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted small py-2 border-bottom">Status</dt>
+                    <dd class="col-sm-8 py-2 border-bottom">
+                        @php
+                            $statusBadge = match($attendance->status) {
+                                'hadir'  => 'success',
+                                'izin'   => 'info',
+                                'sakit'  => 'warning',
+                                'alpha'  => 'danger',
+                                default  => 'secondary',
+                            };
+                            $statusIcon = match($attendance->status) {
+                                'hadir'  => 'check-circle',
+                                'izin'   => 'info-circle',
+                                'sakit'  => 'heartbeat',
+                                'alpha'  => 'times-circle',
+                                default  => 'circle',
+                            };
+                        @endphp
+                        <span class="badge bg-{{ $statusBadge }} px-3 py-2">
+                            <i class="fas fa-{{ $statusIcon }} me-1"></i>{{ ucfirst($attendance->status) }}
+                        </span>
+                    </dd>
+
+                    <dt class="col-sm-4 text-muted small py-2 border-bottom">Catatan</dt>
+                    <dd class="col-sm-8 py-2 border-bottom">{{ $attendance->note ?? '—' }}</dd>
+
+                    <dt class="col-sm-4 text-muted small py-2 border-bottom">Dicatat Oleh</dt>
+                    <dd class="col-sm-8 py-2 border-bottom">{{ $attendance->recorder?->name ?? '—' }}</dd>
+
+                    <dt class="col-sm-4 text-muted small py-2">Waktu Input</dt>
+                    <dd class="col-sm-8 py-2">{{ $attendance->created_at->format('d/m/Y H:i') }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    {{-- Sidebar Aksi --}}
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-light border-bottom">
+                <h6 class="mb-0 fw-semibold">Aksi</h6>
+            </div>
+            <div class="card-body d-grid gap-2">
+                <a href="{{ route('admin.attendance.edit', $attendance) }}" class="btn btn-warning">
+                    <i class="fas fa-edit me-2"></i>Edit Absensi
+                </a>
+                <button type="button" class="btn btn-danger"
+                        onclick="if(confirm('Hapus data absensi ini?')) document.getElementById('deleteForm').submit()">
+                    <i class="fas fa-trash me-2"></i>Hapus Absensi
+                </button>
+                <form id="deleteForm" action="{{ route('admin.attendance.destroy', $attendance) }}" method="POST">
+                    @csrf @method('DELETE')
+                </form>
+                <a href="{{ route('admin.attendance.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-list me-2"></i>Daftar Absensi
+                </a>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light border-bottom">
+                <h6 class="mb-0 fw-semibold">Keterangan Status</h6>
+            </div>
+            <div class="card-body small">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge bg-success me-2 px-2">Hadir</span>
+                    <span class="text-muted">Siswa hadir tepat waktu</span>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge bg-info me-2 px-2">Izin</span>
+                    <span class="text-muted">Tidak hadir dengan izin resmi</span>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge bg-warning text-dark me-2 px-2">Sakit</span>
+                    <span class="text-muted">Tidak hadir karena sakit</span>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-danger me-2 px-2">Alpha</span>
+                    <span class="text-muted">Tidak hadir tanpa keterangan</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@endsection

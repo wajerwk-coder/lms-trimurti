@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
 use App\Models\Kelas;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -15,37 +14,22 @@ class SubmissionsController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
-        $this->middleware('role:guru');
+        $this->middleware(['auth', 'guru']);
     }
 
     public function index(Request $request): View
     {
         try {
-            $guru = Auth::user();
-            
-            // Get submissions for this guru's assignments
-            $query = AssignmentSubmission::with(['assignment.subject', 'assignment.kelas', 'siswa'])
-                ->whereHas('assignment', function($q) use ($guru) {
-                    $q->where('guru_id', $guru->id);
-                });
+            $guruId = Auth::id();
 
-            // Filter by class
-            if ($request->has('kelas_id')) {
-                $query->whereHas('assignment', function($q) use ($request) {
-                    $q->where('kelas_id', $request->kelas_id);
-                });
-            }
+            $query = AssignmentSubmission::with([
+                    'assignment.subject',
+                    'assignment.kelas',
+                    'siswa',
+                ])
+                ->whereHas('assignment', fn($q) => $q->where('guru_id', $guruId));
 
-            // Filter by subject
-            if ($request->has('subject_id')) {
-                $query->whereHas('assignment', function($q) use ($request) {
-                    $q->where('subject_id', $request->subject_id);
-                });
-            }
-
-            // Filter by status
-            if ($request->has('status')) {
+            if ($request->filled('status')) {
                 if ($request->status === 'graded') {
                     $query->whereNotNull('score');
                 } elseif ($request->status === 'ungraded') {
@@ -53,45 +37,30 @@ class SubmissionsController extends Controller
                 }
             }
 
-            $allSubmissions = $query->orderBy('created_at', 'desc')->paginate(10);
+            $allSubmissions = $query->latest('created_at')->paginate(15);
 
-            // Calculate statistics
+            // Stats — single query each
+            $baseQuery = fn() => AssignmentSubmission::whereHas('assignment',
+                fn($q) => $q->where('guru_id', $guruId)
+            );
+
             $stats = [
-                'total_submissions' => $allSubmissions->total(),
-                'pending_grading' => AssignmentSubmission::whereHas('assignment', function($q) use ($guru) {
-                    $q->where('guru_id', $guru->id);
-                })->whereNull('score')->count(),
-                'graded' => AssignmentSubmission::whereHas('assignment', function($q) use ($guru) {
-                    $q->where('guru_id', $guru->id);
-                })->whereNotNull('score')->count(),
-                'average_score' => round(AssignmentSubmission::whereHas('assignment', function($q) use ($guru) {
-                    $q->where('guru_id', $guru->id);
-                })->whereNotNull('score')->avg('score') ?? 0, 1)
+                'total_submissions' => $baseQuery()->count(),
+                'pending_grading'   => $baseQuery()->whereNull('score')->count(),
+                'graded'            => $baseQuery()->whereNotNull('score')->count(),
+                'average_score'     => round($baseQuery()->whereNotNull('score')->avg('score') ?? 0, 1),
             ];
 
-            // Get filter options
-            $kelas = Kelas::where('status', 'active')
-                ->whereHas('guru', function($q) use ($guru) {
-                    $q->where('user_id', $guru->id);
-                })
-                ->orderBy('name')
-                ->pluck('name', 'id');
+            return view('guru.submissions.index', compact('allSubmissions', 'stats'));
 
-            return view('guru.submissions.index', compact('allSubmissions', 'kelas', 'stats'));
-            
         } catch (\Exception $e) {
-            \Log::error('Error in submissions index: ' . $e->getMessage());
-            
+            \Log::error('Submissions index error: ' . $e->getMessage());
             return view('guru.submissions.index', [
-                'allSubmissions' => collect(),
-                'kelas' => collect(),
-                'stats' => [
-                    'total_submissions' => 0,
-                    'pending_grading' => 0,
-                    'graded' => 0,
-                    'average_score' => 0
-                ],
-                'error' => 'Terjadi kesalahan saat memuat data submissions.'
+                'allSubmissions' => new \Illuminate\Pagination\LengthAwarePaginator(
+                    collect(), 0, 15, 1, ['path' => request()->url()]
+                ),
+                'stats' => ['total_submissions'=>0,'pending_grading'=>0,'graded'=>0,'average_score'=>0],
+                'error' => 'Gagal memuat data: ' . $e->getMessage(),
             ]);
         }
     }
@@ -100,17 +69,19 @@ class SubmissionsController extends Controller
     {
         try {
             $this->authorizeSubmission($submission);
-            
-            $submission->load(['assignment.subject', 'assignment.kelas', 'siswa']);
-            
+
+            $submission->load([
+                'assignment.subject',
+                'assignment.kelas',
+                'siswa',
+            ]);
+
             return view('guru.submissions.show', compact('submission'));
-            
+
         } catch (\Exception $e) {
-            \Log::error('Error in submission show: ' . $e->getMessage());
-            
-            return redirect()
-                ->route('guru.submissions.index')
-                ->with('error', 'Submission tidak ditemukan atau terjadi kesalahan.');
+            \Log::error('Submission show error: ' . $e->getMessage());
+            return redirect()->route('guru.submissions.index')
+                ->with('error', 'Submission tidak ditemukan.');
         }
     }
 
@@ -118,28 +89,30 @@ class SubmissionsController extends Controller
     {
         try {
             $this->authorizeSubmission($submission);
-            
+
             $request->validate([
-                'score' => 'required|numeric|min:0|max:100',
-                'feedback' => 'nullable|string|max:1000'
+                'score'    => 'required|numeric|min:0|max:' . ($submission->assignment?->max_score ?? 100),
+                'feedback' => 'nullable|string|max:1000',
+            ], [
+                'score.required' => 'Nilai wajib diisi.',
+                'score.max'      => 'Nilai tidak boleh melebihi nilai maksimum.',
             ]);
 
             $submission->update([
-                'score' => $request->score,
-                'feedback' => $request->feedback,
-                'status' => 'graded'
+                'score'     => $request->score,
+                'feedback'  => $request->feedback,
+                'status'    => 'graded',
+                'graded_by' => Auth::id(),
+                'graded_at' => now(),
             ]);
 
             return redirect()
                 ->route('guru.submissions.show', $submission->id)
-                ->with('success', 'Submission berhasil dinilai');
-                
+                ->with('success', 'Nilai berhasil disimpan.');
+
         } catch (\Exception $e) {
-            \Log::error('Error in submission grade: ' . $e->getMessage());
-            
-            return redirect()
-                ->back()
-                ->with('error', 'Terjadi kesalahan saat memberikan nilai.');
+            \Log::error('Submission grade error: ' . $e->getMessage());
+            return back()->with('error', 'Gagal menyimpan nilai: ' . $e->getMessage());
         }
     }
 

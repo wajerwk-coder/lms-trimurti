@@ -5,10 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Kelas;
 use App\Models\Jurusan;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class KelasController extends Controller
 {
@@ -17,285 +18,205 @@ class KelasController extends Controller
         $this->middleware(['auth', 'admin']);
     }
 
-    /**
-     * Display a listing of kelas
-     */
+    // ── Index ────────────────────────────────────────────────────────────────
+
     public function index(): View
     {
-        try {
-            $kelas = Kelas::with('guru')
-                         ->orderBy('name')
-                         ->get();
-            
-            // Calculate statistics
-            $totalSiswa = \App\Models\User::where('role', 'siswa')->count();
-            $kelasKeperawatan = $kelas->count(); // Tidak ada field major, hitung semua
-            $kelasFarmasi = 0; // Tidak ada field major, set 0
-                         
-            return view('admin.kelas.index', compact('kelas', 'totalSiswa', 'kelasKeperawatan', 'kelasFarmasi'));
-        } catch (\Exception $e) {
-            return view('admin.kelas.index', [
-                'kelas' => collect(),
-                'totalSiswa' => 0,
-                'kelasKeperawatan' => 0,
-                'kelasFarmasi' => 0,
-                'error' => 'Error loading kelas: ' . $e->getMessage()
-            ]);
-        }
+        // Gunakan withCount + raw subquery agar cepat (tidak load semua data siswa)
+        $kelas = Kelas::with('jurusan')
+            ->withCount([
+                'siswa as siswa_count' => fn($q) => $q->whereNull('deleted_at'),
+            ])
+            ->orderBy('name')
+            ->get();
+
+        $totalSiswa = $kelas->sum('siswa_count');
+
+        // Stats per jurusan (2 terbesar)
+        $perJurusan   = $kelas->groupBy('jurusan_id')
+            ->map(fn($g) => ['name' => $g->first()->jurusan?->name ?? 'Lainnya', 'count' => $g->count()])
+            ->sortByDesc('count')
+            ->values();
+
+        return view('admin.kelas.index', [
+            'kelas'            => $kelas,
+            'totalSiswa'       => $totalSiswa,
+            'kelasKeperawatan' => $perJurusan->get(0)['count'] ?? 0,
+            'namaJurusan1'     => $perJurusan->get(0)['name']  ?? 'Jurusan 1',
+            'kelasFarmasi'     => $perJurusan->get(1)['count'] ?? 0,
+            'namaJurusan2'     => $perJurusan->get(1)['name']  ?? 'Jurusan 2',
+        ]);
     }
 
-    /**
-     * Show the form for creating a new kelas
-     */
+    // ── Create & Store ────────────────────────────────────────────────────────
+
     public function create(): View
     {
-        $availableGuru = User::where('role', 'guru')
-                           ->where('is_active', true)
-                           ->get();
-        $jurusans = Jurusan::orderBy('name')->get();
-        
-        return view('admin.kelas.create', compact('availableGuru', 'jurusans'));
+        return view('admin.kelas.create', [
+            'jurusans' => Jurusan::orderBy('name')->get(),
+        ]);
     }
 
-    /**
-     * Store a newly created kelas
-     */
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:kelas,name',
-            'code' => 'required|string|max:20|unique:kelas,code',
-            'grade' => 'required|in:X,XI,XII',
-            'major' => 'required_without:jurusan_id|string|max:50',
-            'description' => 'nullable|string|max:500',
-            'capacity' => 'nullable|integer|min:1|max:50',
-            'guru_id' => 'nullable|exists:users,id',
+        $request->validate([
+            'name'          => 'required|string|max:100|unique:classes,name',
+            'grade'         => 'required|in:X,XI,XII',
+            'major_id'      => 'required|exists:jurusans,id',
             'academic_year' => 'required|string|max:20',
-            'jurusan_id' => 'nullable|exists:jurusan,id'
+            'status'        => 'nullable|in:active,inactive',
+        ], [
+            'name.required'          => 'Nama kelas wajib diisi.',
+            'name.unique'            => 'Nama kelas sudah ada.',
+            'grade.required'         => 'Tingkat kelas wajib dipilih.',
+            'grade.in'               => 'Tingkat harus X, XI, atau XII.',
+            'major_id.required'      => 'Jurusan wajib dipilih.',
+            'major_id.exists'        => 'Jurusan tidak ditemukan.',
+            'academic_year.required' => 'Tahun ajaran wajib diisi.',
         ]);
 
-        // Validate guru (wali kelas)
-        if ($validated['guru_id']) {
-            $guru = User::find($validated['guru_id']);
-            if ($guru->role !== 'guru' || !$guru->isActive()) {
-                return redirect()
-                    ->back()
-                    ->with('error', 'Wali kelas harus guru yang aktif.')
-                    ->withInput();
-            }
+        try {
+            $jurusan = Jurusan::findOrFail($request->major_id);
+            $majorId = $this->syncMajorFromJurusan($jurusan);
+
+            Kelas::create([
+                'name'          => $request->name,
+                'grade'         => $request->grade,
+                'major_id'      => $majorId,
+                'jurusan_id'    => $jurusan->id,
+                'academic_year' => $request->academic_year,
+                'status'        => $request->status ?? 'active',
+            ]);
+
+            return redirect()->route('admin.kelas.index')
+                ->with('success', 'Kelas ' . $request->name . ' berhasil ditambahkan.');
+
+        } catch (\Throwable $e) {
+            Log::error('KelasController::store: ' . $e->getMessage());
+            return back()->withInput()
+                ->with('error', 'Gagal menyimpan kelas: ' . $e->getMessage());
         }
-
-        // Sync major from jurusan if provided
-        if (!empty($validated['jurusan_id'])) {
-            $jurusan = Jurusan::find($validated['jurusan_id']);
-            if ($jurusan) {
-                $validated['major'] = $jurusan->nama;
-            }
-        }
-
-        // Set default values
-        $validated['capacity'] = $validated['capacity'] ?? 40;
-
-        Kelas::create($validated);
-
-        return redirect()
-            ->route('admin.kelas.index')
-            ->with('success', 'Kelas berhasil ditambahkan.');
     }
 
-    /**
-     * Display the specified kelas
-     */
+    // ── Show ──────────────────────────────────────────────────────────────────
+
     public function show(Kelas $kelas): View
     {
-        $kelas->load(['guru', 'siswa']);
-        
+        $kelas->load(['jurusan', 'siswa.user']);
         return view('admin.kelas.show', compact('kelas'));
     }
 
-    /**
-     * Show the form for editing kelas
-     */
+    // ── Edit & Update ─────────────────────────────────────────────────────────
+
     public function edit(Kelas $kelas): View
     {
-        $availableGuru = User::where('role', 'guru')
-                           ->where('is_active', true)
-                           ->get();
-        $jurusans = Jurusan::orderBy('name')->get();
-        
-        return view('admin.kelas.edit', compact('kelas', 'availableGuru', 'jurusans'));
+        // Hitung siswa via query langsung — tidak load semua data
+        $siswaCount = DB::table('siswa')
+            ->where('kelas_id', $kelas->id)
+            ->whereNull('deleted_at')
+            ->count();
+
+        return view('admin.kelas.edit', [
+            'kelas'      => $kelas->load('jurusan'),
+            'jurusans'   => Jurusan::orderBy('name')->get(),
+            'siswaCount' => $siswaCount,
+        ]);
     }
 
-    /**
-     * Update the specified kelas
-     */
     public function update(Request $request, Kelas $kelas): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:kelas,name,' . $kelas->id,
-            'code' => 'required|string|max:10|unique:kelas,code,' . $kelas->id,
-            'grade' => 'required|in:X,XI,XII',
-            'major' => 'required_without:jurusan_id|string|max:50',
-            'description' => 'nullable|string|max:500',
-            'capacity' => 'nullable|integer|min:1|max:50',
-            'guru_id' => 'nullable|exists:users,id',
+        $request->validate([
+            'name'          => 'required|string|max:100|unique:classes,name,' . $kelas->id,
+            'grade'         => 'required|in:X,XI,XII',
+            'major_id'      => 'required|exists:jurusans,id',
             'academic_year' => 'required|string|max:20',
-            'jurusan_id' => 'nullable|exists:jurusan,id'
+            'status'        => 'nullable|in:active,inactive',
+        ], [
+            'name.required'          => 'Nama kelas wajib diisi.',
+            'name.unique'            => 'Nama kelas sudah ada.',
+            'grade.required'         => 'Tingkat kelas wajib dipilih.',
+            'grade.in'               => 'Tingkat harus X, XI, atau XII.',
+            'major_id.required'      => 'Jurusan wajib dipilih.',
+            'major_id.exists'        => 'Jurusan tidak ditemukan.',
+            'academic_year.required' => 'Tahun ajaran wajib diisi.',
         ]);
 
-        // Validate guru (wali kelas)
-        if ($validated['guru_id']) {
-            $guru = User::find($validated['guru_id']);
-            if ($guru->role !== 'guru' || !$guru->isActive()) {
-                return redirect()
-                    ->back()
-                    ->with('error', 'Wali kelas harus guru yang aktif.')
-                    ->withInput();
-            }
-        }
+        $jurusan = Jurusan::findOrFail($request->major_id);
+        $majorId = $this->syncMajorFromJurusan($jurusan);
 
-        // Set default values
-        $validated['capacity'] = $validated['capacity'] ?? 40;
+        $kelas->update([
+            'name'          => $request->name,
+            'grade'         => $request->grade,
+            'major_id'      => $majorId,
+            'jurusan_id'    => $jurusan->id,
+            'academic_year' => $request->academic_year,
+            'status'        => $request->status ?? 'active',
+        ]);
 
-        $kelas->update($validated);
-
-        return redirect()
-            ->route('admin.kelas.index')
-            ->with('success', 'Kelas berhasil diperbarui.');
+        return redirect()->route('admin.kelas.index')
+            ->with('success', 'Kelas ' . $request->name . ' berhasil diperbarui.');
     }
 
-    /**
-     * Remove the specified kelas
-     */
+    // ── Destroy ───────────────────────────────────────────────────────────────
+
     public function destroy(Kelas $kelas): RedirectResponse
     {
-        // Check if kelas has siswa
-        if ($kelas->siswa()->count() > 0) {
-            return redirect()
-                ->route('admin.kelas.index')
-                ->with('error', 'Tidak dapat menghapus kelas yang masih memiliki siswa.');
+        $siswaCount = DB::table('siswa')
+            ->where('kelas_id', $kelas->id)
+            ->whereNull('deleted_at')
+            ->count();
+
+        if ($siswaCount > 0) {
+            return back()->with('error',
+                "Tidak dapat menghapus kelas '{$kelas->name}' karena masih ada {$siswaCount} siswa. " .
+                "Pindahkan atau hapus siswa terlebih dahulu."
+            );
         }
 
-        $kelas->delete();
+        try {
+            $nama = $kelas->name;
+            DB::table('class_subjects')->where('class_id', $kelas->id)->delete();
+            $kelas->delete();
 
-        return redirect()
-            ->route('admin.kelas.index')
-            ->with('success', 'Kelas berhasil dihapus.');
+            return redirect()->route('admin.kelas.index')
+                ->with('success', "Kelas '{$nama}' berhasil dihapus.");
+
+        } catch (\Throwable $e) {
+            Log::error('KelasController::destroy: ' . $e->getMessage());
+            return back()->with('error', 'Gagal menghapus kelas: ' . $e->getMessage());
+        }
     }
 
-    /**
-     * Get available rooms for AJAX
-     */
-    public function getAvailableRooms()
-    {
-        $rooms = ['Lab 1', 'Lab 2', 'Lab 3', 'Ruang 101', 'Ruang 102', 'Ruang 103', 'Ruang 201', 'Ruang 202', 'Ruang 203'];
-        // Since we don't have a room field in the current schema, return all rooms
-        return response()->json(array_values($rooms));
-    }
+    // ── Private helpers ───────────────────────────────────────────────────────
 
     /**
-     * Move siswa to different kelas
+     * Sinkronkan jurusan ke tabel majors (FK lama classes.major_id → majors).
+     * Pastikan record ada di majors sebelum INSERT ke classes agar FK tidak gagal.
+     * Jika code null, fallback ke string kosong (majors.code NOT NULL).
      */
-    public function moveSiswa(Request $request, Kelas $kelas): RedirectResponse
+    private function syncMajorFromJurusan(Jurusan $jurusan): int
     {
-        $validated = $request->validate([
-            'siswa_ids' => 'required|array|min:1',
-            'siswa_ids.*' => 'exists:users,id',
-            'target_kelas_id' => 'required|exists:kelas,id|different:' . $kelas->id
-        ]);
+        $code = $jurusan->code ?? strtoupper(substr($jurusan->name, 0, 4));
 
-        $targetKelas = Kelas::find($validated['target_kelas_id']);
-        
-        // Check capacity
-        $currentCount = $targetKelas->siswa()->count();
-        $newCount = count($validated['siswa_ids']);
-        
-        if (($currentCount + $newCount) > $targetKelas->capacity) {
-            return redirect()
-                ->back()
-                ->with('error', 'Kapasitas kelas tujuan tidak mencukupi.');
+        $exists = DB::table('majors')->where('id', $jurusan->id)->exists();
+
+        if ($exists) {
+            DB::table('majors')->where('id', $jurusan->id)->update([
+                'name'       => $jurusan->name,
+                'code'       => $code,
+                'updated_at' => now(),
+            ]);
+        } else {
+            DB::table('majors')->insert([
+                'id'          => $jurusan->id,
+                'name'        => $jurusan->name,
+                'code'        => $code,
+                'description' => $jurusan->description,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]);
         }
 
-        // Move siswa
-        User::whereIn('id', $validated['siswa_ids'])
-            ->update(['kelas_id' => $validated['target_kelas_id']]);
-
-        return redirect()
-            ->route('admin.kelas.show', $kelas)
-            ->with('success', count($validated['siswa_ids']) . ' siswa berhasil dipindahkan.');
-    }
-
-    /**
-     * Generate kelas name automatically
-     */
-    public function generateKelasName(Request $request)
-    {
-        $grade = $request->input('grade');
-        $major = $request->input('major');
-        
-        if (!$grade || !$major) {
-            return response()->json(['error' => 'Grade dan Major diperlukan'], 400);
-        }
-        
-        // Count existing classes (tanpa filter grade dan major karena tidak ada)
-        $count = Kelas::count();
-        
-        $letter = chr(65 + $count); // A, B, C, etc.
-        $name = "{$grade} {$major} {$letter}";
-        $code = strtoupper(substr($major, 0, 3)) . $grade . $letter;
-        
-        return response()->json([
-            'name' => $name,
-            'code' => $code
-        ]);
-    }
-
-    /**
-     * Bulk actions for kelas
-     */
-    public function bulkAction(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'action' => 'required|in:delete,change_guru',
-            'kelas_ids' => 'required|array|min:1',
-            'kelas_ids.*' => 'exists:kelas,id',
-            'guru_id' => 'nullable|exists:users,id'
-        ]);
-
-        $kelasCount = count($validated['kelas_ids']);
-        
-        switch ($validated['action']) {
-            case 'delete':
-                $kelasWithSiswa = Kelas::whereIn('id', $validated['kelas_ids'])
-                                     ->has('siswa')
-                                     ->count();
-                                     
-                if ($kelasWithSiswa > 0) {
-                    return redirect()
-                        ->back()
-                        ->with('error', 'Tidak dapat menghapus kelas yang masih memiliki siswa.');
-                }
-                
-                Kelas::whereIn('id', $validated['kelas_ids'])->delete();
-                return redirect()
-                    ->route('admin.kelas.index')
-                    ->with('success', "{$kelasCount} kelas berhasil dihapus.");
-                    
-            case 'change_guru':
-                if (!$validated['guru_id']) {
-                    return redirect()
-                        ->back()
-                        ->with('error', 'Guru wali kelas harus dipilih untuk aksi ini.');
-                }
-                
-                Kelas::whereIn('id', $validated['kelas_ids'])
-                    ->update(['guru_id' => $validated['guru_id']]);
-                    
-                return redirect()
-                    ->route('admin.kelas.index')
-                    ->with('success', "Wali kelas untuk {$kelasCount} kelas berhasil diubah.");
-        }
-        
-        return redirect()->back();
+        return $jurusan->id;
     }
 }

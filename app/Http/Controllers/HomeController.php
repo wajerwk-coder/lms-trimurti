@@ -26,8 +26,8 @@ class HomeController extends Controller
 
         return view('welcome', [
             'stats' => [
-                'siswa' => User::where('role', 'siswa')->count(),
-                'guru' => User::where('role', 'guru')->count(),
+                'siswa' => \App\Models\UserCentral::where('role', 'siswa')->count(),
+                'guru'  => \App\Models\UserCentral::where('role', 'guru')->count(),
             ],
         ]);
     }

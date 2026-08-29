@@ -1,4 +1,4 @@
-@extends('layouts.guru')
+﻿@extends('layouts.guru')
 
 @section('title', 'Manajemen Absensi - Guru')
 @section('page-title', 'Manajemen Absensi')
@@ -208,7 +208,7 @@
 @endpush
 
 @section('breadcrumb')
-<li class="breadcrumb-item"><a href="{{ route('guru.dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ route('guru.dashboard') }}" class="text-decoration-none">Beranda</a></li>
 <li class="breadcrumb-item active">Manajemen Absensi</li>
 @endsection
 
@@ -382,7 +382,7 @@
                             <span class="text-muted">{{ e($attendance->subject?->name ?? 'Tidak ada mata pelajaran') }}</span>
                         </td>
                         <td>
-                            <span class="text-muted">{{ $attendance->tanggal?->format('d/m/Y') ?? '-' }}</span>
+                            <span class="text-muted">{{ $attendance->date?->format('d/m/Y') ?? '-' }}</span>
                         </td>
                         <td>
                             <span class="status-badge status-{{ $attendance->status }}">
@@ -390,7 +390,7 @@
                             </span>
                         </td>
                         <td>
-                            <span class="text-muted small">{{ e($attendance->keterangan ?? '-') }}</span>
+                            <span class="text-muted small">{{ e($attendance->note ?? '-') }}</span>
                         </td>
                         <td>
                             <div class="btn-group" role="group">
@@ -432,40 +432,3 @@
     @endif
 </div>
 @endsection
-
-@push('scripts')
-<script>
-function clearFilters() {
-    document.getElementById('search').value = '';
-    document.getElementById('class').value = 'all';
-    document.getElementById('subject').value = 'all';
-    document.getElementById('date').value = '';
-    document.getElementById('status').value = 'all';
-    document.getElementById('filterForm').submit();
-}
-
-// Auto-submit on filter change (except search)
-document.querySelectorAll('#class, #subject, #date, #status').forEach(element => {
-    element.addEventListener('change', function() {
-        document.getElementById('filterForm').submit();
-    });
-});
-
-// Search with debounce
-let searchTimeout;
-document.getElementById('search').addEventListener('input', function() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(function() {
-        document.getElementById('filterForm').submit();
-    }, 500);
-});
-
-// Initialize tooltips
-document.addEventListener('DOMContentLoaded', function() {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-});
-</script>
-@endpush

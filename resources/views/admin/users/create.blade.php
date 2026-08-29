@@ -1,8 +1,6 @@
-@extends('admin.layouts.admin-layout')
+@extends('layouts.admin')
 
-@section('title')
-    Tambah Pengguna Baru
-@endsection
+@section('title', 'Tambah Pengguna Baru')
 
 @section('page-title', 'Tambah Pengguna Baru')
 

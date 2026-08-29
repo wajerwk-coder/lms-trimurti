@@ -6,18 +6,23 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Siswa;
 
 class Kelas extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'classes';
 
     protected $fillable = [
         'name',
+        'grade',
         'major_id',
+        'jurusan_id',
         'academic_year',
-        'wallpaper'
+        'status',
+        'wallpaper',
     ];
 
     protected $casts = [
@@ -33,56 +38,55 @@ class Kelas extends Model
     }
 
     /**
-     * Relasi ke model User (Guru)
+     * Relasi ke Jurusan.
+     * DB classes punya dua kolom: jurusan_id (baru) dan major_id (lama).
+     * Keduanya menyimpan jurusans.id.
+     * Gunakan jurusan_id sebagai FK utama, dengan fallback ke major_id via scope.
      */
-    public function guru(): BelongsTo
+    public function jurusan(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by'); // Gunakan created_by jika ada, atau hapus
+        return $this->belongsTo(Jurusan::class, 'jurusan_id');
     }
 
     /**
-     * Relasi ke model Jurusan
+     * Fallback alias via major_id — untuk backward compat query lama.
+     * Jika jurusan_id null (data sangat lama), coba via major_id.
      */
-    public function jurusan(): BelongsTo
+    public function major(): BelongsTo
     {
         return $this->belongsTo(Jurusan::class, 'major_id');
     }
 
     /**
-     * Relasi ke siswa
+     * Accessor: ambil jurusan dari jurusan_id, fallback ke major_id
      */
-    public function students(): HasMany
+    public function getJurusanEagerAttribute(): ?Jurusan
     {
-        // Return empty relationship karena tidak ada field kelas_id
-        return $this->hasMany(User::class, 'id')->whereRaw('1=0');
+        return $this->jurusan ?? $this->major;
     }
 
     /**
-     * Alias untuk students() untuk konsistensi dengan konvensi Indonesian
+     * Siswa yang terdaftar di kelas ini (via tabel siswa)
+     */
+    public function students(): HasMany
+    {
+        return $this->hasMany(Siswa::class, 'kelas_id');
+    }
+
+    /**
+     * Alias Indonesian untuk students()
      */
     public function siswa(): HasMany
     {
         return $this->students();
     }
-    
+
     /**
-     * Relasi ke semua users (siswa) di kelas ini
+     * User accounts siswa di kelas ini (via relasi Siswa)
      */
     public function users(): HasMany
     {
-        // Tidak ada field kelas_id di users table, return empty relationship
-        return $this->hasMany(User::class);
-    }
-
-    // Note: jurusan relationship removed as major is stored as string
-    // Note: waliKelas renamed to guru to match database schema
-
-    /**
-     * Accessor untuk nama kelas lengkap
-     */
-    public function getNamaLengkapAttribute(): string
-    {
-        return $this->name; // Gunakan field name yang ada
+        return $this->hasMany(Siswa::class, 'kelas_id');
     }
 
     /**
@@ -90,7 +94,7 @@ class Kelas extends Model
      */
     public function scopeAktif($query)
     {
-        return $query; // Tidak ada field status di tabel classes, return all
+        return $query->where('status', 'active');
     }
 
     /**
@@ -98,7 +102,12 @@ class Kelas extends Model
      */
     public function scopeByGrade($query, $grade)
     {
-        return $query; // Tidak ada field grade di tabel classes
+        // Jika ada kolom grade, filter by it; otherwise return all
+        try {
+            return $query->where('grade', $grade);
+        } catch (\Exception $e) {
+            return $query;
+        }
     }
 
     /**
@@ -106,6 +115,14 @@ class Kelas extends Model
      */
     public function scopeByMajor($query, $major)
     {
-        return $query->where('major_id', $major); // Gunakan major_id yang ada
+        return $query->where('major_id', $major);
+    }
+
+    /**
+     * Subjects / mata pelajaran di kelas ini via class_subjects
+     */
+    public function subjects()
+    {
+        return $this->belongsToMany(Subject::class, 'class_subjects', 'class_id', 'subject_id');
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Traits;
 
-use App\Models\Student;
+use App\Models\Siswa;
 use App\Models\Guru;
 
 trait HasUserProfile

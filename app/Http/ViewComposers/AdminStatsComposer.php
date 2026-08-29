@@ -5,8 +5,8 @@ namespace App\Http\ViewComposers;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
-use App\Models\User;
-use App\Models\Student;
+use App\Models\UserCentral;
+use App\Models\Siswa;
 use App\Models\Guru;
 use App\Models\Kelas;
 use App\Models\Jurusan;
@@ -38,16 +38,16 @@ class AdminStatsComposer
 
         $stats = Cache::remember('admin_stats_counts', $ttl, function () {
             return [
-                'total_users' => $this->safeCount(User::class),
-                'total_siswa' => $this->safeCount(Student::class),
-                'total_guru' => $this->safeCount(Guru::class),
-                'total_classes' => $this->safeCount(Kelas::class),
-                'total_majors' => $this->safeCount(Jurusan::class),
-                'total_criteria' => $this->safeCount(KriteriaPenilaian::class),
-                'total_materials' => $this->safeCount(Material::class),
-                'total_assignments' => $this->safeCount(Assignment::class),
+                'total_users'      => $this->safeCount(UserCentral::class),
+                'total_siswa'      => $this->safeCount(Siswa::class),
+                'total_guru'       => $this->safeCount(Guru::class),
+                'total_classes'    => $this->safeCount(Kelas::class),
+                'total_majors'     => $this->safeCount(Jurusan::class),
+                'total_criteria'   => $this->safeCount(KriteriaPenilaian::class),
+                'total_materials'  => $this->safeCount(Material::class),
+                'total_assignments'=> $this->safeCount(Assignment::class),
                 'total_practicals' => $this->safeCount(Practical::class),
-                'total_exams' => $this->safeCount(ExamSchedule::class),
+                'total_exams'      => $this->safeCount(ExamSchedule::class),
             ];
         });
 

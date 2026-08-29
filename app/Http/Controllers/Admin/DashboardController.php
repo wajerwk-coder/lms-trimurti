@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\UserCentral;
 use App\Models\Material;
 use App\Models\Assignment;
 use App\Models\Practical;
@@ -81,16 +81,16 @@ class DashboardController extends Controller
     {
         try {
             return [
-                'total_users' => User::count(),
-                'total_guru' => User::where('role', 'guru')->count(),
-                'total_siswa' => User::where('role', 'siswa')->count(),
-                'total_admin' => User::where('role', 'admin')->count(),
+                'total_users' => UserCentral::count(),
+                'total_guru' => UserCentral::where('role', 'guru')->count(),
+                'total_siswa' => UserCentral::where('role', 'siswa')->count(),
+                'total_admin' => UserCentral::where('role', 'admin')->count(),
                 'total_materials' => Material::count(),
                 'total_assignments' => Assignment::count(),
                 'total_practicals' => Practical::count(),
-                'new_users_today' => User::whereDate('created_at', today())->count(),
-                'active_users' => User::where('status', 'active')->count(),
-                'inactive_users' => User::where('status', 'inactive')->count(),
+                'new_users_today' => UserCentral::whereDate('created_at', today())->count(),
+                'active_users' => UserCentral::where('is_active', true)->count(),
+                'inactive_users' => UserCentral::where('is_active', false)->count(),
             ];
         } catch (\Exception $e) {
             Log::error('Error getting dashboard stats: ' . $e->getMessage());
@@ -116,7 +116,7 @@ class DashboardController extends Controller
      */
     private function getRecentUsers()
     {
-        return User::latest()
+        return UserCentral::latest()
             ->take(8)
             ->get()
             ->map(function ($user) {
@@ -172,7 +172,7 @@ class DashboardController extends Controller
             $activities = [];
 
             // Get recent users
-            $recentUsers = User::latest()->take(3)->get();
+            $recentUsers = UserCentral::latest()->take(3)->get();
             foreach ($recentUsers as $user) {
                 $activities[] = [
                     'user' => (object)['name' => 'System'],
@@ -237,7 +237,7 @@ class DashboardController extends Controller
             $endOfMonth = $month->copy()->endOfMonth();
 
             // Count new users for this month
-            $userData[] = User::whereBetween('created_at', [$startOfMonth, $endOfMonth])->count();
+            $userData[] = UserCentral::whereBetween('created_at', [$startOfMonth, $endOfMonth])->count();
 
             // Count new materials for this month
             $materialData[] = Material::whereBetween('created_at', [$startOfMonth, $endOfMonth])->count();
@@ -287,9 +287,9 @@ class DashboardController extends Controller
         return [
             'labels' => ['Admin', 'Guru', 'Siswa'],
             'data' => [
-                User::where('role', 'admin')->count(),
-                User::where('role', 'guru')->count(),
-                User::where('role', 'siswa')->count()
+                UserCentral::where('role', 'admin')->count(),
+                UserCentral::where('role', 'guru')->count(),
+                UserCentral::where('role', 'siswa')->count()
             ],
             'colors' => [
                 'rgba(78, 115, 223, 0.8)',

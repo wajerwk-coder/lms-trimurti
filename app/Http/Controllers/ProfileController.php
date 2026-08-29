@@ -53,7 +53,7 @@ class ProfileController extends Controller
 
         $validationRules = [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'email' => 'required|email|unique:users_central,email,' . $user->id,
             'phone' => 'nullable|string|max:20',
             'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'current_password' => 'required_with:password',
@@ -65,7 +65,7 @@ class ProfileController extends Controller
             $siswaId = $siswa ? $siswa->id : 0;
 
             $validationRules = array_merge($validationRules, [
-                'nis' => 'required|string|unique:siswas,nis,' . $siswaId,
+                'nis' => 'required|string|unique:siswa,nis,' . $siswaId,
                 'jenis_kelamin' => 'required|in:L,P',
                 'tanggal_lahir' => 'required|date',
                 'alamat' => 'nullable|string|max:500',

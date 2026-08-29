@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\Siswa; // ✅ DIPERBAIKI: Student menjadi Siswa
-use App\Models\Guru; // ✅ DITAMBAHKAN: Untuk konsistensi
+use App\Models\UserCentral;
+use App\Models\Siswa;
+use App\Models\Guru;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -39,7 +39,7 @@ class RegisterController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|regex:/^[a-zA-Z\s\.]+$/',
-            'email' => 'required|string|email|max:255|unique:users,email',
+            'email' => 'required|string|email|max:255|unique:users_central,email',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role' => 'required|in:siswa,guru,admin',
             'terms' => 'accepted',
@@ -66,7 +66,7 @@ class RegisterController extends Controller
         try {
             DB::beginTransaction();
 
-            $user = User::create([
+            $user = UserCentral::create([
                 'name' => ucwords(strtolower(trim($request->name))),
                 'email' => strtolower(trim($request->email)),
                 'password' => Hash::make($request->password),

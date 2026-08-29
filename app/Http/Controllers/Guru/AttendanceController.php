@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
-use App\Models\User;
+use App\Models\Siswa;
+use App\Models\Kelas;
+use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
@@ -33,7 +33,7 @@ class AttendanceController extends Controller
         
         // Get available praktik
         $practicals = \App\Models\Practical::where('guru_id', Auth::id())
-            ->where('status', 'active')
+            ->where('is_active', true)
             ->get();
             
         $query = Attendance::with('siswa.kelas')
@@ -52,7 +52,7 @@ class AttendanceController extends Controller
 
         $attendances = $query->latest()->paginate(25);
 
-        $classes = \App\Models\Kelas::where('status', 'active')
+        $classes = \App\Models\Kelas::aktif()
             ->whereHas('students')
             ->pluck('name', 'id');
             
@@ -81,119 +81,96 @@ class AttendanceController extends Controller
     public function index(): View
     {
         try {
-            // Default to last 30 days if no date specified
-            $date = request('date', null);
+            $date  = request('date', null);
             $class = request('class', 'all');
-            $type = request('type', null);
+            $type  = request('type', null);
 
-            // Start with base query - load relationships properly
-            $query = Attendance::with([
-                'siswa.kelas',
-                'subject'
-            ])->whereIn('class_subject_id', function($q) {
-                $q->select('id')
-                  ->from('class_subjects')
-                  ->where('teacher_id', Auth::id());
-            });
+            // Filter berdasarkan recorded_by (guru yang mencatat) — lebih reliabel
+            // daripada class_subject_id yang sering NULL pada data lama
+            $query = Attendance::with(['siswa', 'subject', 'kelas'])
+                ->where(function ($q) {
+                    $q->where('recorded_by', Auth::id())
+                      ->orWhere('guru_id', Auth::id());
+                });
 
-            // If specific date provided, filter by date
             if ($date) {
                 $query->whereDate('date', $date);
             } else {
-                // Default: show last 30 days of attendance
                 $query->where('date', '>=', Carbon::now()->subDays(30));
             }
 
-            if ($class !== 'all') {
-                $query->whereHas('siswa.kelas', function($q) use ($class) {
-                    $q->where('kelas_id', $class);
-                });
-            }
-            
-            // Filter berdasarkan tipe absensi hanya jika type specified
-            if ($type) {
-                $query->where('type', $type);
+            if ($class !== 'all' && $class) {
+                $query->where('kelas_id', $class);
             }
 
-            // Get paginated results with proper ordering
+            if ($type) {
+                $query->where('status', $type);
+            }
+
             $attendances = $query->orderBy('date', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->paginate(20);
 
-            // Get all active classes
-            $classes = \App\Models\Kelas::orderBy('name')
-                ->pluck('name', 'id');
+            $classes = \App\Models\Kelas::orderBy('name')->pluck('name', 'id');
 
-            // Get all active subjects
             $subjects = \App\Models\Subject::where('is_active', true)
-                ->orderBy('name')
-                ->get();
+                ->orderBy('name')->get();
 
-            // Get stats efficiently
-            $statsQuery = Attendance::query();
-            
+            // Stats dari query yang sama (bukan paginator)
+            $statsQuery = Attendance::where(function ($q) {
+                $q->where('recorded_by', Auth::id())
+                  ->orWhere('guru_id', Auth::id());
+            });
+
             if ($date) {
                 $statsQuery->whereDate('date', $date);
             } else {
                 $statsQuery->where('date', '>=', Carbon::now()->subDays(30));
             }
-            
-            if ($type) {
-                $statsQuery->where('type', $type);
+
+            if ($class !== 'all' && $class) {
+                $statsQuery->where('kelas_id', $class);
             }
-            
+
             $statsData = $statsQuery->selectRaw('status, COUNT(*) as count')
                 ->groupBy('status')
                 ->pluck('count', 'status');
 
             $stats = [
                 'total' => $attendances->total(),
-                'hadir' => $statsData['present'] ?? 0,
-                'izin' => $statsData['permission'] ?? 0,
-                'sakit' => $statsData['sick'] ?? 0,
+                'hadir' => $statsData['hadir'] ?? 0,
+                'izin'  => $statsData['izin']  ?? 0,
+                'sakit' => $statsData['sakit'] ?? 0,
                 'alpha' => $statsData['alpha'] ?? 0,
             ];
-            
-            // Debug logging with detailed info
-            \Log::info('Guru Attendance Debug', [
-                'attendances_count' => $attendances->count(),
-                'attendances_total' => $attendances->total(),
-                'attendances_type' => get_class($attendances),
-                'classes_count' => $classes->count(),
-                'subjects_count' => $subjects->count(),
-                'date' => $date,
-                'class' => $class,
-                'type' => $type,
-                'query_sql' => $query->toSql(),
-                'has_attendances_table' => \Schema::hasTable('attendances'),
-                'attendances_table_count' => \DB::table('attendances')->count(),
-                'sample_attendance' => $attendances->first(),
-                'sample_attendance_relations' => $attendances->first() ? [
-                    'has_siswa' => $attendances->first()->relationLoaded('siswa'),
-                    'siswa_id' => $attendances->first()->siswa_id,
-                    'siswa_data' => $attendances->first()->siswa,
-                    'siswa_name' => $attendances->first()->siswa?->name,
-                    'siswa_kelas' => $attendances->first()->siswa?->kelas,
-                    'has_subject' => $attendances->first()->relationLoaded('subject'),
-                    'subject_id' => $attendances->first()->subject_id,
-                    'subject_data' => $attendances->first()->subject,
-                ] : null
-            ]);
-            
-            return view('guru.absensi.index', compact('attendances', 'date', 'stats', 'classes', 'class', 'subjects', 'type'));
+
+            return view('guru.absensi.index', compact(
+                'attendances', 'date', 'stats', 'classes', 'class', 'subjects', 'type'
+            ));
+
         } catch (\Exception $e) {
             Log::error('Error in guru attendance index: ' . $e->getMessage());
             return view('guru.absensi.index', [
-                'attendances' => collect(),
-                'date' => Carbon::today()->format('Y-m-d'),
-                'stats' => ['total' => 0, 'hadir' => 0, 'izin' => 0, 'sakit' => 0, 'alpha' => 0],
-                'classes' => collect(),
-                'class' => 'all',
-                'subjects' => collect(),
-                'type' => null,
-                'error' => 'Terjadi kesalahan saat memuat data absensi. Silakan coba lagi.'
+                'attendances' => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20),
+                'date'        => Carbon::today()->format('Y-m-d'),
+                'stats'       => ['total' => 0, 'hadir' => 0, 'izin' => 0, 'sakit' => 0, 'alpha' => 0],
+                'classes'     => collect(),
+                'class'       => 'all',
+                'subjects'    => collect(),
+                'type'        => null,
+                'error'       => 'Terjadi kesalahan saat memuat data absensi.',
             ]);
         }
+    }
+
+    /**
+     * Display detail of a single attendance record.
+     */
+    public function show(Attendance $absensi): View
+    {
+        $absensi->load(['siswa', 'kelas', 'subject', 'recorder', 'createdBy']);
+
+        return view('guru.absensi.show', compact('absensi'));
     }
 
     /**
@@ -201,53 +178,37 @@ class AttendanceController extends Controller
      */
     public function create(): View
     {
-        try {
-            $guruId = Auth::id();
-            
-            // Get classes where this guru teaches
-            $classes = \DB::table('classes')
-                ->join('class_subjects', 'classes.id', '=', 'class_subjects.class_id')
-                ->where('class_subjects.teacher_id', $guruId)
-                ->distinct()
-                ->select('classes.id', 'classes.name')
-                ->orderBy('classes.name')
-                ->pluck('name', 'id');
+        $classes  = Kelas::orderBy('name')->get(['id', 'name']);
+        $subjects = Subject::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
-            $selectedClass = request('class');
-            
-            // Get students with proper filtering and ordering
-            if ($selectedClass) {
-                $siswas = \DB::table('users')
-                    ->join('class_students', 'users.id', '=', 'class_students.student_id')
-                    ->where('users.role', 'siswa')
-                    ->where('class_students.class_id', $selectedClass)
-                    ->orderBy('users.name')
-                    ->select('users.*', 'class_students.class_id')
-                    ->get();
-            } else {
-                $siswas = collect(); // Empty collection if no class selected
-            }
-                
-            // Get subjects assigned to this guru
-            $subjects = \DB::table('class_subjects')
-                ->join('subjects', 'class_subjects.subject_id', '=', 'subjects.id')
-                ->where('class_subjects.teacher_id', $guruId)
-                ->where('subjects.is_active', true)
-                ->select('class_subjects.id', 'subjects.name')
-                ->distinct()
-                ->orderBy('subjects.name')
-                ->get();
+        return view('guru.absensi.create', compact('classes', 'subjects'));
+    }
 
-            return view('guru.absensi.create', compact('siswas', 'classes', 'selectedClass', 'subjects'));
-        } catch (\Exception $e) {
-            return view('guru.absensi.create', [
-                'siswas' => collect(),
-                'classes' => collect(),
-                'selectedClass' => null,
-                'subjects' => collect(),
-                'error' => 'Error loading create form: ' . $e->getMessage()
-            ]);
+    /**
+     * AJAX: ambil daftar siswa berdasarkan kelas_id.
+     * GET /guru/absensi/siswa-by-kelas?kelas_id=X
+     */
+    public function siswaByKelas(Request $request)
+    {
+        $kelasId = $request->get('kelas_id');
+
+        if (!$kelasId) {
+            return response()->json([]);
         }
+
+        $siswas = Siswa::with('user')
+            ->where('kelas_id', $kelasId)
+            ->whereNull('deleted_at')
+            ->get()
+            ->sortBy(fn($s) => $s->user?->name)
+            ->map(fn($s) => [
+                'id'   => $s->id,
+                'name' => $s->user?->name ?? "Siswa #$s->id",
+                'nis'  => $s->nis ?? '',
+            ])
+            ->values();
+
+        return response()->json($siswas);
     }
 
     /**
@@ -255,71 +216,54 @@ class AttendanceController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $validator = Validator::make($request->all(), [
-            'siswa_id' => 'required|exists:users,id',
-            'date' => 'required|date|before_or_equal:today',
-            'status' => 'required|in:hadir,izin,sakit,alpha',
-            'keterangan' => 'nullable|string|max:500',
-            'waktu_masuk' => 'nullable|date_format:H:i',
-            'waktu_keluar' => 'nullable|date_format:H:i|after:waktu_masuk',
-            'type' => 'nullable|in:regular,praktik',
-            'practical_id' => 'required_if:type,praktik|nullable|exists:practicals,id',
+        $request->validate([
+            'siswa_id'   => 'required|exists:siswa,id',
+            'kelas_id'   => 'nullable|exists:classes,id',
+            'subject_id' => 'nullable|exists:subjects,id',
+            'date'       => 'required|date|before_or_equal:today',
+            'status'     => 'required|in:hadir,izin,sakit,alpha',
+            'note'       => 'nullable|string|max:500',
         ], [
-            'tanggal.before_or_equal' => 'Tanggal tidak boleh melebihi hari ini',
-            'waktu_keluar.after' => 'Waktu keluar harus setelah waktu masuk',
+            'siswa_id.required'       => 'Siswa wajib dipilih.',
+            'date.before_or_equal'    => 'Tanggal tidak boleh melebihi hari ini.',
+            'status.required'         => 'Status kehadiran wajib dipilih.',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput()
-                ->with('error', 'Terdapat kesalahan dalam pengisian form');
-        }
+        // Cek duplikasi — tapi cek dari users_central.id
+        $siswa = \App\Models\Siswa::findOrFail($request->siswa_id);
+        $ucId  = $siswa->user_id;
 
-        // ✅ Cek duplikasi
-        if ($this->isAttendanceExists($request->siswa_id, $request->date)) {
-            return back()->with('error', 'Absensi untuk siswa ini pada tanggal tersebut sudah ada.')
-                ->withInput();
+        if (Attendance::where('siswa_id', $ucId)->whereDate('date', $request->date)->exists()) {
+            return back()->withInput()
+                ->with('error', 'Absensi untuk siswa ini pada tanggal tersebut sudah ada.');
         }
 
         try {
             $attendance = Attendance::create([
-                'siswa_id' => $request->siswa_id,
-                'date' => $request->date,
-                'status' => $request->status,
-                'keterangan' => $request->keterangan,
-                'waktu_masuk' => $request->waktu_masuk,
-                'waktu_keluar' => $request->waktu_keluar,
-                'type' => $request->type ?? 'regular',
-                'practical_id' => $request->practical_id,
+                'siswa_id'    => $ucId,
+                'kelas_id'    => $request->kelas_id,
+                'subject_id'  => $request->subject_id,
+                'date'        => $request->date,
+                'status'      => $request->status,
+                'note'        => $request->note,
+                'guru_id'     => Auth::id(),
                 'recorded_by' => Auth::id(),
             ]);
 
             Log::info('Attendance created', [
                 'attendance_id' => $attendance->id,
-                'siswa_id' => $request->siswa_id,
-                'date' => $request->date,
-                'status' => $request->status,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
+                'siswa_id'      => $ucId,
+                'date'          => $request->date,
+                'status'        => $request->status,
+                'guru_id'       => Auth::id(),
             ]);
-
-            if ($request->type == 'praktik') {
-                return redirect()->route('guru.absensi.praktik')
-                    ->with('success', 'Absensi praktik berhasil dicatat!');
-            }
 
             return redirect()->route('guru.absensi.index')
-                ->with('success', 'Absensi berhasil dicatat!');
+                ->with('success', 'Absensi berhasil dicatat.');
 
         } catch (\Exception $e) {
-            Log::error('Attendance creation failed: ' . $e->getMessage(), [
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return redirect()->back()
-                ->withInput()
+            Log::error('Attendance creation failed: ' . $e->getMessage());
+            return back()->withInput()
                 ->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
         }
     }
@@ -329,46 +273,40 @@ class AttendanceController extends Controller
      */
     public function storePraktikBatch(Request $request): RedirectResponse
     {
-        $validator = Validator::make($request->all(), [
-            'date' => 'required|date',
+        $request->validate([
+            'date'         => 'required|date',
             'practical_id' => 'required|exists:practicals,id',
-            'status' => 'required|array',
-            'status.*' => 'required|in:hadir,izin,sakit,alpha',
-            'keterangan' => 'nullable|array',
-            'keterangan.*' => 'nullable|string|max:255',
+            'status'       => 'required|array',
+            'status.*'     => 'required|in:hadir,izin,sakit,alpha',
+            'note'         => 'nullable|array',
+            'note.*'       => 'nullable|string|max:255',
         ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
 
         try {
             // Verify that the practical belongs to the authenticated teacher
             $practical = \App\Models\Practical::where('id', $request->practical_id)
                 ->where('guru_id', Auth::id())
                 ->firstOrFail();
-                
+
             // Get students for this practical's class
-            $students = User::where('role', 'siswa')
-                ->whereHas('kelas', function($query) use ($practical) {
-                    $query->where('id', $practical->kelas_id);
-                })
-                ->get();
-                
+            $students = Siswa::whereHas('kelas', function ($q) use ($practical) {
+                $q->where('id', $practical->kelas_id);
+            })->get();
+
             foreach ($students as $student) {
                 if (isset($request->status[$student->id])) {
+                    // Konversi siswa.id → users_central.id
+                    $ucId = $student->user_id;
                     Attendance::updateOrCreate(
                         [
-                            'siswa_id' => $student->id,
-                            'date' => $request->date,
-                            'type' => 'praktik',
+                            'siswa_id'     => $ucId,
+                            'date'         => $request->date,
+                            'type'         => 'praktik',
                             'practical_id' => $request->practical_id,
                         ],
                         [
-                            'status' => $request->status[$student->id],
-                            'keterangan' => $request->keterangan[$student->id] ?? null,
+                            'status'      => $request->status[$student->id],
+                            'note'        => $request->note[$student->id] ?? null,
                             'recorded_by' => Auth::id(),
                         ]
                     );
@@ -377,11 +315,11 @@ class AttendanceController extends Controller
 
             return redirect()->route('guru.absensi.praktik')
                 ->with('success', 'Absensi praktik berhasil disimpan untuk semua siswa.');
+
         } catch (\Exception $e) {
             Log::error('Error creating batch praktik attendance: ' . $e->getMessage());
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan saat menyimpan absensi praktik.')
-                ->withInput();
+            return back()->withInput()
+                ->with('error', 'Terjadi kesalahan saat menyimpan absensi praktik.');
         }
     }
 
@@ -390,84 +328,64 @@ class AttendanceController extends Controller
      */
     public function bulkCreate(): View
     {
-        $classes = \App\Models\Kelas::whereHas('students', function($query) {
-                $query->where('role', 'siswa');
-            })
-            ->where('status', 'active')
-            ->pluck('name', 'id');
+        $classes  = Kelas::orderBy('name')->pluck('name', 'id');
+        $subjects = Subject::where('is_active', true)->orderBy('name')->get();
 
-        return view('guru.absensi.bulk-create', compact('classes'));
+        return view('guru.absensi.bulk-create', compact('classes', 'subjects'));
     }
 
     /**
-     * Store multiple attendance records.
+     * Store multiple attendance records (bulk — satu kelas sekaligus).
      */
     public function bulkStore(Request $request): RedirectResponse
     {
-        // ✅ Validasi kelas harus valid
-        $validClasses = \App\Models\Kelas::whereHas('students', function($query) {
-                $query->where('role', 'siswa');
-            })
-            ->where('status', 'active')
-            ->pluck('id')
-            ->toArray();
-
-        $validator = Validator::make($request->all(), [
-            'date' => 'required|date|before_or_equal:today',
-            'class' => [
-                'required',
-                Rule::in($validClasses)
-            ],
-            'status' => 'required|in:hadir,izin,sakit,alpha',
-            'keterangan' => 'nullable|string|max:500',
+        $request->validate([
+            'date'       => 'required|date|before_or_equal:today',
+            'class'      => 'required|exists:classes,id',
+            'subject_id' => 'nullable|exists:subjects,id',
+            'status'     => 'required|in:hadir,izin,sakit,alpha',
+            'note'       => 'nullable|string|max:500',
+        ], [
+            'date.before_or_equal' => 'Tanggal tidak boleh melebihi hari ini.',
+            'class.required'       => 'Kelas wajib dipilih.',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
         try {
-            $siswas = User::where('role', 'siswa')
-                ->where('kelas_id', $request->class)
-                ->get();
-
+            $siswas       = Siswa::where('kelas_id', $request->class)->whereNull('deleted_at')->get();
             $createdCount = 0;
+
             foreach ($siswas as $siswa) {
-                if (!$this->isAttendanceExists($siswa->id, $request->date)) {
-                    Attendance::create([
-                        'siswa_id' => $siswa->id,
-                        'date' => $request->date,
-                        'status' => $request->status,
-                        'keterangan' => $request->keterangan,
-                        'recorded_by' => Auth::id(),
-                    ]);
-                    $createdCount++;
+                $ucId = $siswa->user_id;
+                // Skip jika sudah ada
+                if (Attendance::where('siswa_id', $ucId)->whereDate('date', $request->date)->exists()) {
+                    continue;
                 }
+                Attendance::create([
+                    'siswa_id'    => $ucId,
+                    'kelas_id'    => $request->class,
+                    'subject_id'  => $request->subject_id,
+                    'date'        => $request->date,
+                    'status'      => $request->status,
+                    'note'        => $request->note,
+                    'guru_id'     => Auth::id(),
+                    'recorded_by' => Auth::id(),
+                ]);
+                $createdCount++;
             }
 
             Log::info('Bulk attendance created', [
-                'class' => $request->class,
-                'date' => $request->date,
-                'status' => $request->status,
+                'class'         => $request->class,
+                'date'          => $request->date,
                 'created_count' => $createdCount,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
+                'guru_id'       => Auth::id(),
             ]);
 
             return redirect()->route('guru.absensi.index')
-                ->with('success', "Absensi massal berhasil dicatat untuk $createdCount siswa!");
+                ->with('success', "Absensi massal berhasil dicatat untuk {$createdCount} siswa.");
 
         } catch (\Exception $e) {
-            Log::error('Bulk attendance creation failed: ' . $e->getMessage(), [
-                'class' => $request->class,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return redirect()->back()
-                ->withInput()
+            Log::error('Bulk attendance creation failed: ' . $e->getMessage());
+            return back()->withInput()
                 ->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
         }
     }
@@ -477,13 +395,14 @@ class AttendanceController extends Controller
      */
     public function edit(Attendance $absensi): View
     {
-        // ✅ Security: Double-check ownership
+        // Security: Double-check ownership
         if ($absensi->recorded_by !== Auth::id()) {
             abort(403, 'Anda tidak diizinkan mengedit absensi ini.');
         }
 
-        $this->authorize('update', $absensi);
-        return view('guru.absensi.edit', compact('absensi'));
+        $kelas = Kelas::orderBy('name')->pluck('name', 'id');
+        $subjects = Subject::where('is_active', true)->orderBy('name')->get();
+        return view('guru.absensi.edit', compact('absensi', 'kelas', 'subjects'));
     }
 
     /**
@@ -491,54 +410,38 @@ class AttendanceController extends Controller
      */
     public function update(Request $request, Attendance $absensi): RedirectResponse
     {
-        // ✅ Security: Double-check ownership
+        // Security: Double-check ownership
         if ($absensi->recorded_by !== Auth::id()) {
             abort(403, 'Anda tidak diizinkan mengedit absensi ini.');
         }
 
-        $this->authorize('update', $absensi);
-
-        $validator = Validator::make($request->all(), [
-            'status' => 'required|in:hadir,izin,sakit,alpha',
-            'keterangan' => 'nullable|string|max:500',
-            'waktu_masuk' => 'nullable|date_format:H:i',
-            'waktu_keluar' => 'nullable|date_format:H:i|after:waktu_masuk',
+        $request->validate([
+            'status'     => 'required|in:hadir,izin,sakit,alpha',
+            'note'       => 'nullable|string|max:500',
+            'kelas_id'   => 'nullable|exists:classes,id',
+            'subject_id' => 'nullable|exists:subjects,id',
         ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
 
         try {
             $absensi->update([
-                'status' => $request->status,
-                'keterangan' => $request->keterangan,
-                'waktu_masuk' => $request->waktu_masuk,
-                'waktu_keluar' => $request->waktu_keluar,
-                'updated_by' => Auth::id(),
+                'status'     => $request->status,
+                'note'       => $request->note,
+                'kelas_id'   => $request->kelas_id,
+                'subject_id' => $request->subject_id,
             ]);
 
             Log::info('Attendance updated', [
                 'attendance_id' => $absensi->id,
-                'status' => $request->status,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
+                'status'        => $request->status,
+                'guru_id'       => Auth::id(),
             ]);
 
             return redirect()->route('guru.absensi.index')
-                ->with('success', 'Absensi berhasil diperbarui!');
+                ->with('success', 'Absensi berhasil diperbarui.');
 
         } catch (\Exception $e) {
-            Log::error('Attendance update failed: ' . $e->getMessage(), [
-                'attendance_id' => $absensi->id,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return redirect()->back()
-                ->withInput()
+            Log::error('Attendance update failed: ' . $e->getMessage());
+            return back()->withInput()
                 ->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
         }
     }
@@ -548,12 +451,10 @@ class AttendanceController extends Controller
      */
     public function destroy(Attendance $absensi): RedirectResponse
     {
-        // ✅ Security: Double-check ownership
+        // Security: Double-check ownership
         if ($absensi->recorded_by !== Auth::id()) {
             abort(403, 'Anda tidak diizinkan menghapus absensi ini.');
         }
-
-        $this->authorize('delete', $absensi);
 
         try {
             $absensi->delete();
@@ -579,13 +480,4 @@ class AttendanceController extends Controller
         }
     }
 
-    /**
-     * Check if attendance record already exists.
-     */
-    private function isAttendanceExists($siswaId, $tanggal): bool
-    {
-        return Attendance::where('siswa_id', $siswaId)
-            ->whereDate('date', $tanggal)
-            ->exists();
-    }
 }

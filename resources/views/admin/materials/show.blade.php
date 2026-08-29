@@ -1,274 +1,184 @@
 @extends('layouts.admin')
 
-@section('title', 'Detail Materi Pembelajaran')
+@section('title', 'Detail Materi')
+@section('page-title', 'Detail Materi')
+@section('page-subtitle', 'Informasi lengkap dan statistik materi pembelajaran.')
+
+@section('page-actions')
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.materials.edit', $material) }}" class="btn btn-warning btn-sm">
+            <i class="fas fa-edit me-1"></i>Edit
+        </a>
+        <form action="{{ route('admin.materials.toggle-publish', $material) }}" method="POST" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-sm {{ $material->published_at ? 'btn-secondary' : 'btn-success' }}">
+                <i class="fas fa-{{ $material->published_at ? 'eye-slash' : 'eye' }} me-1"></i>
+                {{ $material->published_at ? 'Sembunyikan' : 'Publikasikan' }}
+            </button>
+        </form>
+        <a href="{{ route('admin.materials.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Kembali
+        </a>
+    </div>
+@endsection
 
 @section('content')
-<div class="mb-6">
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800">Detail Materi Pembelajaran</h1>
-            <p class="text-gray-600">Informasi lengkap dan statistik materi</p>
-        </div>
-        <div class="flex space-x-3">
-            <a href="{{ route('admin.materials.edit', $material) }}" class="btn-primary">
-                <i class="fas fa-edit mr-2"></i>
-                Edit Materi
-            </a>
-            <a href="{{ route('admin.materials.index') }}" class="btn-secondary">
-                <i class="fas fa-arrow-left mr-2"></i>
-                Kembali
-            </a>
-        </div>
-    </div>
-</div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Main Content -->
-    <div class="lg:col-span-2 space-y-6">
-        <!-- Material Information -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-800">Informasi Materi</h2>
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+<div class="row g-4">
+
+    {{-- Info Materi --}}
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-book me-2"></i>Informasi Materi</h6>
             </div>
-            <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Judul Materi</label>
-                        <p class="text-sm text-gray-900 font-medium">{{ $material->judul }}</p>
+            <div class="card-body">
+                <h5 class="fw-bold mb-1">{{ $material->title }}</h5>
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-user me-1"></i>{{ $material->guru?->name ?? 'N/A' }}
+                    &nbsp;·&nbsp;
+                    <i class="fas fa-book me-1"></i>{{ $material->subject?->name ?? 'N/A' }}
+                </p>
+
+                @if($material->content)
+                    <h6 class="fw-bold">Konten</h6>
+                    <div class="bg-light rounded-3 p-3 mb-3">
+                        {!! nl2br(e($material->content)) !!}
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Guru</label>
-                        <p class="text-sm text-gray-900">{{ $material->teacher->name ?? 'N/A' }}</p>
+                @endif
+
+                @if($material->video_url)
+                    <div class="mt-3">
+                        <h6 class="fw-bold"><i class="fas fa-video me-1 text-info"></i>Video</h6>
+                        <a href="{{ $material->video_url }}" target="_blank" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-external-link-alt me-1"></i>Buka Video
+                        </a>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {{ $material->subject->name ?? 'N/A' }}
-                        </span>
+                @endif
+
+                @if($material->file_url)
+                    <div class="mt-3">
+                        <h6 class="fw-bold"><i class="fas fa-file-alt me-1 text-success"></i>File Materi</h6>
+                        <div class="d-flex align-items-center p-3 bg-light rounded-3">
+                            <i class="fas fa-file-alt text-success me-3 fa-lg"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-medium">{{ $material->file_url }}</div>
+                            </div>
+                            <a href="{{ Storage::url('materials/' . $material->file_url) }}" download
+                               class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-download me-1"></i>Unduh
+                            </a>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            {{ $material->category }}
-                        </span>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                        @if($material->is_published)
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <i class="fas fa-eye mr-1"></i>
-                                Dipublikasikan
-                            </span>
-                        @else
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                <i class="fas fa-eye-slash mr-1"></i>
-                                Disembunyikan
-                            </span>
-                        @endif
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Dibuat</label>
-                        <p class="text-sm text-gray-900">{{ $material->created_at->format('d F Y, H:i') }}</p>
-                    </div>
-                </div>
-                
-                @if($material->description)
-                <div class="mt-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <p class="text-sm text-gray-900 whitespace-pre-wrap">{{ $material->description }}</p>
-                    </div>
-                </div>
                 @endif
             </div>
         </div>
 
-        <!-- File Information -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-800">Informasi File</h2>
-            </div>
-            <div class="p-6">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 h-12 w-12">
-                        <div class="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
-                            <i class="fas fa-file-{{ $material->file_type === 'pdf' ? 'pdf' : ($material->file_type === 'doc' || $material->file_type === 'docx' ? 'word' : 'alt') }} text-gray-600 text-xl"></i>
-                        </div>
-                    </div>
-                    <div class="ml-4 flex-1">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Nama File</label>
-                                <p class="text-sm text-gray-900 font-medium">{{ $material->file }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Tipe File</label>
-                                <p class="text-sm text-gray-900 uppercase">{{ $material->file_type }}</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Ukuran File</label>
-                                <p class="text-sm text-gray-900">{{ number_format($material->file_size / 1024, 1) }} KB</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">MIME Type</label>
-                                <p class="text-sm text-gray-900">{{ $material->mime_type }}</p>
-                            </div>
-                        </div>
-                    </div>
+        {{-- Download Log --}}
+        @if(isset($downloads) && $downloads->count())
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-download me-2"></i>Log Unduhan</h6>
+                    <span class="badge bg-white text-info">{{ $downloads->total() }}</span>
                 </div>
-            </div>
-        </div>
-
-        <!-- Download History -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-800">Riwayat Download</h2>
-            </div>
-            <div class="p-6">
-                @if($downloads->count() > 0)
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 small">
+                            <thead class="table-light">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Siswa</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Download</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                                    <th class="ps-3">Siswa</th>
+                                    <th>Waktu Unduh</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($downloads as $download)
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">{{ $download->siswa->name ?? 'N/A' }}</div>
-                                        <div class="text-sm text-gray-500">{{ $download->siswa->email ?? 'N/A' }}</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {{ $download->downloaded_at->format('d/m/Y H:i') }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {{ $download->ip_address }}
-                                    </td>
-                                </tr>
+                            <tbody>
+                                @foreach($downloads as $dl)
+                                    <tr>
+                                        <td class="ps-3 fw-semibold">{{ $dl->siswa?->name ?? 'N/A' }}</td>
+                                        <td class="text-muted">{{ optional($dl->downloaded_at ?? $dl->created_at)->format('d M Y H:i') ?? '—' }}</td>
+                                    </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
-                    
-                    @if($downloads->hasPages())
-                    <div class="mt-4">
-                        {{ $downloads->links() }}
-                    </div>
+                </div>
+                @if($downloads->hasPages())
+                    <div class="card-footer bg-white border-top">{{ $downloads->links() }}</div>
+                @endif
+            </div>
+        @endif
+    </div>
+
+    {{-- Sidebar --}}
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-info-circle me-2"></i>Detail Info</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted d-block">Status</small>
+                    @if($material->published_at)
+                        <span class="badge bg-success">Published</span>
+                    @else
+                        <span class="badge bg-secondary">Draft</span>
                     @endif
-                @else
-                    <div class="text-center py-8">
-                        <i class="fas fa-download text-4xl text-gray-300 mb-4"></i>
-                        <p class="text-gray-500">Belum ada riwayat download</p>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted d-block">Dipublikasikan</small>
+                    <span class="fw-semibold">{{ optional($material->published_at)->format('d M Y H:i') ?? '—' }}</span>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted d-block">Guru</small>
+                    <span class="fw-semibold">{{ $material->guru?->name ?? '—' }}</span>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted d-block">Mata Pelajaran</small>
+                    <span class="fw-semibold">{{ $material->subject?->name ?? '—' }}</span>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted d-block">Kelas</small>
+                    <span class="fw-semibold">{{ $material->kelas?->name ?? 'Semua Kelas' }}</span>
+                </div>
+                <hr>
+                <div class="mb-2">
+                    <small class="text-muted d-block">Total Unduhan</small>
+                    <span class="fw-bold text-primary h5">{{ $material->downloads_count ?? 0 }}</span>
+                </div>
+                @if(isset($stats))
+                    <div class="mb-2">
+                        <small class="text-muted d-block">Unduhan Minggu Ini</small>
+                        <span class="fw-semibold text-success">{{ $stats['last_week_downloads'] ?? 0 }}</span>
+                    </div>
+                    <div>
+                        <small class="text-muted d-block">Pengunduh Unik</small>
+                        <span class="fw-semibold text-info">{{ $stats['unique_downloaders'] ?? 0 }}</span>
                     </div>
                 @endif
             </div>
         </div>
-    </div>
 
-    <!-- Sidebar -->
-    <div class="space-y-6">
-        <!-- Statistics -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-800">Statistik</h2>
-            </div>
-            <div class="p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <div class="p-2 bg-blue-100 rounded-lg">
-                            <i class="fas fa-download text-blue-600"></i>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-600">Total Download</p>
-                            <p class="text-2xl font-bold text-gray-900">{{ number_format($stats['total_downloads']) }}</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <div class="p-2 bg-green-100 rounded-lg">
-                            <i class="fas fa-calendar-week text-green-600"></i>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-600">Download Minggu Ini</p>
-                            <p class="text-2xl font-bold text-gray-900">{{ number_format($stats['last_week_downloads']) }}</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <div class="p-2 bg-purple-100 rounded-lg">
-                            <i class="fas fa-users text-purple-600"></i>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-600">Downloader Unik</p>
-                            <p class="text-2xl font-bold text-gray-900">{{ number_format($stats['unique_downloaders']) }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-800">Aksi</h2>
-            </div>
-            <div class="p-6 space-y-3">
-                <form action="{{ route('admin.materials.publish', $material) }}" method="POST" class="w-full">
-                    @csrf
-                    <button type="submit" 
-                            class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white {{ $material->is_published ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-600 hover:bg-green-700' }} focus:outline-none focus:ring-2 focus:ring-offset-2 {{ $material->is_published ? 'focus:ring-yellow-500' : 'focus:ring-green-500' }}">
-                        <i class="fas fa-{{ $material->is_published ? 'eye-slash' : 'eye' }} mr-2"></i>
-                        {{ $material->is_published ? 'Sembunyikan' : 'Publikasikan' }}
-                    </button>
-                </form>
-                
-                <a href="{{ route('admin.materials.edit', $material) }}" 
-                   class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    <i class="fas fa-edit mr-2"></i>
-                    Edit Materi
+        <div class="card border-0 shadow-sm">
+            <div class="card-body d-grid gap-2">
+                <a href="{{ route('admin.materials.edit', $material) }}" class="btn btn-warning">
+                    <i class="fas fa-edit me-2"></i>Edit Materi
                 </a>
-                
-                <form action="{{ route('admin.materials.destroy', $material) }}" method="POST" 
-                      onsubmit="return confirm('Apakah Anda yakin ingin menghapus materi ini?')" class="w-full">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" 
-                            class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                        <i class="fas fa-trash mr-2"></i>
-                        Hapus Materi
-                    </button>
+                <button type="button" class="btn btn-danger"
+                        onclick="if(confirm('Hapus materi ini?')) document.getElementById('deleteForm').submit()">
+                    <i class="fas fa-trash me-2"></i>Hapus Materi
+                </button>
+                <form id="deleteForm" action="{{ route('admin.materials.destroy', $material) }}" method="POST">
+                    @csrf @method('DELETE')
                 </form>
-            </div>
-        </div>
-
-        <!-- Material Info -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-semibold text-gray-800">Informasi Tambahan</h2>
-            </div>
-            <div class="p-6 space-y-3">
-                <div class="flex justify-between">
-                    <span class="text-sm text-gray-600">ID Materi:</span>
-                    <span class="text-sm font-medium text-gray-900">#{{ $material->id }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-sm text-gray-600">Terakhir Diupdate:</span>
-                    <span class="text-sm font-medium text-gray-900">{{ $material->updated_at->format('d/m/Y H:i') }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-sm text-gray-600">Path File:</span>
-                    <span class="text-sm font-medium text-gray-900 break-all">{{ $material->file_path }}</span>
-                </div>
             </div>
         </div>
     </div>
 </div>
+
 @endsection

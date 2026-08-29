@@ -1,11 +1,11 @@
-@extends('admin.layouts.admin-layout')
+@extends('layouts.admin')
 
-@section('title')
-    Profil Admin
-@endsection
+@section('title', 'Profil Admin')
+@section('page-title', 'Profil Saya')
+@section('page-subtitle', 'Kelola informasi akun dan foto profil.')
 
 @section('content')
-<div class="container-fluid">
+<div>
     <div class="row mb-3">
         <div class="col-12 d-flex justify-content-between align-items-center">
             <h4 class="mb-0">Profil Saya</h4>
@@ -85,7 +85,7 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Jenis Kelamin</label>
-                        <select name="gender" class="form-control">
+        <select name="gender" class="form-select">
                             <option value="" {{ old('gender', $user->gender) === null ? 'selected' : '' }}>Pilih</option>
                             <option value="L" {{ old('gender', $user->gender) === 'L' ? 'selected' : '' }}>Laki-laki</option>
                             <option value="P" {{ old('gender', $user->gender) === 'P' ? 'selected' : '' }}>Perempuan</option>

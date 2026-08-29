@@ -1,14 +1,14 @@
-@extends('admin.layouts.admin-layout')
+﻿@extends('layouts.admin')
 
 @section('title', 'Tambah Kriteria Penilaian (Gabungan)')
 
 @section('content')
-<div class="container-fluid">
+<div>
     <div class="row">
         <div class="col-12 mb-3">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Beranda</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('admin.kriteria-penilaian.index') }}">Kriteria Penilaian</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Tambah (Gabungan)</li>
                 </ol>
@@ -74,24 +74,24 @@
                             </div>
                             <div class="col-md-3 mb-3">
                                 <label class="form-label">Status</label>
-                                <select name="status" class="form-control">
-                                    <option value="1" {{ old('status', 1)==1 ? 'selected' : '' }}>Aktif</option>
-                                    <option value="0" {{ old('status')==='0' ? 'selected' : '' }}>Nonaktif</option>
+                                <select name="is_active" class="form-control">
+                                    <option value="1" {{ old('is_active', 1)==1 ? 'selected' : '' }}>Aktif</option>
+                                    <option value="0" {{ old('is_active')==='0' ? 'selected' : '' }}>Nonaktif</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="alert alert-info d-flex justify-content-between align-items-center">
-                            <span>Pastikan total bobot dari keempat kategori berjumlah 1.0 (100%).</span>
-                            <span class="badge bg-dark">Total Bobot Saat Ini: <span id="totalBobot">0.00</span></span>
+                            <span>Pastikan total bobot dari keempat kategori berjumlah 100%.</span>
+                            <span class="badge bg-dark">Total Bobot Saat Ini: <span id="totalBobot">0</span>%</span>
                         </div>
 
                         @php
                             $defaults = [
-                                'persiapan' => ['label' => 'Persiapan', 'color' => 'info', 'default_bobot' => 0.20],
-                                'pelaksanaan' => ['label' => 'Pelaksanaan', 'color' => 'primary', 'default_bobot' => 0.40],
-                                'hasil' => ['label' => 'Hasil', 'color' => 'success', 'default_bobot' => 0.25],
-                                'sikap' => ['label' => 'Sikap Profesional', 'color' => 'warning', 'default_bobot' => 0.15],
+                                'persiapan'  => ['label' => 'Persiapan',          'color' => 'info',    'default_weight' => 20],
+                                'pelaksanaan'=> ['label' => 'Pelaksanaan',         'color' => 'primary', 'default_weight' => 40],
+                                'hasil'      => ['label' => 'Hasil',               'color' => 'success', 'default_weight' => 25],
+                                'sikap'      => ['label' => 'Sikap Profesional',   'color' => 'warning', 'default_weight' => 15],
                             ];
                         @endphp
 
@@ -106,30 +106,36 @@
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label">Nama Kriteria <span class="text-danger">*</span></label>
-                                            <input type="text" name="categories[{{ $key }}][nama]" value="{{ old("categories.$key.nama") }}" class="form-control" placeholder="Nama kriteria {{ strtolower($meta['label']) }}" required>
+                                            <input type="text" name="categories[{{ $key }}][name]"
+                                                value="{{ old("categories.$key.name") }}"
+                                                class="form-control"
+                                                placeholder="Nama kriteria {{ strtolower($meta['label']) }}" required>
                                         </div>
                                         <div class="col-md-3 mb-3">
-                                            <label class="form-label">Bobot <span class="text-danger">*</span></label>
+                                            <label class="form-label">Bobot (%) <span class="text-danger">*</span></label>
                                             <div class="input-group">
-                                                <input type="number" step="0.01" min="0" max="1" name="categories[{{ $key }}][bobot]" value="{{ old("categories.$key.bobot", $meta['default_bobot']) }}" class="form-control" required>
-                                                <span class="input-group-text">0..1</span>
+                                                <input type="number" step="1" min="1" max="100"
+                                                    name="categories[{{ $key }}][weight]"
+                                                    value="{{ old("categories.$key.weight", $meta['default_weight']) }}"
+                                                    class="form-control bobot-input" required>
+                                                <span class="input-group-text">%</span>
                                             </div>
                                         </div>
                                         <div class="col-md-3 mb-3">
                                             <label class="form-label">Checklist (jumlah)</label>
-                                            <input type="number" min="1" value="3" class="form-control checklist-init-count" data-target="{{ $key }}">
-                                            <small class="text-muted">Klik "+ Item" untuk menambah/baris baru</small>
+                                            <input type="number" min="1" value="3" class="form-control checklist-init-count" data-bs-target="{{ $key }}">
+                                            <small class="text-muted">Klik "+ Item" untuk menambah baris baru</small>
                                         </div>
                                     </div>
 
                                     <div class="mb-3">
                                         <label class="form-label">Deskripsi</label>
-                                        <textarea name="categories[{{ $key }}][deskripsi]" rows="2" class="form-control" placeholder="Deskripsi singkat"></textarea>
+                                        <textarea name="categories[{{ $key }}][description]" rows="2" class="form-control" placeholder="Deskripsi singkat"></textarea>
                                     </div>
 
                                     <div class="d-flex justify-content-between align-items-center">
                                         <label class="form-label mb-0">SOP Checklist <span class="text-danger">*</span></label>
-                                        <button type="button" class="btn btn-sm btn-outline-{{ $meta['color'] }} add-checklist" data-target="{{ $key }}">
+                                        <button type="button" class="btn btn-sm btn-outline-{{ $meta['color'] }} add-checklist" data-bs-target="{{ $key }}">
                                             <i class="fas fa-plus me-1"></i>+ Item
                                         </button>
                                     </div>
@@ -201,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.remove();
                 if (this.children.length === 0) {
                     // keep at least one row
-                    const addBtn = document.querySelector(`.add-checklist[data-target="${this.id.replace('checklist-','')}"]`);
+                    const addBtn = document.querySelector(`.add-checklist[data-bs-target="${this.id.replace('checklist-','')}"]`);
                     addBtn?.click();
                 }
                 renumber(this);
@@ -218,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const current = container.querySelectorAll('.checklist-item').length;
             if (desired > current) {
                 for (let i = 0; i < (desired - current); i++) {
-                    const btn = document.querySelector(`.add-checklist[data-target="${key}"]`);
+                    const btn = document.querySelector(`.add-checklist[data-bs-target="${key}"]`);
                     btn?.click();
                 }
             } else if (desired < current) {
@@ -236,22 +242,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitBtn = document.getElementById('submitBtn');
 
     function getBobotInputs() {
-        return Array.from(document.querySelectorAll('input[name$="[bobot]"]'));
+        return Array.from(document.querySelectorAll('.bobot-input'));
     }
 
     function updateTotalBobot() {
         const inputs = getBobotInputs();
         let sum = 0;
         for (const inp of inputs) {
-            const val = parseFloat(inp.value);
+            const val = parseInt(inp.value, 10);
             if (!isNaN(val)) sum += val;
         }
-        const display = (Math.round(sum * 100) / 100).toFixed(2);
-        totalBobotEl.textContent = display;
+        totalBobotEl.textContent = sum;
 
-        const isValid = Math.abs(sum - 1.0) <= 0.001;
+        const isValid = sum === 100;
         submitBtn.disabled = !isValid;
-        submitBtn.title = isValid ? '' : 'Total bobot harus 1.0';
+        submitBtn.title = isValid ? '' : 'Total bobot harus 100%';
+        totalBobotEl.parentElement.className = isValid ? 'badge bg-success' : 'badge bg-danger';
     }
 
     // Pasang listener pada input bobot statis

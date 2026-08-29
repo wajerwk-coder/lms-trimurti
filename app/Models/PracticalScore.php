@@ -35,12 +35,12 @@ class PracticalScore extends Model
 
     public function siswa()
     {
-        return $this->belongsTo(User::class, 'siswa_id');
+        return $this->belongsTo(UserCentral::class, 'siswa_id');
     }
 
     public function criteria()
     {
-        return $this->belongsTo(Criteria::class);
+        return $this->belongsTo(KriteriaPenilaian::class, 'criteria_id');
     }
 
     // Scopes

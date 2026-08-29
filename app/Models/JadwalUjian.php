@@ -64,7 +64,7 @@ class JadwalUjian extends Model
      */
     public function pengawas(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'pengawas_id');
+        return $this->belongsTo(UserCentral::class, 'pengawas_id');
     }
 
     /**
@@ -268,7 +268,7 @@ class JadwalUjian extends Model
     {
         return User::where('role', 'siswa')
                   ->where('kelas_id', $this->kelas_id)
-                  ->where('status', 'active')
+                  ->where('is_active', true)
                   ->get();
     }
 

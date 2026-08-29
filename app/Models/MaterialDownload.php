@@ -32,7 +32,7 @@ class MaterialDownload extends Model
 
     public function siswa()
     {
-        return $this->belongsTo(User::class, 'siswa_id');
+        return $this->belongsTo(UserCentral::class, 'siswa_id');
     }
 
     // Scopes

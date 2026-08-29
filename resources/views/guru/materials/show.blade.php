@@ -1,15 +1,16 @@
-@extends('layouts.guru')
+﻿@extends('layouts.guru')
 
-@section('title', $material->judul)
-@section('page-title', $material->judul)
+@section('title', $material->title)
+@section('page-title', $material->title)
+@section('page-subtitle', ($material->subject?->name ?? '—') . ' · Materi')
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('guru.materials.index') }}" class="text-decoration-none">Materi</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{ $material->judul }}</li>
+    <li class="breadcrumb-item active" aria-current="page">{{ $material->title }}</li>
 @endsection
 
 @section('page-actions')
     <div class="d-flex gap-2">
-        @if($material->file)
+        @if($material->file_url)
         <a href="{{ route('guru.materials.download', $material->id) }}" class="btn btn-success btn-sm">
             <i class="fas fa-download me-1"></i> Download File
         </a>
@@ -24,6 +25,19 @@
 @endsection
 
 @section('content')
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
 <div class="row">
     <div class="col-12">
         <!-- Material Info Card -->
@@ -31,15 +45,11 @@
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-lg-8">
-                        <h1 class="h3 mb-3">{{ $material->judul }}</h1>
+                        <h1 class="h3 mb-3">{{ $material->title }}</h1>
                         <div class="d-flex flex-wrap gap-3 mb-2">
                             <span class="text-muted">
                                 <i class="fas fa-book me-1"></i>
-                                {{ $material->subject->nama ?? 'Subject' }}
-                            </span>
-                            <span class="text-muted">
-                                <i class="fas fa-tag me-1"></i>
-                                {{ $material->category }}
+                                {{ $material->subject?->name ?? '—' }}
                             </span>
                         </div>
                     </div>
@@ -87,7 +97,7 @@
         </div>
 
         <!-- Material Description -->
-        @if($material->description)
+        @if($material->content)
         <div class="card mb-4">
             <div class="card-header">
                 <h5 class="mb-0">
@@ -97,14 +107,14 @@
             </div>
             <div class="card-body">
                 <div class="alert alert-info">
-                    <p class="mb-0">{{ $material->description }}</p>
+                    <p class="mb-0">{!! nl2br(e($material->content)) !!}</p>
                 </div>
             </div>
         </div>
         @endif
 
         <!-- File Information -->
-        @if($material->file)
+        @if($material->file_url)
         <div class="card mb-4">
             <div class="card-header">
                 <h5 class="mb-0">
@@ -119,17 +129,12 @@
                             <i class="fas fa-file fa-2x"></i>
                         </div>
                         <div>
-                            <h6 class="mb-1">{{ $material->file }}</h6>
-                            <small class="text-muted d-block">{{ $material->file_size_formatted ?? 'Unknown size' }}</small>
-                            <small class="text-muted">Type: {{ strtoupper($material->file_type ?? 'unknown') }}</small>
-                            @if($material->mime_type)
-                            <small class="text-muted d-block">MIME: {{ $material->mime_type }}</small>
-                            @endif
+                            <h6 class="mb-1">{{ $material->file_url }}</h6>
+                            <small class="text-muted d-block">{{ $material->file_size_formatted }}</small>
                         </div>
                     </div>
                     <a href="{{ route('guru.materials.download', $material->id) }}" class="btn btn-success">
-                        <i class="fas fa-download me-1"></i>
-                        Download
+                        <i class="fas fa-download me-1"></i>Download
                     </a>
                 </div>
             </div>

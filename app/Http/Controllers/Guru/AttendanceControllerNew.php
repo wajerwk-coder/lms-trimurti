@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Kelas;
 use App\Models\Subject;
-use App\Models\User;
+use App\Models\Siswa;
+use App\Models\UserCentral;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -81,7 +82,7 @@ class AttendanceControllerNew extends Controller
             $selectedDate = $request->get('date', Carbon::today()->format('Y-m-d'));
             
             // Get classes with students
-            $classes = Kelas::where('status', 'active')
+            $classes = Kelas::aktif()
                 ->whereHas('students')
                 ->orderBy('name')
                 ->get(['id', 'name', 'grade']);
@@ -89,10 +90,8 @@ class AttendanceControllerNew extends Controller
             // Get students for selected class
             $students = collect();
             if ($selectedClass) {
-                $students = User::where('role', 'siswa')
-                    ->where('kelas_id', $selectedClass)
-                    ->whereHas('siswa')
-                    ->with(['siswa', 'kelas'])
+                $students = Siswa::query()
+                    ->where('kelas_id', $selectedClass)->with('kelas')
                     ->orderBy('name')
                     ->get();
             }
@@ -131,12 +130,12 @@ class AttendanceControllerNew extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'class_id' => 'required|exists:kelas,id',
+                'class_id' => 'required|exists:classes,id',
                 'subject_id' => 'required|exists:subjects,id',
                 'date' => 'required|date|before_or_equal:today',
                 'type' => 'required|in:regular,praktik',
                 'attendances' => 'required|array',
-                'attendances.*.siswa_id' => 'required|exists:users,id',
+                'attendances.*.siswa_id' => 'required|exists:users_central,id',
                 'attendances.*.status' => 'required|in:hadir,izin,sakit,alpha',
                 'attendances.*.keterangan' => 'nullable|string|max:255'
             ]);
@@ -424,7 +423,7 @@ class AttendanceControllerNew extends Controller
     private function getFilterOptions(): array
     {
         return [
-            'classes' => Kelas::where('status', 'active')
+            'classes' => Kelas::aktif()
                 ->whereHas('students')
                 ->orderBy('name')
                 ->pluck('name', 'id'),

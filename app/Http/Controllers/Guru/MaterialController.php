@@ -8,11 +8,9 @@ use App\Models\MaterialDownload;
 use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -25,113 +23,106 @@ class MaterialController extends Controller
         $this->middleware('role:guru');
     }
 
-    /**
-     * Display a listing of materials.
-     */
+    // ── Index ─────────────────────────────────────────────────────────────
+
     public function index(): View
     {
+        $guruId = Auth::id();
+
         $materials = Material::withCount('downloads')
             ->with('subject')
-            ->where('guru_id', Auth::id())
+            ->where('guru_id', $guruId)
             ->latest()
             ->paginate(12);
-        
-        // Get subjects for filter dropdown
-        $subjects = Subject::where('is_active', true)->get();
 
-        return view('guru.materials.index', compact('materials', 'subjects'));
+        // Stats dari query aggregate (bukan filter paginator yang hanya 1 halaman)
+        $totalPublished = Material::where('guru_id', $guruId)->whereNotNull('published_at')->count();
+        $totalDraft     = Material::where('guru_id', $guruId)->whereNull('published_at')->count();
+        $totalDownloads = Material::where('guru_id', $guruId)->sum('downloads_count');
+
+        // Subjects untuk filter (dari tabel subjects)
+        $subjects = Subject::where('is_active', true)->orderBy('name')->get();
+
+        return view('guru.materials.index', compact(
+            'materials', 'subjects', 'totalPublished', 'totalDraft', 'totalDownloads'
+        ));
     }
 
-    /**
-     * Show the form for creating a new material.
-     */
+    // ── Create ────────────────────────────────────────────────────────────
+
     public function create(): View
     {
-        $guruId = Auth::id();
-        
-        // Get subjects assigned to this guru
-        $classSubjects = \DB::table('class_subjects')
-            ->join('subjects', 'class_subjects.subject_id', '=', 'subjects.id')
-            ->where('subjects.is_active', true)
-            ->where('class_subjects.teacher_id', $guruId)
-            ->select('class_subjects.id', 'subjects.name as subject_name', 'class_subjects.class_id')
-            ->get();
-        
-        // Get classes where this guru teaches
-        $classes = \DB::table('classes')
-            ->join('class_subjects', 'classes.id', '=', 'class_subjects.class_id')
-            ->where('class_subjects.teacher_id', $guruId)
-            ->distinct()
-            ->select('classes.id', 'classes.name')
-            ->orderBy('classes.name')
+        $guruId      = Auth::id();
+        $guruProfile = Auth::user()->guruProfile;
+
+        $classSubjects = $this->getGuruSubjects($guruId, $guruProfile);
+
+        $classes = DB::table('classes')
+            ->whereNull('deleted_at')
+            ->select('id', 'name')
+            ->orderBy('name')
             ->get();
 
         return view('guru.materials.create', compact('classSubjects', 'classes'));
     }
 
-    /**
-     * Store a newly created material.
-     */
+    // ── Store ─────────────────────────────────────────────────────────────
+
     public function store(Request $request): RedirectResponse
     {
-        $validator = Validator::make($request->all(), [
-            'judul' => 'required|string|max:255',
-            'subject_id' => 'required|exists:class_subjects,id',
-            'file' => 'required|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,zip,rar,mp4,avi,mov,jpg,jpeg,png|max:51200',
-            'description' => 'nullable|string',
+        $request->validate([
+            'title'      => 'required|string|max:255',
+            'subject_id' => 'required|exists:subjects,id',
+            'content'    => 'nullable|string',
+            'video_url'  => 'nullable|url|max:500',
+            'file'       => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,zip,rar|max:40960',
         ], [
-            'file.mimes' => 'Format file harus: pdf, doc, docx, ppt, pptx, xls, xlsx, txt, zip, rar, mp4, avi, mov, jpg, jpeg, png',
-            'file.max' => 'Ukuran file maksimal 50MB',
-            'file.required' => 'File materi wajib diupload',
+            'title.required'      => 'Judul materi wajib diisi.',
+            'subject_id.required' => 'Mata pelajaran wajib dipilih.',
+            'subject_id.exists'   => 'Mata pelajaran tidak valid.',
+            'file.mimes'          => 'Format: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, ZIP, RAR.',
+            'file.max'            => 'Ukuran file maksimal 40 MB.',
+            'video_url.url'       => 'URL video tidak valid.',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput()
-                ->with('error', 'Terdapat kesalahan dalam pengisian form');
-        }
-
         try {
-            $material = new Material();
-            $material->guru_id = Auth::id();
-            $material->title = $request->judul;
-            $material->class_subject_id = $request->subject_id;
-            $material->content = $request->description;
-            $material->published_at = $request->has('is_published') ? now() : null;
+            $material                  = new Material();
+            $material->guru_id         = Auth::id();
+            $material->title           = $request->title;
+            $material->subject_id      = $request->subject_id;
+            $material->kelas_id        = $request->kelas_id ?? null;
+            $material->content         = $request->content;
+            $material->video_url       = $request->video_url;
+            $material->published_at    = $request->boolean('is_published') ? now() : null;
+            $material->views_count     = 0;
+            $material->downloads_count = 0;
 
             if ($request->hasFile('file')) {
-                $fileData = $this->handleFileUpload($request->file('file'));
-                $material->fill($fileData);
+                $file     = $request->file('file');
+                $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9.]/', '_', $file->getClientOriginalName());
+                $file->storeAs('materials', $filename, 'public');
+                $material->file_url = $filename;
             }
 
             $material->save();
 
             Log::info('Material created', [
                 'material_id' => $material->id,
-                'guru_id' => Auth::id(),
-                'judul' => $material->judul,
-                'ip' => $request->ip()
+                'guru_id'     => Auth::id(),
             ]);
 
             return redirect()->route('guru.materials.index')
-                ->with('success', 'Materi berhasil ditambahkan!');
+                ->with('success', "Materi '{$material->title}' berhasil ditambahkan.");
 
         } catch (\Exception $e) {
-            Log::error('Material creation failed: ' . $e->getMessage(), [
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+            Log::error('Material creation failed: ' . $e->getMessage(), ['guru_id' => Auth::id()]);
+            return back()->withInput()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Display the specified material.
-     */
+    // ── Show ──────────────────────────────────────────────────────────────
+
     public function show(Material $material): View
     {
         if ($material->guru_id !== Auth::id()) {
@@ -140,11 +131,11 @@ class MaterialController extends Controller
 
         $downloads = MaterialDownload::with('siswa')
             ->where('material_id', $material->id)
-            ->orderBy('downloaded_at', 'desc')
+            ->orderByDesc('downloaded_at')
             ->paginate(15);
 
         $stats = [
-            'total_downloads' => $material->downloads_count,
+            'total_downloads'    => $material->downloads_count ?? 0,
             'last_week_downloads' => MaterialDownload::where('material_id', $material->id)
                 ->where('downloaded_at', '>=', now()->subWeek())
                 ->count(),
@@ -156,88 +147,83 @@ class MaterialController extends Controller
         return view('guru.materials.show', compact('material', 'downloads', 'stats'));
     }
 
-    /**
-     * Show the form for editing the material.
-     */
+    // ── Edit ──────────────────────────────────────────────────────────────
+
     public function edit(Material $material): View
     {
         if ($material->guru_id !== Auth::id()) {
             abort(403, 'Anda tidak memiliki akses ke materi ini.');
         }
 
-        $subjects = Subject::where('is_active', true)->get();
-        $categories = [
-            'Teori' => 'Teori',
-            'Praktik' => 'Praktik', 
-            'Tugas' => 'Tugas',
-            'Ujian' => 'Ujian',
-            'Referensi' => 'Referensi'
-        ];
+        $guruId      = Auth::id();
+        $guruProfile = Auth::user()->guruProfile;
+        $classSubjects = $this->getGuruSubjects($guruId, $guruProfile);
 
-        return view('guru.materials.edit', compact('material', 'subjects', 'categories'));
+        return view('guru.materials.edit', compact('material', 'classSubjects'));
     }
 
-    /**
-     * Update the specified material.
-     */
+    // ── Update ────────────────────────────────────────────────────────────
+
     public function update(Request $request, Material $material): RedirectResponse
     {
         if ($material->guru_id !== Auth::id()) {
             abort(403, 'Anda tidak memiliki akses ke materi ini.');
         }
 
-        $validator = Validator::make($request->all(), [
-            'judul' => 'required|string|max:255',
-            'subject_id' => 'required|exists:class_subjects,id',
-            'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,zip,rar,mp4,avi,mov,jpg,jpeg,png|max:51200',
-            'description' => 'nullable|string',
+        $request->validate([
+            'title'      => 'required|string|max:255',
+            'subject_id' => 'required|exists:subjects,id',
+            'content'    => 'nullable|string',
+            'video_url'  => 'nullable|url|max:500',
+            'file'       => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,zip,rar|max:40960',
+        ], [
+            'title.required'      => 'Judul materi wajib diisi.',
+            'subject_id.required' => 'Mata pelajaran wajib dipilih.',
+            'subject_id.exists'   => 'Mata pelajaran tidak valid.',
+            'file.mimes'          => 'Format: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, ZIP, RAR.',
+            'file.max'            => 'Ukuran file maksimal 40 MB.',
+            'video_url.url'       => 'URL video tidak valid.',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
         try {
-            $material->title = $request->judul;
-            $material->class_subject_id = $request->subject_id;
-            $material->content = $request->description;
-            $material->published_at = $request->has('is_published') ? now() : null;
+            $material->title        = $request->title;
+            $material->subject_id   = $request->subject_id;
+            $material->kelas_id     = $request->kelas_id ?? $material->kelas_id;
+            $material->content      = $request->content;
+            $material->video_url    = $request->video_url;
+            $material->published_at = $request->boolean('is_published')
+                ? ($material->published_at ?? now())
+                : null;
 
             if ($request->hasFile('file')) {
-                $fileData = $this->handleFileUpload($request->file('file'), $material->file);
-                $material->fill($fileData);
+                if ($material->file_url) {
+                    Storage::disk('public')->delete('materials/' . $material->file_url);
+                }
+                $file     = $request->file('file');
+                $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9.]/', '_', $file->getClientOriginalName());
+                $file->storeAs('materials', $filename, 'public');
+                $material->file_url = $filename;
             }
 
             $material->save();
 
             Log::info('Material updated', [
                 'material_id' => $material->id,
-                'guru_id' => Auth::id(),
-                'judul' => $material->judul,
-                'ip' => $request->ip()
+                'guru_id'     => Auth::id(),
             ]);
 
             return redirect()->route('guru.materials.index')
-                ->with('success', 'Materi berhasil diperbarui!');
+                ->with('success', "Materi '{$material->title}' berhasil diperbarui.");
 
         } catch (\Exception $e) {
-            Log::error('Material update failed: ' . $e->getMessage(), [
-                'material_id' => $material->id,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+            Log::error('Material update failed: ' . $e->getMessage(), ['material_id' => $material->id]);
+            return back()->withInput()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Remove the specified material.
-     */
+    // ── Destroy ───────────────────────────────────────────────────────────
+
     public function destroy(Material $material): RedirectResponse
     {
         if ($material->guru_id !== Auth::id()) {
@@ -245,287 +231,153 @@ class MaterialController extends Controller
         }
 
         try {
-            if ($material->file) {
-                Storage::disk('public')->delete('materials/' . $material->file);
+            if ($material->file_url) {
+                Storage::disk('public')->delete('materials/' . $material->file_url);
             }
-
             MaterialDownload::where('material_id', $material->id)->delete();
-
+            $nama = $material->title;
             $material->delete();
 
-            Log::info('Material deleted', [
-                'material_id' => $material->id,
-                'guru_id' => Auth::id(),
-                'ip' => request()->ip()
-            ]);
-
             return redirect()->route('guru.materials.index')
-                ->with('success', 'Materi berhasil dihapus!');
+                ->with('success', "Materi '{$nama}' berhasil dihapus.");
 
         } catch (\Exception $e) {
-            Log::error('Material deletion failed: ' . $e->getMessage(), [
-                'material_id' => $material->id,
-                'guru_id' => Auth::id(),
-                'ip' => request()->ip()
+            Log::error('Material deletion failed: ' . $e->getMessage(), ['material_id' => $material->id]);
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    // ── Helper ────────────────────────────────────────────────────────────
+
+    /**
+     * Ambil mata pelajaran yang diajar guru via pivot guru_subjects,
+     * fallback ke subjects.guru_id, lalu semua jika masih kosong.
+     */
+    private function getGuruSubjects(int $guruId, $guruProfile): \Illuminate\Support\Collection
+    {
+        if ($guruProfile) {
+            $via = $guruProfile->subjects()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get()
+                ->map(fn($s) => (object)[
+                    'subject_id'   => $s->id,
+                    'subject_name' => $s->name,
+                    'class_name'   => null,
+                ]);
+            if ($via->isNotEmpty()) return $via;
+        }
+
+        $direct = \App\Models\Subject::where('is_active', true)
+            ->where('guru_id', $guruId)
+            ->orderBy('name')
+            ->get()
+            ->map(fn($s) => (object)[
+                'subject_id'   => $s->id,
+                'subject_name' => $s->name,
+                'class_name'   => null,
             ]);
+        if ($direct->isNotEmpty()) return $direct;
 
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
-        }
+        return \App\Models\Subject::where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn($s) => (object)[
+                'subject_id'   => $s->id,
+                'subject_name' => $s->name,
+                'class_name'   => null,
+            ]);
     }
 
-    /**
-     * Publish the material.
-     */
-    public function publish(Material $material): RedirectResponse
-    {
-        if ($material->guru_id !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses ke materi ini.');
-        }
+    // ── Toggle Publish ────────────────────────────────────────────────────
 
-        $material->update(['is_published' => true]);
-
-        Log::info('Material published', [
-            'material_id' => $material->id,
-            'guru_id' => Auth::id(),
-            'ip' => request()->ip()
-        ]);
-
-        return back()->with('success', 'Materi berhasil diterbitkan!');
-    }
-
-    /**
-     * Unpublish the material.
-     */
-    public function unpublish(Material $material): RedirectResponse
-    {
-        if ($material->guru_id !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses ke materi ini.');
-        }
-
-        $material->update(['is_published' => false]);
-
-        Log::info('Material unpublished', [
-            'material_id' => $material->id,
-            'guru_id' => Auth::id(),
-            'ip' => request()->ip()
-        ]);
-
-        return back()->with('success', 'Materi berhasil disembunyikan!');
-    }
-
-    /**
-     * Toggle publish status of material.
-     */
     public function togglePublish(Material $material): RedirectResponse
     {
         if ($material->guru_id !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses ke materi ini.');
+            abort(403);
         }
-        
-        $material->is_published = !$material->is_published;
+
+        $wasPublished = $material->published_at !== null;
+        $material->published_at = $wasPublished ? null : now();
         $material->save();
-        
-        $status = $material->is_published ? 'diterbitkan' : 'disembunyikan';
-        
-        Log::info('Material publish status toggled', [
-            'material_id' => $material->id,
-            'guru_id' => Auth::id(),
-            'new_status' => $material->is_published,
-            'ip' => request()->ip()
-        ]);
-        
-        return back()->with('success', "Materi berhasil {$status}!");
+
+        $status = $wasPublished ? 'disembunyikan' : 'diterbitkan';
+        return back()->with('success', "Materi '{$material->title}' berhasil {$status}.");
     }
 
-    /**
-     * Download the material (for preview/testing by teacher).
-     */
+    // ── Download ──────────────────────────────────────────────────────────
+
     public function download(Material $material)
     {
         if ($material->guru_id !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses ke materi ini.');
+            abort(403);
         }
 
-        if (!$material->file) {
+        if (!$material->file_url) {
             return back()->with('error', 'File materi tidak ditemukan.');
         }
 
-        $filePath = storage_path('app/public/materials/' . $material->file);
+        $filePath = storage_path('app/public/materials/' . $material->file_url);
 
         if (!file_exists($filePath)) {
             return back()->with('error', 'File materi tidak ditemukan di server.');
         }
 
-        // Log download — sebagai guru
-        try {
-            MaterialDownload::create([
-                'material_id' => $material->id,
-                'siswa_id' => Auth::id(), // Use guru's ID instead of null
-                'downloaded_at' => now(),
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]);
-        } catch (\Exception $e) {
-            // If duplicate entry (guru already downloaded), just update the timestamp
-            MaterialDownload::where('material_id', $material->id)
-                ->where('siswa_id', Auth::id())
-                ->update(['downloaded_at' => now()]);
-        }
+        DB::table('materials')->where('id', $material->id)->increment('downloads_count');
 
-        DB::table('materials')
-            ->where('id', $material->id)
-            ->increment('downloads_count');
-
-        $downloadName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $material->judul) . '.' . $material->file_type;
+        $ext          = pathinfo($material->file_url, PATHINFO_EXTENSION);
+        $downloadName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $material->title) . '.' . $ext;
 
         return response()->download($filePath, $downloadName);
     }
 
-    /**
-     * Bulk delete materials.
-     */
+    // ── Bulk actions ──────────────────────────────────────────────────────
+
     public function bulkDelete(Request $request): RedirectResponse
     {
-        $validator = Validator::make($request->all(), [
-            'ids' => 'required|array',
-            'ids.*' => [
-                'required',
-                Rule::exists('materials', 'id')->where('guru_id', Auth::id())
-            ],
+        $request->validate([
+            'ids'   => 'required|array',
+            'ids.*' => ['required', Rule::exists('materials', 'id')->where('guru_id', Auth::id())],
         ]);
 
-        if ($validator->fails()) {
-            return back()->with('error', 'Data tidak valid');
-        }
-
         try {
-            $materials = Material::where('guru_id', Auth::id())
-                ->whereIn('id', $request->ids)
-                ->get();
-
-            foreach ($materials as $material) {
-                if ($material->file) {
-                    Storage::disk('public')->delete('materials/' . $material->file);
-                }
-                MaterialDownload::where('material_id', $material->id)->delete();
-                $material->delete();
+            $materials = Material::where('guru_id', Auth::id())->whereIn('id', $request->ids)->get();
+            foreach ($materials as $m) {
+                if ($m->file_url) Storage::disk('public')->delete('materials/' . $m->file_url);
+                MaterialDownload::where('material_id', $m->id)->delete();
+                $m->delete();
             }
-
-            Log::info('Bulk materials deleted', [
-                'material_ids' => $request->ids,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return back()->with('success', count($request->ids) . ' materi berhasil dihapus');
-
+            return back()->with('success', count($request->ids) . ' materi berhasil dihapus.');
         } catch (\Exception $e) {
-            Log::error('Bulk material deletion failed: ' . $e->getMessage(), [
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return back()->with('error', 'Terjadi kesalahan sistem');
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Bulk publish materials.
-     */
     public function bulkPublish(Request $request): RedirectResponse
     {
-        $validator = Validator::make($request->all(), [
-            'ids' => 'required|array',
-            'ids.*' => [
-                'required',
-                Rule::exists('materials', 'id')->where('guru_id', Auth::id())
-            ],
+        $request->validate([
+            'ids'   => 'required|array',
+            'ids.*' => ['required', Rule::exists('materials', 'id')->where('guru_id', Auth::id())],
         ]);
 
-        if ($validator->fails()) {
-            return back()->with('error', 'Data tidak valid');
-        }
+        $count = Material::where('guru_id', Auth::id())->whereIn('id', $request->ids)
+            ->whereNull('published_at')
+            ->update(['published_at' => now()]);
 
-        try {
-            $count = Material::where('guru_id', Auth::id())
-                ->whereIn('id', $request->ids)
-                ->update(['is_published' => true]);
-
-            Log::info('Bulk materials published', [
-                'material_ids' => $request->ids,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return back()->with('success', "$count materi berhasil diterbitkan");
-
-        } catch (\Exception $e) {
-            Log::error('Bulk material publish failed: ' . $e->getMessage(), [
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return back()->with('error', 'Terjadi kesalahan sistem');
-        }
+        return back()->with('success', "{$count} materi berhasil diterbitkan.");
     }
 
-    /**
-     * Bulk unpublish materials.
-     */
     public function bulkUnpublish(Request $request): RedirectResponse
     {
-        $validator = Validator::make($request->all(), [
-            'ids' => 'required|array',
-            'ids.*' => [
-                'required',
-                Rule::exists('materials', 'id')->where('guru_id', Auth::id())
-            ],
+        $request->validate([
+            'ids'   => 'required|array',
+            'ids.*' => ['required', Rule::exists('materials', 'id')->where('guru_id', Auth::id())],
         ]);
 
-        if ($validator->fails()) {
-            return back()->with('error', 'Data tidak valid');
-        }
+        $count = Material::where('guru_id', Auth::id())->whereIn('id', $request->ids)
+            ->whereNotNull('published_at')
+            ->update(['published_at' => null]);
 
-        try {
-            $count = Material::where('guru_id', Auth::id())
-                ->whereIn('id', $request->ids)
-                ->update(['is_published' => false]);
-
-            Log::info('Bulk materials unpublished', [
-                'material_ids' => $request->ids,
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return back()->with('success', "$count materi berhasil disembunyikan");
-
-        } catch (\Exception $e) {
-            Log::error('Bulk material unpublish failed: ' . $e->getMessage(), [
-                'guru_id' => Auth::id(),
-                'ip' => $request->ip()
-            ]);
-
-            return back()->with('error', 'Terjadi kesalahan sistem');
-        }
-    }
-
-    /**
-     * Handle file upload and cleanup.
-     */
-    private function handleFileUpload($file, $oldFilename = null)
-    {
-        if ($oldFilename) {
-            Storage::disk('public')->delete('materials/' . $oldFilename);
-        }
-
-        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $extension = $file->getClientOriginalExtension();
-        $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', $originalName) . '.' . $extension;
-        $path = $file->storeAs('materials', $filename, 'public');
-
-        return [
-            'file_url' => $filename,
-        ];
+        return back()->with('success', "{$count} materi berhasil disembunyikan.");
     }
 }

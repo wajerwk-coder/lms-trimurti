@@ -22,33 +22,10 @@
     --gray-900: #3a3b45;
 }
 
-/* Sidebar Styles - Admin Override */
-body.admin-layout .sidebar-wrapper {
-    min-height: 100vh !important;
-    width: 350px !important;
-    min-width: 350px !important;
-    max-width: 350px !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    z-index: 1050 !important;
-    transition: all 0.3s ease !important;
-}
+/* Sidebar Styles — DISABLED: now handled by .sidebar in sidebar-shared-css */
+/* body.admin-layout .sidebar-wrapper rules removed to prevent conflict */
 
-/* Legacy sidebar wrapper */
-.sidebar-wrapper {
-    min-height: 100vh;
-    width: 250px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1050;
-    transition: all 0.3s ease;
-}
-
-.sidebar-wrapper.active {
-    margin-left: -250px;
-}
+/* Legacy sidebar wrapper — DISABLED */
 
 .sidebar-content {
     height: 100vh;
@@ -71,19 +48,20 @@ body.admin-layout .sidebar-wrapper {
     letter-spacing: 0.05rem;
 }
 
-.nav-link {
+/* Sidebar nav-link styles — scoped to .sidebar only to avoid overriding Bootstrap nav-pills */
+.sidebar .nav-link {
     padding: 0.75rem 1rem;
     border-radius: 0.35rem;
     margin: 0.125rem 0;
     transition: all 0.15s ease-in-out;
 }
 
-.nav-link:hover {
+.sidebar .nav-link:hover {
     background-color: rgba(255, 255, 255, 0.1) !important;
     color: white !important;
 }
 
-.nav-link.active {
+.sidebar .nav-link.active {
     background-color: var(--primary) !important;
     color: white !important;
 }
@@ -141,29 +119,11 @@ body.admin-layout .sidebar-wrapper {
 
 .text-gray-800 {
     color: var(--gray-800) !important;
-/* Main Content Layout - Admin Override */
-body.admin-layout #content,
-body.admin-layout .main-content,
-body.admin-layout #main-content {
-    margin-left: 280px !important;
-    transition: all 0.3s ease !important;
-    min-height: 100vh !important;
-    display: flex !important;
-    flex-direction: column !important;
-    width: calc(100% - 280px) !important;
-}
+/* Main Content Layout — DISABLED: now handled by .lms-main in each layout */
+/* body.admin-layout .main-content rules removed to prevent override conflict */
 
-/* Legacy main content support */
-#content {
-    margin-left: 250px;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-#content.active {
-    margin-left: 0;
-}
+/* Legacy main content support — disabled */
+/* #content rules removed */
 
 /* Responsive Design */
 @media (max-width: 768px) {

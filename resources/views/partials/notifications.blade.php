@@ -30,7 +30,7 @@
                             </div>
                         </div>
                         <div>
-                            <div class="small text-gray-500">{{ $notification->created_at->diffForHumans() }}</div>
+                            <div class="small text-muted">{{ $notification->created_at->diffForHumans() }}</div>
                             <div class="fw-bold text-sm">{{ $notification->title }}</div>
                             <span class="{{ $notification->read_at ? '' : 'fw-bold' }}">
                                 {{ $notification->message }}
@@ -50,7 +50,7 @@
             </li>
         @else
             <li class="dropdown-item text-center py-3">
-                <i class="fas fa-bell-slash fa-2x text-gray-300 mb-2"></i>
+                <i class="fas fa-bell-slash fa-2x text-muted mb-2"></i>
                 <p class="text-muted mb-0">Tidak ada notifikasi</p>
             </li>
         @endif

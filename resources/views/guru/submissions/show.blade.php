@@ -1,342 +1,527 @@
 @extends('layouts.guru')
 
-@section('title', 'Detail Submission - SMK Kesehatan Trimurti Husada')
-
-@section('page-title', 'Detail Submission')
-@section('page-subtitle', 'Lihat detail submission dari siswa')
+@section('title', 'Detail Pengumpulan Tugas')
+@section('page-title', 'Detail Pengumpulan')
+@section('page-subtitle', 'Lihat dan nilai tugas yang dikumpulkan siswa.')
 
 @section('breadcrumb')
-<li class="breadcrumb-item"><a href="{{ route('guru.submissions') }}">Submissions</a></li>
-<li class="breadcrumb-item active" aria-current="page">Detail</li>
-@endsection
-
-@section('content')
-<div class="row">
-    <div class="col-lg-8">
-        <!-- Submission Detail Card -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white border-0 py-3">
-                <div class="d-flex align-items-center justify-content-between">
-                    <h5 class="mb-0 fw-bold">Detail Submission</h5>
-                    
-                    <div class="d-flex gap-2">
-                        @if(is_null($submission->score))
-                            <a href="{{ route('guru.penilaian.edit', $submission->id) }}" class="btn btn-success">
-                                <i class="fas fa-star me-1"></i> Beri Nilai
-                            </a>
-                        @else
-                            <span class="badge bg-success fs-6 px-3 py-2">
-                                <i class="fas fa-check-circle me-1"></i> Sudah Dinilai
-                            </span>
-                        @endif
-                        
-                        <a href="{{ route('guru.submissions') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left me-1"></i> Kembali
-                        </a>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card-body">
-                <!-- Student Info -->
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="avatar-lg bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
-                                <span class="text-primary fw-bold fs-3">{{ substr($submission->siswa->name, 0, 1) }}</span>
-                            </div>
-                            <div>
-                                <h5 class="mb-1">{{ $submission->siswa->name }}</h5>
-                                <p class="text-muted mb-0">{{ $submission->siswa->email }}</p>
-                                @if($submission->siswa->kelas_id)
-                                    <small class="badge bg-info">{{ $submission->siswa->kelas->nama_kelas ?? 'Kelas tidak diketahui' }}</small>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="text-md-end">
-                            <p class="mb-1"><strong>Tanggal Submit:</strong> {{ $submission->submitted_at ? $submission->submitted_at->format('d M Y, H:i') : '-' }}</p>
-                            <p class="mb-1"><strong>Status:</strong> 
-                                @if(is_null($submission->score))
-                                    <span class="badge bg-warning">Belum Dinilai</span>
-                                @else
-                                    <span class="badge bg-success">Sudah Dinilai</span>
-                                @endif
-                            </p>
-                            @if(!is_null($submission->score))
-                                <p class="mb-0"><strong>Nilai:</strong> <span class="fs-4 fw-bold text-primary">{{ $submission->score }}</span></p>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
-                <hr>
-
-                <!-- Assignment/Practical Info -->
-                <div class="mb-4">
-                    <h6 class="fw-bold mb-3">
-                        @if(isset($submission->assignment))
-                            <i class="fas fa-tasks text-info me-2"></i>Informasi Tugas
-                        @else
-                            <i class="fas fa-flask text-success me-2"></i>Informasi Praktikum
-                        @endif
-                    </h6>
-                    
-                    <div class="bg-light rounded p-3">
-                        @if(isset($submission->assignment))
-                            <h5>{{ $submission->assignment->title }}</h5>
-                            <p class="text-muted mb-2">{{ $submission->assignment->description }}</p>
-                            <div class="row text-sm">
-                                <div class="col-md-6">
-                                    <p class="mb-1"><strong>Deadline:</strong> {{ $submission->assignment->due_date ? \Carbon\Carbon::parse($submission->assignment->due_date)->format('d M Y, H:i') : '-' }}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <p class="mb-1"><strong>Max Score:</strong> {{ $submission->assignment->max_score ?? 100 }}</p>
-                                </div>
-                            </div>
-                        @elseif(isset($submission->practical))
-                            <h5>{{ $submission->practical->judul }}</h5>
-                            <p class="text-muted mb-2">{{ $submission->practical->deskripsi }}</p>
-                            <div class="row text-sm">
-                                <div class="col-md-6">
-                                    <p class="mb-1"><strong>Tanggal Praktikum:</strong> {{ $submission->practical->tanggal ? \Carbon\Carbon::parse($submission->practical->tanggal)->format('d M Y') : '-' }}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <p class="mb-1"><strong>Max Score:</strong> {{ $submission->practical->max_score ?? 100 }}</p>
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-
-                <hr>
-
-                <!-- Submission Content -->
-                <div class="mb-4">
-                    <h6 class="fw-bold mb-3">
-                        <i class="fas fa-file-alt text-primary me-2"></i>Isi Submission
-                    </h6>
-                    
-                    @if($submission->content)
-                        <div class="border rounded p-3 mb-3">
-                            <div class="submission-content">
-                                {!! nl2br(e($submission->content)) !!}
-                            </div>
-                        </div>
-                    @endif
-
-                    <!-- File Attachments -->
-                    @if($submission->file_path)
-                        <div class="mb-3">
-                            <h6 class="fw-semibold">File Lampiran:</h6>
-                            <div class="border rounded p-3">
-                                <div class="d-flex align-items-center">
-                                    <i class="fas fa-paperclip text-muted me-2"></i>
-                                    <div class="flex-grow-1">
-                                        <a href="{{ Storage::url($submission->file_path) }}" target="_blank" class="text-decoration-none fw-medium">
-                                            {{ basename($submission->file_path) }}
-                                        </a>
-                                        @if($submission->file_size)
-                                            <span class="text-muted ms-2">({{ number_format($submission->file_size / 1024, 1) }} KB)</span>
-                                        @endif
-                                    </div>
-                                    <a href="{{ Storage::url($submission->file_path) }}" class="btn btn-sm btn-outline-primary" download>
-                                        <i class="fas fa-download"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-
-                    @if(!$submission->content && !$submission->file_path)
-                        <div class="text-muted text-center py-3">
-                            <i class="fas fa-exclamation-circle me-1"></i>
-                            Tidak ada konten submission
-                        </div>
-                    @endif
-                </div>
-
-                @if($submission->feedback)
-                    <hr>
-                    
-                    <!-- Feedback -->
-                    <div class="mb-4">
-                        <h6 class="fw-bold mb-3">
-                            <i class="fas fa-comment text-success me-2"></i>Feedback Guru
-                        </h6>
-                        
-                        <div class="bg-success bg-opacity-10 border border-success border-opacity-25 rounded p-3">
-                            <p class="mb-0">{{ $submission->feedback }}</p>
-                            @if($submission->graded_at)
-                                <small class="text-muted">Dinilai pada: {{ $submission->graded_at->format('d M Y, H:i') }}</small>
-                            @endif
-                        </div>
-                    </div>
-                @endif
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-4">
-        <!-- Quick Actions -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white border-0">
-                <h6 class="mb-0 fw-bold">Aksi Cepat</h6>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    @if(is_null($submission->score))
-                        <a href="{{ route('guru.penilaian.edit', $submission->id) }}" class="btn btn-success">
-                            <i class="fas fa-star me-2"></i>Beri Nilai
-                        </a>
-                    @else
-                        <a href="{{ route('guru.penilaian.edit', $submission->id) }}" class="btn btn-outline-success">
-                            <i class="fas fa-edit me-2"></i>Edit Nilai
-                        </a>
-                    @endif
-                    
-                    @if($submission->file_path)
-                        <a href="{{ Storage::url($submission->file_path) }}" class="btn btn-outline-primary" download>
-                            <i class="fas fa-download me-2"></i>Download File
-                        </a>
-                    @endif
-                    
-                    <a href="{{ route('guru.submissions') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-list me-2"></i>Lihat Semua Submissions
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Submission Timeline -->
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-0">
-                <h6 class="mb-0 fw-bold">Timeline</h6>
-            </div>
-            <div class="card-body">
-                <div class="timeline">
-                    @if($submission->submitted_at)
-                        <div class="timeline-item">
-                            <div class="timeline-marker bg-info"></div>
-                            <div class="timeline-content">
-                                <h6 class="timeline-title">Submission Diterima</h6>
-                                <p class="timeline-subtitle text-muted">{{ $submission->submitted_at->format('d M Y, H:i') }}</p>
-                            </div>
-                        </div>
-                    @endif
-
-                    @if($submission->graded_at)
-                        <div class="timeline-item">
-                            <div class="timeline-marker bg-success"></div>
-                            <div class="timeline-content">
-                                <h6 class="timeline-title">Telah Dinilai</h6>
-                                <p class="timeline-subtitle text-muted">{{ $submission->graded_at->format('d M Y, H:i') }}</p>
-                                <p class="timeline-subtitle text-muted">Nilai: <span class="fw-bold">{{ $submission->score }}</span></p>
-                            </div>
-                        </div>
-                    @endif
-
-                    @if(!$submission->graded_at)
-                        <div class="timeline-item">
-                            <div class="timeline-marker bg-warning"></div>
-                            <div class="timeline-content">
-                                <h6 class="timeline-title">Menunggu Penilaian</h6>
-                                <p class="timeline-subtitle text-muted">Belum dinilai</p>
-                            </div>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
+    <li class="breadcrumb-item">
+        <a href="{{ route('guru.submissions.index') }}">Pengumpulan Tugas</a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">Detail</li>
 @endsection
 
 @push('css')
 <style>
-.avatar-lg {
-    width: 4rem;
-    height: 4rem;
+.detail-card {
+    border: 1px solid #e8edf2 !important;
+    border-radius: 14px !important;
+    overflow: hidden;
+}
+.detail-card .card-header {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e8edf2 !important;
+    padding: .875rem 1.25rem;
+}
+.section-label {
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: .5rem;
+}
+.info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    padding: .55rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: .85rem;
+}
+.info-row:last-child { border-bottom: none; }
+.info-row .info-key {
+    width: 130px;
+    flex-shrink: 0;
+    color: #64748b;
+    font-weight: 500;
+}
+.info-row .info-val { color: #1e293b; font-weight: 500; }
+
+/* Score circle */
+.score-circle {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border: 3px solid;
+    margin: 0 auto;
 }
 
-.submission-content {
-    line-height: 1.6;
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.timeline {
-    position: relative;
-    padding-left: 2rem;
-}
-
-.timeline::before {
+/* Timeline */
+.tl { list-style: none; padding: 0; margin: 0; position: relative; }
+.tl::before {
     content: '';
     position: absolute;
-    left: 0.5rem;
-    top: 0;
-    bottom: 0;
+    left: 14px; top: 0; bottom: 0;
     width: 2px;
-    background: #e9ecef;
+    background: #e8edf2;
 }
-
-.timeline-item {
-    position: relative;
-    margin-bottom: 2rem;
-}
-
-.timeline-item:last-child {
-    margin-bottom: 0;
-}
-
-.timeline-marker {
-    position: absolute;
-    left: -2rem;
-    top: 0.25rem;
-    width: 1rem;
-    height: 1rem;
+.tl-item { display: flex; gap: .75rem; position: relative; padding-bottom: 1.25rem; }
+.tl-item:last-child { padding-bottom: 0; }
+.tl-dot {
+    width: 28px; height: 28px;
     border-radius: 50%;
-    border: 3px solid #fff;
-    box-shadow: 0 0 0 2px #e9ecef;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: .7rem; color: #fff;
+    position: relative; z-index: 1;
+}
+.tl-content { flex: 1; padding-top: 3px; }
+.tl-title { font-size: .83rem; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
+.tl-time  { font-size: .72rem; color: #94a3b8; }
+
+/* File attachment */
+.file-attach {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .75rem 1rem;
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 10px;
+    background: #f8fafc;
+    transition: border-color .15s, background .15s;
+}
+.file-attach:hover { border-color: #3b82f6; background: #eff6ff; }
+.file-attach-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
 }
 
-.timeline-content {
-    margin-left: 0.5rem;
+/* Quick action buttons */
+.action-btn {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .6rem .9rem;
+    border-radius: 10px;
+    font-size: .83rem; font-weight: 500;
+    text-decoration: none !important;
+    transition: background .15s, transform .12s;
+    border: 1.5px solid transparent;
 }
-
-.timeline-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
-
-.timeline-subtitle {
-    font-size: 0.75rem;
-    margin-bottom: 0.25rem;
-}
+.action-btn:hover { transform: translateX(2px); }
 </style>
 @endpush
 
-@push('js')
-<script>
-$(document).ready(function() {
-    // Highlight important elements
-    $('.submission-content a').addClass('text-primary text-decoration-underline');
-    
-    // Auto-expand content that's too long
-    $('.submission-content').each(function() {
-        if ($(this).height() > 400) {
-            $(this).addClass('expandable');
-            $('<button class="btn btn-sm btn-outline-secondary mt-2">Lihat Selengkapnya</button>')
-                .insertAfter($(this))
-                .click(function() {
-                    $(this).prev().removeClass('expandable').css('max-height', 'none');
-                    $(this).remove();
-                });
-        }
-    });
-});
-</script>
-@endpush
+@section('content')
+
+@php
+    $isGraded    = !is_null($submission->score);
+    $assignment  = $submission->assignment;
+    $siswa       = $submission->siswa;
+    $siswaName   = $siswa?->name ?? '—';
+    $initial     = strtoupper(substr($siswaName, 0, 1));
+    $colors      = ['#0891b2','#7c3aed','#16a34a','#d97706','#dc2626','#0f766e'];
+    $avatarBg    = $colors[abs(crc32($siswaName)) % count($colors)];
+    $siswaProfile = \App\Models\Siswa::where('user_id', $siswa?->id)->with('kelas')->first();
+
+    $score    = (float) ($submission->score ?? 0);
+    $grade    = match(true) { $score >= 90 => 'A', $score >= 80 => 'B', $score >= 70 => 'C', $score >= 60 => 'D', default => 'E' };
+    $scoreBorder = match(true) { $score >= 80 => '#16a34a', $score >= 60 => '#d97706', default => '#dc2626' };
+    $scoreText   = match(true) { $score >= 80 => 'text-success', $score >= 60 => 'text-warning', default => 'text-danger' };
+
+    $ext = strtolower(pathinfo($submission->file_path ?? '', PATHINFO_EXTENSION));
+    [$fileIcon, $fileBg, $fileColor] = match(true) {
+        in_array($ext, ['pdf'])          => ['fa-file-pdf',        '#fee2e2','#dc2626'],
+        in_array($ext, ['doc','docx'])   => ['fa-file-word',       '#dbeafe','#3b82f6'],
+        in_array($ext, ['ppt','pptx'])   => ['fa-file-powerpoint', '#fff7ed','#ea580c'],
+        in_array($ext, ['xls','xlsx'])   => ['fa-file-excel',      '#dcfce7','#16a34a'],
+        in_array($ext, ['zip','rar'])    => ['fa-file-archive',    '#f3e8ff','#7c3aed'],
+        in_array($ext, ['jpg','jpeg','png','gif']) => ['fa-file-image','#fdf4ff','#a21caf'],
+        default                          => ['fa-file-alt',        '#f1f5f9','#64748b'],
+    };
+    $isLate = $submission->is_late ?? false;
+@endphp
+
+{{-- Flash --}}
+@if(session('success'))
+<div class="alert alert-success alert-dismissible fade show mb-4 border-0 shadow-sm" style="border-radius:12px;">
+    <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+@endif
+
+<div class="row g-4">
+
+    {{-- ══ LEFT COLUMN ════════════════════════════════════════════════ --}}
+    <div class="col-lg-8">
+
+        {{-- Student info --}}
+        <div class="card detail-card shadow-sm mb-4">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <div class="fw-semibold" style="font-size:.88rem;">
+                    <i class="fas fa-user me-2 text-primary"></i>Informasi Siswa
+                </div>
+                @if($isGraded)
+                    <span class="badge" style="background:#dcfce7;color:#16a34a;border-radius:20px;font-size:.72rem;padding:.25rem .75rem;">
+                        <i class="fas fa-check me-1"></i>Sudah Dinilai
+                    </span>
+                @else
+                    <span class="badge" style="background:#fef9c3;color:#a16207;border-radius:20px;font-size:.72rem;padding:.25rem .75rem;">
+                        <i class="fas fa-clock me-1"></i>Belum Dinilai
+                    </span>
+                @endif
+            </div>
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white flex-shrink-0"
+                         style="width:52px;height:52px;font-size:1.3rem;background:{{ $avatarBg }};">
+                        {{ $initial }}
+                    </div>
+                    <div>
+                        <h5 class="mb-0 fw-bold">{{ $siswaName }}</h5>
+                        <div class="text-muted" style="font-size:.82rem;">
+                            {{ $siswa?->email ?? '—' }}
+                        </div>
+                        @if($siswaProfile?->kelas)
+                            <span class="badge mt-1"
+                                  style="background:#e0f2fe;color:#0891b2;border-radius:20px;font-size:.7rem;">
+                                {{ $siswaProfile->kelas->name }}
+                            </span>
+                        @endif
+                        @if($siswaProfile?->nis)
+                            <span class="badge mt-1"
+                                  style="background:#f3e8ff;color:#7c3aed;border-radius:20px;font-size:.7rem;">
+                                NIS: {{ $siswaProfile->nis }}
+                            </span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="section-label">Detail Pengumpulan</div>
+                        <div class="info-row">
+                            <span class="info-key">Dikumpulkan</span>
+                            <span class="info-val">
+                                {{ $submission->submitted_at?->format('d M Y, H:i') ?? '—' }}
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">Status</span>
+                            <span class="info-val">
+                                @if($isLate)
+                                    <span class="badge" style="background:#fee2e2;color:#dc2626;border-radius:20px;font-size:.7rem;">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Terlambat
+                                    </span>
+                                @else
+                                    <span class="badge" style="background:#dcfce7;color:#16a34a;border-radius:20px;font-size:.7rem;">
+                                        <i class="fas fa-check me-1"></i>Tepat Waktu
+                                    </span>
+                                @endif
+                            </span>
+                        </div>
+                        @if($isGraded)
+                        <div class="info-row">
+                            <span class="info-key">Dinilai Pada</span>
+                            <span class="info-val">
+                                {{ $submission->graded_at?->format('d M Y, H:i') ?? '—' }}
+                            </span>
+                        </div>
+                        @endif
+                    </div>
+                    <div class="col-md-6">
+                        <div class="section-label">Informasi Tugas</div>
+                        <div class="info-row">
+                            <span class="info-key">Judul</span>
+                            <span class="info-val">{{ $assignment?->title ?? '—' }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">Mata Pelajaran</span>
+                            <span class="info-val">{{ $assignment?->subject?->name ?? '—' }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">Deadline</span>
+                            <span class="info-val">
+                                {{ $assignment?->due_date?->format('d M Y, H:i') ?? '—' }}
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">Nilai Maks</span>
+                            <span class="info-val">{{ $assignment?->max_score ?? 100 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Submission content --}}
+        <div class="card detail-card shadow-sm mb-4">
+            <div class="card-header">
+                <div class="fw-semibold" style="font-size:.88rem;">
+                    <i class="fas fa-file-alt me-2 text-info"></i>Isi Pengumpulan
+                </div>
+            </div>
+            <div class="card-body py-3">
+
+                {{-- Text content --}}
+                @if($submission->submission_text ?? $submission->content)
+                    <div class="section-label">Jawaban / Teks</div>
+                    <div class="border rounded-3 p-3 mb-3 bg-white"
+                         style="font-size:.85rem;line-height:1.7;min-height:80px;white-space:pre-wrap;">
+                        {{ $submission->submission_text ?? $submission->content }}
+                    </div>
+                @endif
+
+                {{-- File attachment --}}
+                @if($submission->file_path)
+                    <div class="section-label">File Lampiran</div>
+                    <div class="file-attach mb-3">
+                        <div class="file-attach-icon"
+                             style="background:{{ $fileBg }};">
+                            <i class="fas {{ $fileIcon }}" style="color:{{ $fileColor }};"></i>
+                        </div>
+                        <div class="flex-grow-1" style="min-width:0;">
+                            <div class="fw-semibold text-dark text-truncate" style="font-size:.85rem;">
+                                {{ $submission->file_name ?? basename($submission->file_path) }}
+                            </div>
+                            @if($submission->file_size)
+                                <div class="text-muted" style="font-size:.72rem;">
+                                    {{ number_format($submission->file_size / 1024, 1) }} KB
+                                </div>
+                            @endif
+                        </div>
+                        <a href="{{ Storage::url($submission->file_path) }}"
+                           class="btn btn-sm btn-primary flex-shrink-0"
+                           style="border-radius:8px;" target="_blank" download>
+                            <i class="fas fa-download me-1"></i>Unduh
+                        </a>
+                    </div>
+                @endif
+
+                @if(!($submission->submission_text ?? $submission->content) && !$submission->file_path)
+                    <div class="text-center py-4 text-muted">
+                        <div class="rounded-circle bg-secondary bg-opacity-10 d-inline-flex align-items-center
+                                     justify-content-center mb-2"
+                             style="width:48px;height:48px;">
+                            <i class="fas fa-inbox text-secondary"></i>
+                        </div>
+                        <div class="small">Tidak ada konten yang dikumpulkan.</div>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- Feedback --}}
+        @if($isGraded && $submission->feedback)
+        <div class="card detail-card shadow-sm">
+            <div class="card-header">
+                <div class="fw-semibold" style="font-size:.88rem;">
+                    <i class="fas fa-comment-dots me-2 text-success"></i>Feedback Guru
+                </div>
+            </div>
+            <div class="card-body py-3">
+                <div class="rounded-3 p-3"
+                     style="background:#f0fdf4;border:1px solid #bbf7d0;font-size:.85rem;line-height:1.7;">
+                    {{ $submission->feedback }}
+                </div>
+                @if($submission->graded_at)
+                    <small class="text-muted d-block mt-2">
+                        <i class="fas fa-clock me-1"></i>Dinilai {{ $submission->graded_at->diffForHumans() }}
+                    </small>
+                @endif
+            </div>
+        </div>
+        @endif
+
+        {{-- Grade form (if not graded) --}}
+        @if(!$isGraded)
+        <div class="card detail-card shadow-sm mt-4">
+            <div class="card-header">
+                <div class="fw-semibold" style="font-size:.88rem;">
+                    <i class="fas fa-star me-2 text-warning"></i>Beri Nilai
+                </div>
+            </div>
+            <div class="card-body py-3">
+                <form method="POST" action="{{ route('guru.submissions.grade', $submission->id) }}">
+                    @csrf
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">
+                                Nilai <span class="text-danger">*</span>
+                                <span class="text-muted fw-normal">(0 – {{ $assignment?->max_score ?? 100 }})</span>
+                            </label>
+                            <input type="number" name="score" class="form-control @error('score') is-invalid @enderror"
+                                   min="0" max="{{ $assignment?->max_score ?? 100 }}"
+                                   placeholder="Masukkan nilai..." required
+                                   value="{{ old('score') }}"
+                                   style="border-radius:8px;">
+                            @error('score')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold">
+                                Feedback <span class="text-muted fw-normal">(opsional)</span>
+                            </label>
+                            <textarea name="feedback" class="form-control" rows="3"
+                                      placeholder="Berikan catatan atau feedback untuk siswa..."
+                                      style="border-radius:8px;resize:none;">{{ old('feedback') }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success"
+                                    style="border-radius:8px;">
+                                <i class="fas fa-check me-2"></i>Simpan Nilai
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        @endif
+
+    </div>
+
+    {{-- ══ RIGHT COLUMN ═══════════════════════════════════════════════ --}}
+    <div class="col-lg-4">
+
+        {{-- Score card --}}
+        @if($isGraded)
+        <div class="card detail-card shadow-sm mb-4">
+            <div class="card-header">
+                <div class="fw-semibold" style="font-size:.88rem;">
+                    <i class="fas fa-chart-bar me-2 text-primary"></i>Hasil Penilaian
+                </div>
+            </div>
+            <div class="card-body text-center py-4">
+                <div class="score-circle mx-auto mb-3"
+                     style="border-color:{{ $scoreBorder }};">
+                    <div class="fw-black {{ $scoreText }}" style="font-size:1.75rem;line-height:1;">
+                        {{ number_format($score, 0) }}
+                    </div>
+                    <div class="text-muted" style="font-size:.65rem;">/ {{ $assignment?->max_score ?? 100 }}</div>
+                </div>
+                <div class="fw-bold fs-4 {{ $scoreText }} mb-1">Grade: {{ $grade }}</div>
+                <div class="text-muted small">
+                    {{ $score >= 80 ? 'Sangat Baik' : ($score >= 70 ? 'Baik' : ($score >= 60 ? 'Cukup' : 'Perlu Perbaikan')) }}
+                </div>
+            </div>
+        </div>
+        @endif
+
+        {{-- Quick Actions --}}
+        <div class="card detail-card shadow-sm mb-4">
+            <div class="card-header">
+                <div class="fw-semibold" style="font-size:.88rem;">
+                    <i class="fas fa-bolt me-2 text-warning"></i>Aksi Cepat
+                </div>
+            </div>
+            <div class="card-body d-flex flex-column gap-2 pt-3">
+                @if(!$isGraded)
+                    <a href="{{ route('guru.penilaian.edit', $submission->id) }}"
+                       class="action-btn text-decoration-none"
+                       style="background:#fef9c3;border-color:#fde047;color:#a16207;">
+                        <i class="fas fa-star"></i>
+                        <span>Beri Nilai via Penilaian</span>
+                    </a>
+                @else
+                    <a href="{{ route('guru.penilaian.edit', $submission->id) }}"
+                       class="action-btn text-decoration-none"
+                       style="background:#dcfce7;border-color:#86efac;color:#16a34a;">
+                        <i class="fas fa-edit"></i>
+                        <span>Edit Nilai</span>
+                    </a>
+                @endif
+
+                @if($submission->file_path)
+                    <a href="{{ Storage::url($submission->file_path) }}"
+                       class="action-btn text-decoration-none"
+                       style="background:#dbeafe;border-color:#93c5fd;color:#1d4ed8;"
+                       target="_blank" download>
+                        <i class="fas fa-download"></i>
+                        <span>Unduh File Tugas</span>
+                    </a>
+                @endif
+
+                <a href="{{ route('guru.submissions.index') }}"
+                   class="action-btn text-decoration-none"
+                   style="background:#f1f5f9;border-color:#cbd5e1;color:#475569;">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Kembali ke Daftar</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- Timeline --}}
+        <div class="card detail-card shadow-sm">
+            <div class="card-header">
+                <div class="fw-semibold" style="font-size:.88rem;">
+                    <i class="fas fa-history me-2 text-secondary"></i>Timeline
+                </div>
+            </div>
+            <div class="card-body py-3">
+                <ul class="tl">
+                    <li class="tl-item">
+                        <div class="tl-dot" style="background:#3b82f6;">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="tl-content">
+                            <div class="tl-title">Tugas Dibuat</div>
+                            <div class="tl-time">
+                                {{ $assignment?->created_at?->format('d M Y') ?? '—' }}
+                            </div>
+                        </div>
+                    </li>
+                    @if($submission->submitted_at)
+                    <li class="tl-item">
+                        <div class="tl-dot" style="background:{{ $isLate ? '#dc2626' : '#0891b2' }};">
+                            <i class="fas fa-upload" style="font-size:.6rem;"></i>
+                        </div>
+                        <div class="tl-content">
+                            <div class="tl-title">
+                                Dikumpulkan
+                                @if($isLate)
+                                    <span class="badge" style="font-size:.62rem;background:#fee2e2;color:#dc2626;border-radius:10px;padding:.1rem .4rem;">
+                                        Terlambat
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="tl-time">
+                                {{ $submission->submitted_at->format('d M Y, H:i') }}
+                                <span class="ms-1">({{ $submission->submitted_at->diffForHumans() }})</span>
+                            </div>
+                        </div>
+                    </li>
+                    @endif
+                    @if($submission->graded_at)
+                    <li class="tl-item">
+                        <div class="tl-dot" style="background:#16a34a;">
+                            <i class="fas fa-check" style="font-size:.6rem;"></i>
+                        </div>
+                        <div class="tl-content">
+                            <div class="tl-title">Dinilai</div>
+                            <div class="tl-time">
+                                {{ $submission->graded_at->format('d M Y, H:i') }}
+                            </div>
+                            <div class="tl-time">
+                                Nilai: <strong class="{{ $scoreText }}">{{ number_format($score, 0) }}</strong>
+                                (Grade {{ $grade }})
+                            </div>
+                        </div>
+                    </li>
+                    @else
+                    <li class="tl-item">
+                        <div class="tl-dot" style="background:#d97706;">
+                            <i class="fas fa-clock" style="font-size:.6rem;"></i>
+                        </div>
+                        <div class="tl-content">
+                            <div class="tl-title">Menunggu Penilaian</div>
+                            <div class="tl-time">Belum dinilai</div>
+                        </div>
+                    </li>
+                    @endif
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@endsection

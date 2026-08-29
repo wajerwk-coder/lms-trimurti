@@ -26,89 +26,75 @@
 @endsection
 
 @section('content')
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Informasi Tugas</h3>
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-tasks me-2"></i>Informasi Tugas</h6>
             </div>
             <div class="card-body">
-                <div class="mb-4">
-                    <h4 class="text-primary">{{ $assignment->title }}</h4>
-                    <div class="text-muted">
-                        <i class="fas fa-user me-1"></i> Dibuat oleh: {{ $assignment->guru->name ?? 'N/A' }}
-                        <span class="mx-2">|</span>
-                        <i class="fas fa-calendar me-1"></i> {{ $assignment->created_at->format('d/m/Y H:i') }}
-                    </div>
+                <h5 class="fw-bold mb-1">{{ $assignment->title }}</h5>
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-user me-1"></i>{{ $assignment->guru?->name ?? 'N/A' }}
+                    &nbsp;·&nbsp;
+                    <i class="fas fa-calendar me-1"></i>{{ $assignment->created_at->format('d/m/Y H:i') }}
+                </p>
+
+                <h6 class="fw-bold">Deskripsi</h6>
+                <div class="bg-light rounded-3 p-3 mb-3 small">
+                    {!! nl2br(e($assignment->description)) !!}
                 </div>
 
-                <div class="mb-4">
-                    <h5>Deskripsi Tugas</h5>
-                    <div class="border rounded p-3 bg-light">
-                        {!! nl2br(e($assignment->description)) !!}
-                    </div>
-                </div>
-
-                @if($assignment->file)
-                <div class="mb-4">
-                    <h5>Lampiran</h5>
-                    <div class="border rounded p-3 bg-light">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-paperclip me-2 text-muted"></i>
-                            <span>{{ $assignment->file }}</span>
-                            <a href="{{ asset('storage/assignments/' . $assignment->file) }}" 
-                               class="btn btn-sm btn-outline-primary ms-auto" target="_blank">
-                                <i class="fas fa-download me-1"></i> Download
-                            </a>
-                        </div>
-                    </div>
+                @if($assignment->file_url)
+                <div class="d-flex align-items-center p-3 bg-light rounded-3 mb-3">
+                    <i class="fas fa-paperclip text-primary me-2"></i>
+                    <span class="small flex-grow-1">{{ basename($assignment->file_url) }}</span>
+                    <a href="{{ asset('storage/assignments/' . $assignment->file_url) }}"
+                       class="btn btn-sm btn-outline-primary" target="_blank">
+                        <i class="fas fa-download me-1"></i>Unduh
+                    </a>
                 </div>
                 @endif
             </div>
         </div>
 
-        <!-- Submissions -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h3 class="card-title">Submissions ({{ $assignment->submissions->count() }})</h3>
+        {{-- Submissions --}}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-inbox me-2"></i>Submissions</h6>
+                <span class="badge bg-white text-success">{{ $assignment->submissions->count() }}</span>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 @if($assignment->submissions->count() > 0)
                     <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
+                        <table class="table table-hover align-middle mb-0 small">
+                            <thead class="table-light">
                                 <tr>
-                                    <th>Siswa</th>
+                                    <th class="ps-3">Siswa</th>
                                     <th>Tanggal Submit</th>
-                                    <th>Status</th>
-                                    <th>Nilai</th>
-                                    <th>Aksi</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Nilai</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($assignment->submissions as $submission)
                                 <tr>
-                                    <td>{{ $submission->siswa->name ?? 'N/A' }}</td>
-                                    <td>{{ $submission->submitted_at ? $submission->submitted_at->format('d/m/Y H:i') : 'Belum submit' }}</td>
-                                    <td>
+                                    <td class="ps-3 fw-semibold">{{ $submission->siswa?->name ?? 'N/A' }}</td>
+                                    <td class="text-muted">
+                                        {{ $submission->submitted_at?->format('d/m/Y H:i') ?? 'Belum submit' }}
+                                    </td>
+                                    <td class="text-center">
                                         @if($submission->submitted_at)
                                             <span class="badge bg-success">Submitted</span>
                                         @else
-                                            <span class="badge bg-warning">Pending</span>
+                                            <span class="badge bg-warning text-dark">Pending</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td class="text-center">
                                         @if($submission->score !== null)
                                             <span class="badge bg-primary">{{ $submission->score }}/{{ $assignment->max_score }}</span>
                                         @else
                                             <span class="badge bg-secondary">Belum dinilai</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($submission->submitted_at)
-                                            <a href="#" class="btn btn-sm btn-info" title="Lihat Submission">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
                                         @endif
                                     </td>
                                 </tr>
@@ -117,91 +103,89 @@
                         </table>
                     </div>
                 @else
-                    <div class="text-center py-4">
-                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">Belum ada submission untuk tugas ini.</p>
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted opacity-25 mb-3 d-block"></i>
+                        <p class="text-muted small mb-0">Belum ada submission.</p>
                     </div>
                 @endif
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Detail Informasi</h3>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-info-circle me-2"></i>Ringkasan</h6>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Status Publikasi</label>
-                    <div>
+            <div class="card-body small">
+                <div class="mb-2">
+                    <span class="text-muted">Status</span>
+                    <div class="mt-1">
                         @if($assignment->is_published)
                             <span class="badge bg-success">Dipublikasikan</span>
                         @else
-                            <span class="badge bg-warning">Draft</span>
+                            <span class="badge bg-warning text-dark">Draft</span>
                         @endif
                     </div>
                 </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Tanggal Deadline</label>
-                    <div>
-                        <span class="badge {{ $assignment->deadline < now() ? 'bg-danger' : 'bg-info' }}">
-                            {{ $assignment->deadline->format('d/m/Y H:i') }}
-                        </span>
-                        @if($assignment->deadline < now())
-                            <small class="text-danger d-block">Deadline telah lewat</small>
+                <hr class="my-2">
+                <div class="mb-2">
+                    <span class="text-muted">Deadline</span>
+                    <div class="mt-1">
+                        @if($assignment->due_date)
+                            <span class="badge bg-{{ $assignment->due_date->isPast() ? 'danger' : 'info' }}">
+                                {{ $assignment->due_date->format('d/m/Y H:i') }}
+                            </span>
+                            @if($assignment->due_date->isPast())
+                                <small class="text-danger d-block mt-1">Deadline telah lewat</small>
+                            @endif
+                        @else
+                            <span class="text-muted">—</span>
                         @endif
                     </div>
                 </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Nilai Maksimal</label>
-                    <div>{{ $assignment->max_score }}</div>
+                <hr class="my-2">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Nilai Maksimal</span>
+                    <span class="fw-semibold">{{ $assignment->max_score }}</span>
                 </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Total Submissions</label>
-                    <div>{{ $assignment->submissions->count() }}</div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Total Submissions</span>
+                    <span class="fw-semibold">{{ $assignment->submissions->count() }}</span>
                 </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Submissions yang Sudah Dinilai</label>
-                    <div>{{ $assignment->submissions->whereNotNull('score')->count() }}</div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Sudah Dinilai</span>
+                    <span class="fw-semibold text-success">{{ $assignment->submissions->whereNotNull('score')->count() }}</span>
                 </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Rata-rata Nilai</label>
-                    <div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Rata-rata Nilai</span>
+                    <span class="fw-semibold text-primary">
                         @php
-                            $scoredSubmissions = $assignment->submissions->whereNotNull('score');
-                            $averageScore = $scoredSubmissions->count() > 0 ? $scoredSubmissions->avg('score') : 0;
+                            $scored = $assignment->submissions->whereNotNull('score');
+                            echo $scored->count() > 0 ? number_format($scored->avg('score'), 1) : '—';
                         @endphp
-                        {{ number_format($averageScore, 2) }}/{{ $assignment->max_score }}
-                    </div>
+                    </span>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
+{{-- Delete Modal --}}
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Konfirmasi Hapus</h5>
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-semibold">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>Konfirmasi Hapus
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>Apakah Anda yakin ingin menghapus tugas ini?</p>
-                <p class="text-danger"><small>Tindakan ini tidak dapat dibatalkan.</small></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                <form id="deleteForm" method="POST" style="display: inline;">
-                    @csrf
-                    @method('DELETE')
+            <div class="modal-body text-muted">Apakah Anda yakin ingin menghapus tugas ini? Tindakan ini tidak dapat dibatalkan.</div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                <form id="deleteForm" method="POST" class="d-inline">
+                    @csrf @method('DELETE')
                     <button type="submit" class="btn btn-danger">Hapus</button>
                 </form>
             </div>
@@ -209,29 +193,3 @@
     </div>
 </div>
 @endsection
-
-@push('js')
-<script>
-function deleteAssignment(id) {
-    $('#deleteForm').attr('action', '{{ route("admin.assignments.destroy", ":id") }}'.replace(':id', id));
-    $('#deleteModal').modal('show');
-}
-
-function togglePublish(id) {
-    if (confirm('Apakah Anda yakin ingin mengubah status publikasi tugas ini?')) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '{{ route("admin.assignments.publish", ":id") }}'.replace(':id', id);
-        
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = '_token';
-        csrfToken.value = '{{ csrf_token() }}';
-        
-        form.appendChild(csrfToken);
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-</script>
-@endpush

@@ -1,514 +1,223 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buat Tugas Baru - LMS Trimurti Husada</title>
-    <!-- Tailwind CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary: #1a56db;
-            --primary-dark: #1e429f;
-            --success: #059669;
-            --warning: #d97706;
-            --danger: #dc2626;
-        }
+﻿@extends('layouts.guru')
 
-        .form-input {
-            border: 1px solid #d1d5db;
-            border-radius: 0.375rem;
-            padding: 0.5rem 0.75rem;
-            width: 100%;
-            transition: all 0.2s ease;
-        }
+@section('title', 'Buat Tugas Baru')
+@section('page-title', 'Buat Tugas Baru')
+@section('page-subtitle', 'Tambahkan tugas baru untuk siswa.')
 
-        .form-input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
+@section('page-actions')
+    <a href="{{ route('guru.assignments.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Kembali
+    </a>
+@endsection
 
-        .form-label {
-            display: block;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 0.5rem;
-        }
+@section('content')
 
-        .btn-primary {
-            background: linear-gradient(120deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
+@if($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        <strong>Terdapat kesalahan:</strong>
+        <ul class="mb-0 mt-1 small">
+            @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
 
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
+<form action="{{ route('guru.assignments.store') }}" method="POST"
+      enctype="multipart/form-data" id="assignmentForm">
+    @csrf
 
-        .btn-secondary {
-            background-color: #f3f4f6;
-            color: #374151;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
+    <div class="row g-4">
 
-        .btn-secondary:hover {
-            background-color: #e5e7eb;
-        }
+        {{-- Kiri: Konten utama --}}
+        <div class="col-lg-8">
 
-        .editor-toolbar {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .editor-btn {
-            padding: 0.5rem;
-            background-color: #f3f4f6;
-            border: 1px solid #d1d5db;
-            border-radius: 0.25rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .editor-btn:hover {
-            background-color: #e5e7eb;
-        }
-
-        @media (max-width: 768px) {
-            .grid-cols-1 {
-                grid-template-columns: 1fr;
-            }
-
-            .md-grid-cols-2 {
-                grid-template-columns: 1fr;
-            }
-
-            .editor-toolbar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-        }
-    </style>
-</head>
-<body class="bg-gray-100">
-    <!-- Header -->
-    <header class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-800">Buat Tugas Baru</h1>
-                    <p class="text-gray-600">Buat tugas baru untuk siswa</p>
+            {{-- Informasi Dasar --}}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-info-circle me-2"></i>Informasi Tugas</h6>
                 </div>
-                <div>
-                    <a href="{{ route('guru.assignments.index') }}" class="btn-secondary">
-                        <i class="fas fa-arrow-left mr-2"></i>Kembali
-                    </a>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label fw-semibold">
+                            Judul Tugas <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control @error('title') is-invalid @enderror"
+                               id="title" name="title"
+                               value="{{ old('title') }}"
+                               placeholder="Masukkan judul tugas" required>
+                        @error('title')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label fw-semibold">
+                            Deskripsi <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control @error('description') is-invalid @enderror"
+                                  id="description" name="description" rows="3"
+                                  placeholder="Deskripsi singkat tentang tugas" required>{{ old('description') }}</textarea>
+                        @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="instructions" class="form-label fw-semibold">Instruksi Detail</label>
+                        <textarea class="form-control @error('instructions') is-invalid @enderror"
+                                  id="instructions" name="instructions" rows="5"
+                                  placeholder="Instruksi lengkap untuk siswa (opsional)">{{ old('instructions') }}</textarea>
+                        @error('instructions')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+            </div>
+
+            {{-- Lampiran --}}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light border-0">
+                    <h6 class="mb-0 fw-semibold"><i class="fas fa-paperclip me-2 text-primary"></i>Lampiran</h6>
+                </div>
+                <div class="card-body">
+                    <label for="file" class="form-label fw-semibold">File Lampiran</label>
+                    <input type="file" class="form-control @error('file') is-invalid @enderror"
+                           id="file" name="file"
+                           accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.rar">
+                    <div class="form-text">Format: PDF, DOC, DOCX, PPT, PPTX, TXT, ZIP, RAR. Maks 20MB.</div>
+                    @error('file')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
             </div>
         </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-                <h2 class="text-xl font-semibold text-gray-800">
-                    <i class="fas fa-tasks mr-2 text-blue-600"></i>
-                    Form Buat Tugas
-                </h2>
+        {{-- Kanan: Pengaturan --}}
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-cog me-2"></i>Pengaturan</h6>
+                </div>
+                <div class="card-body">
+
+                    <div class="mb-3">
+                        <label for="class_id" class="form-label fw-semibold">Kelas <span class="text-danger">*</span></label>
+                        <select class="form-select @error('class_id') is-invalid @enderror"
+                                id="class_id" name="class_id" required>
+                            <option value="">— Pilih Kelas —</option>
+                            @foreach($classes as $class)
+                                <option value="{{ $class->id }}" {{ old('class_id') == $class->id ? 'selected' : '' }}>
+                                    {{ $class->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('class_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="subject_id" class="form-label fw-semibold">Mata Pelajaran <span class="text-danger">*</span></label>
+                        <select class="form-select @error('subject_id') is-invalid @enderror"
+                                id="subject_id" name="subject_id" required>
+                            <option value="">— Pilih Mata Pelajaran —</option>
+                            @foreach($classSubjects ?? [] as $subj)
+                                <option value="{{ $subj->subject_id }}"
+                                        {{ old('subject_id') == $subj->subject_id ? 'selected' : '' }}>
+                                    {{ $subj->subject_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('subject_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="deadline" class="form-label fw-semibold">Batas Waktu <span class="text-danger">*</span></label>
+                        <input type="datetime-local"
+                               class="form-control @error('deadline') is-invalid @enderror"
+                               id="deadline" name="deadline"
+                               value="{{ old('deadline') }}" required>
+                        @error('deadline')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="max_score" class="form-label fw-semibold">Nilai Maksimal <span class="text-danger">*</span></label>
+                        <input type="number"
+                               class="form-control @error('max_score') is-invalid @enderror"
+                               id="max_score" name="max_score"
+                               value="{{ old('max_score', 100) }}"
+                               min="1" max="1000" required>
+                        @error('max_score')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <hr class="my-3">
+
+                    <div class="mb-2">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="allow_late" value="1"
+                                   id="allow_late" {{ old('allow_late') ? 'checked' : '' }}>
+                            <label class="form-check-label fw-semibold" for="allow_late">
+                                Izinkan Terlambat
+                            </label>
+                        </div>
+                        <small class="text-muted">Siswa boleh mengumpulkan setelah deadline.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_published" value="1"
+                                   id="is_published" {{ old('is_published', 1) ? 'checked' : '' }}>
+                            <label class="form-check-label fw-semibold" for="is_published">
+                                Publikasikan Sekarang
+                            </label>
+                        </div>
+                        <small class="text-muted">Langsung terlihat oleh siswa.</small>
+                    </div>
+                </div>
             </div>
 
-            <!-- Display Errors -->
-            @if ($errors->any())
-                <div class="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-exclamation-circle text-red-500"></i>
-                        </div>
-                        <div class="ml-3">
-                            <h3 class="text-sm font-medium text-red-800">Terdapat kesalahan dalam form:</h3>
-                            <div class="mt-2 text-sm text-red-700">
-                                <ul class="list-disc list-inside space-y-1">
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            <!-- Success Message -->
-            @if (session('success'))
-                <div class="mx-6 mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-check-circle text-green-500"></i>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            <!-- Error Message -->
-            @if (session('error'))
-                <div class="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-exclamation-circle text-red-500"></i>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            <form action="{{ route('guru.assignments.store') }}" method="POST" enctype="multipart/form-data" id="assignmentForm">
-                @csrf
-
-                <div class="px-6 py-4 space-y-6">
-                    <!-- Basic Information -->
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                            <i class="fas fa-info-circle mr-2 text-blue-500"></i>
-                            Informasi Dasar
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="form-group">
-                                <label for="title" class="form-label">Judul Tugas *</label>
-                                <input type="text" name="title" id="title" class="form-input"
-                                       value="{{ old('title') }}" required placeholder="Masukkan judul tugas" autocomplete="off">
-                                @error('title')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
-                                <label for="class_id" class="form-label">Kelas *</label>
-                                <select name="class_id" id="class_id" class="form-input" required autocomplete="off">
-                                    <option value="">Pilih Kelas</option>
-                                    @foreach($classes as $class)
-                                    <option value="{{ $class->id }}" {{ old('class_id') == $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
-                                    @endforeach
-                                </select>
-                                @error('class_id')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
-                                <label for="subject_id" class="form-label">Mata Pelajaran *</label>
-                                <select name="subject_id" id="subject_id" class="form-input" required autocomplete="off">
-                                    <option value="">Pilih Mata Pelajaran</option>
-                                    @foreach($classSubjects as $classSubject)
-                                    <option value="{{ $classSubject->id }}" {{ old('subject_id') == $classSubject->id ? 'selected' : '' }}>
-                                        {{ $classSubject->subject_name }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                                @error('subject_id')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            
-                            <div class="form-group">
-                                <label for="deadline" class="form-label">Batas Waktu *</label>
-                                <input type="datetime-local" name="deadline" id="deadline" class="form-input"
-                                       value="{{ old('deadline') }}" required autocomplete="off">
-                                @error('deadline')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Instructions and Content -->
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                            <i class="fas fa-clipboard-list mr-2 text-green-500"></i>
-                            Instruksi Tugas
-                        </h3>
-                        <div class="form-group">
-                            <label for="description" class="form-label">Deskripsi Tugas *</label>
-                            <textarea name="description" id="description" class="form-input" rows="3"
-                                      required placeholder="Deskripsi singkat tentang tugas" autocomplete="off">{{ old('description') }}</textarea>
-                            @error('description')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div class="form-group">
-                            <label for="instructions" class="form-label">Instruksi Detail</label>
-                            <div class="editor-toolbar" id="instructionsToolbar">
-                                <button type="button" onclick="formatText('bold')" class="editor-btn" title="Bold">
-                                    <i class="fas fa-bold"></i>
-                                </button>
-                                <button type="button" onclick="formatText('italic')" class="editor-btn" title="Italic">
-                                    <i class="fas fa-italic"></i>
-                                </button>
-                                <button type="button" onclick="formatText('underline')" class="editor-btn" title="Underline">
-                                    <i class="fas fa-underline"></i>
-                                </button>
-                                <button type="button" onclick="insertBullet()" class="editor-btn" title="Bullet List">
-                                    <i class="fas fa-list-ul"></i>
-                                </button>
-                                <button type="button" onclick="insertNumber()" class="editor-btn" title="Numbered List">
-                                    <i class="fas fa-list-ol"></i>
-                                </button>
-                                <button type="button" onclick="insertCode()" class="editor-btn" title="Code">
-                                    <i class="fas fa-code"></i>
-                                </button>
-                            </div>
-                            <textarea name="instructions" id="instructions" class="form-input" rows="6"
-                                      placeholder="Instruksi detail untuk siswa (opsional)" autocomplete="off">{{ old('instructions') }}</textarea>
-                            @error('instructions')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <!-- File Attachment -->
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                            <i class="fas fa-paperclip mr-2 text-yellow-500"></i>
-                            Lampiran Tugas
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="form-group">
-                                <label for="file" class="form-label">File Tugas (Opsional)</label>
-                                <input type="file" name="file" id="file" class="form-input"
-                                       accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.rar"
-                                       title="Pilih file PDF, DOC, DOCX, PPT, PPTX, TXT, ZIP, RAR (maks 20MB)">
-                                <p class="text-xs text-gray-500 mt-1">
-                                    Format: PDF, DOC, DOCX, PPT, PPTX, TXT, ZIP, RAR. Maks: 20MB
-                                </p>
-                                @error('file')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="form-group">
-                                <label for="max_score" class="form-label">Nilai Maksimal *</label>
-                                <input type="number" name="max_score" id="max_score" class="form-input"
-                                       value="{{ old('max_score', 100) }}" min="1" max="1000" required autocomplete="off">
-                                @error('max_score')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Additional Settings -->
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                            <i class="fas fa-cog mr-2 text-gray-500"></i>
-                            Pengaturan Tambahan
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="form-group">
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="allow_late" value="1"
-                                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                                           {{ old('allow_late') ? 'checked' : '' }}>
-                                    <span class="text-sm text-gray-700">Izinkan pengumpulan terlambat</span>
-                                </label>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="is_published" value="1"
-                                           class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                                           {{ old('is_published', 1) ? 'checked' : '' }}>
-                                    <span class="text-sm text-gray-700">Publikasikan tugas</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
-                    <a href="{{ route('guru.assignments.index') }}" class="btn-secondary">
-                        <i class="fas fa-times mr-2"></i>Batal
-                    </a>
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-save mr-2"></i>Buat Tugas
-                    </button>
-                </div>
-            </form>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-white shadow-sm mt-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div class="text-center text-sm text-gray-500">
-                <p>&copy; {{ date('Y') }} SMK Kesehatan Trimurti Husada Ambon. All rights reserved.</p>
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="fas fa-save me-1"></i>Simpan Tugas
+                </button>
+                <a href="{{ route('guru.assignments.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Batal
+                </a>
             </div>
         </div>
-    </footer>
+    </div>
+</form>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Set minimum datetime to current time
-        const now = new Date();
-        const localDateTime = now.toISOString().slice(0, 16);
-        document.getElementById('deadline').min = localDateTime;
+@push('js')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Set default deadline to tomorrow
+    const deadlineInput = document.getElementById('deadline');
+    if (!deadlineInput.value) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        deadlineInput.value = tomorrow.toISOString().slice(0, 16);
+    }
 
-        // File size validation
-        const fileInput = document.getElementById('file');
-        if (fileInput) {
-            fileInput.addEventListener('change', function() {
-                const file = this.files[0];
-                if (file && file.size > 20 * 1024 * 1024) { // 20MB
-                    alert('Ukuran file terlalu besar. Maksimal 20MB.');
-                    this.value = '';
-                }
-            });
+    // File size validation
+    document.getElementById('file').addEventListener('change', function () {
+        if (this.files[0] && this.files[0].size > 20 * 1024 * 1024) {
+            alert('Ukuran file terlalu besar. Maksimal 20MB.');
+            this.value = '';
         }
-
-        // Form validation
-        const form = document.getElementById('assignmentForm');
-        form.addEventListener('submit', function(e) {
-            console.log('Form submitted');
-            
-            // Validate required fields
-            const title = document.getElementById('title').value.trim();
-            const description = document.getElementById('description').value.trim();
-            const instructions = document.getElementById('instructions').value.trim();
-            const subjectId = document.getElementById('subject_id').value;
-            const deadline = document.getElementById('deadline').value;
-            const maxScore = document.getElementById('max_score').value;
-
-            if (!title) {
-                e.preventDefault();
-                alert('Judul tugas wajib diisi!');
-                document.getElementById('title').focus();
-                return false;
-            }
-
-            if (!description) {
-                e.preventDefault();
-                alert('Deskripsi tugas wajib diisi!');
-                document.getElementById('description').focus();
-                return false;
-            }
-
-            // Instructions is optional, no validation needed
-
-            if (!subjectId) {
-                e.preventDefault();
-                alert('Mata pelajaran wajib dipilih!');
-                document.getElementById('subject_id').focus();
-                return false;
-            }
-
-            if (!deadline) {
-                e.preventDefault();
-                alert('Batas waktu wajib diisi!');
-                document.getElementById('deadline').focus();
-                return false;
-            }
-
-            const dueDate = new Date(deadline);
-            const now = new Date();
-
-            if (dueDate <= now) {
-                e.preventDefault();
-                alert('Batas waktu harus lebih besar dari waktu sekarang.');
-                document.getElementById('deadline').focus();
-                return false;
-            }
-
-            if (!maxScore || maxScore < 1) {
-                e.preventDefault();
-                alert('Nilai maksimal harus diisi dan minimal 1!');
-                document.getElementById('max_score').focus();
-                return false;
-            }
-
-            console.log('Form validation passed, submitting...');
-            
-            // Show loading state
-            const submitButton = form.querySelector('button[type="submit"]');
-            submitButton.disabled = true;
-            submitButton.innerHTML = `
-                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Menyimpan...
-            `;
-        });
     });
 
-    function formatText(format) {
-        const textarea = document.getElementById('instructions');
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const selectedText = textarea.value.substring(start, end);
+    // Loading state on submit
+    document.getElementById('assignmentForm').addEventListener('submit', function () {
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
+    });
+});
+</script>
+@endpush
 
-        let formattedText = '';
-        switch(format) {
-            case 'bold':
-                formattedText = `**${selectedText}**`;
-                break;
-            case 'italic':
-                formattedText = `_${selectedText}_`;
-                break;
-            case 'underline':
-                formattedText = `__${selectedText}__`;
-                break;
-        }
-
-        textarea.value = textarea.value.substring(0, start) +
-                       formattedText +
-                       textarea.value.substring(end);
-        textarea.focus();
-        textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
-    }
-
-    function insertBullet() {
-        const textarea = document.getElementById('instructions');
-        const start = textarea.selectionStart;
-        textarea.value = textarea.value.substring(0, start) +
-                       '• ' +
-                       textarea.value.substring(start);
-        textarea.focus();
-        textarea.setSelectionRange(start + 2, start + 2);
-    }
-
-    function insertNumber() {
-        const textarea = document.getElementById('instructions');
-        const start = textarea.selectionStart;
-        textarea.value = textarea.value.substring(0, start) +
-                       '1. ' +
-                       textarea.value.substring(start);
-        textarea.focus();
-        textarea.setSelectionRange(start + 3, start + 3);
-    }
-
-    function insertCode() {
-        const textarea = document.getElementById('instructions');
-        const start = textarea.selectionStart;
-        textarea.value = textarea.value.substring(0, start) +
-                       '`' +
-                       textarea.value.substring(start);
-        textarea.focus();
-        textarea.setSelectionRange(start + 1, start + 1);
-    }
-    </script>
-</body>
-</html>
+@endsection

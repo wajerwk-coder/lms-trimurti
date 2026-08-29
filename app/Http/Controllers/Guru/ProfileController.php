@@ -2,128 +2,183 @@
 
 namespace App\Http\Controllers\Guru;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Guru;
+use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class ProfileController extends Controller
 {
-    /**
-     * Show the form for editing the user's profile.
-     */
-    public function edit()
+    public function __construct()
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-        return view('guru.profile.edit', compact('user'));
+        $this->middleware('auth');
     }
 
     /**
-     * Update the user's profile.
+     * Halaman edit profil.
      */
-    public function update(Request $request)
+    public function edit(): View
     {
-        /** @var \App\Models\User $user */
+        $user       = Auth::user();
+        $guruProfile = Guru::where('user_id', $user->id)->first();
+        return view('guru.profile.edit', compact('user', 'guruProfile'));
+    }
+
+    /**
+     * Simpan perubahan profil (akun + profil guru).
+     */
+    public function update(Request $request): RedirectResponse
+    {
         $user = Auth::user();
 
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'birth_date' => 'nullable|date',
-            'gender' => 'nullable|in:L,P',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
+        $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users_central,email,' . $user->id,
+            'phone'    => 'nullable|string|max:20',
+            'foto'     => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            // Profil guru
+            'nip'                => 'nullable|string|max:50',
+            'tempat_lahir'       => 'nullable|string|max:100',
+            'tanggal_lahir'      => 'nullable|date',
+            'jenis_kelamin'      => 'nullable|in:L,P',
+            'alamat'             => 'nullable|string|max:500',
+            'pendidikan_terakhir'=> 'nullable|string|max:255',
         ], [
-            'photo.image' => 'File harus berupa gambar',
-            'photo.mimes' => 'Format foto yang diizinkan: JPEG, PNG, JPG, GIF',
-            'photo.max' => 'Ukuran foto maksimal 2MB',
+            'email.unique' => 'Email sudah digunakan akun lain.',
+            'foto.image'   => 'File harus berupa gambar.',
+            'foto.mimes'   => 'Format foto: JPEG, PNG, JPG.',
+            'foto.max'     => 'Ukuran foto maksimal 2MB.',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
+        DB::beginTransaction();
+        try {
+            // ── Update users_central ──────────────────────────────────────────
+            $userData = [
+                'name'  => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+            ];
 
-        // Handle photo upload
-        if ($request->hasFile('photo')) {
-            // Delete old photo if exists
-            if ($user->photo) {
-                Storage::delete($user->photo);
+            // Handle upload foto ke users_central.photo
+            if ($request->hasFile('foto')) {
+                if ($user->photo) {
+                    Storage::disk('public')->delete($user->photo);
+                }
+                $userData['photo'] = $request->file('foto')
+                    ->store('profiles/guru', 'public');
             }
 
-            // Upload new photo
-            $photo = $request->file('photo');
-            $photoPath = $photo->store('photos/profiles', 'public');
-            $user->photo = $photoPath;
+            $user->update($userData);
+
+            // ── Update / buat profil di tabel gurus ───────────────────────────
+            $guruData = array_filter([
+                'name'               => $request->name,
+                'email'              => $request->email,
+                'phone'              => $request->phone,
+                'nip'                => $request->nip,
+                'tempat_lahir'       => $request->tempat_lahir,
+                'tanggal_lahir'      => $request->tanggal_lahir,
+                'jenis_kelamin'      => $request->jenis_kelamin,
+                'address'            => $request->alamat,
+                'pendidikan_terakhir'=> $request->pendidikan_terakhir,
+            ], fn($v) => $v !== null);
+
+            Guru::updateOrCreate(
+                ['user_id' => $user->id],
+                $guruData
+            );
+
+            DB::commit();
+            return redirect()->route('guru.profile.edit')
+                ->with('success', 'Profil berhasil diperbarui.');
+
+        } catch (\Throwable $e) {
+            DB::rollback();
+            Log::error('Guru profile update error: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memperbarui profil: ' . $e->getMessage())->withInput();
         }
-
-        $user->update($request->only([
-            'name',
-            'email',
-            'phone',
-            'address',
-            'birth_date',
-            'gender',
-        ]));
-
-        return redirect()->back()->with('success', 'Profil berhasil diperbarui.');
     }
 
     /**
-     * Update profile photo only.
+     * Update foto profil saja.
      */
-    public function updatePhoto(Request $request)
+    public function updatePhoto(Request $request): RedirectResponse
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
-        $validator = Validator::make($request->all(), [
-            'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
+        $request->validate([
+            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ], [
-            'photo.required' => 'Foto harus dipilih',
-            'photo.image' => 'File harus berupa gambar',
-            'photo.mimes' => 'Format foto yang diizinkan: JPEG, PNG, JPG, GIF',
-            'photo.max' => 'Ukuran foto maksimal 2MB',
+            'foto.required' => 'Foto harus dipilih.',
+            'foto.image'    => 'File harus berupa gambar.',
+            'foto.mimes'    => 'Format foto: JPEG, PNG, JPG.',
+            'foto.max'      => 'Ukuran foto maksimal 2MB.',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        // Delete old photo if exists
-        if ($user->photo) {
-            Storage::delete($user->photo);
-        }
-
-        // Upload new photo
-        $photo = $request->file('photo');
-        $photoPath = $photo->store('photos/profiles', 'public');
-        $user->photo = $photoPath;
-        $user->save();
-
-        return redirect()->back()->with('success', 'Foto profil berhasil diperbarui.');
-    }
-
-    /**
-     * Remove profile photo
-     */
-    public function removePhoto()
-    {
-        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if ($user->photo) {
-            Storage::delete($user->photo);
-            $user->photo = null;
-            $user->save();
+            Storage::disk('public')->delete($user->photo);
         }
 
-        return redirect()->back()->with('success', 'Foto profil berhasil dihapus.');
+        $path = $request->file('foto')->store('profiles/guru', 'public');
+        $user->update(['photo' => $path]);
+
+        return back()->with('success', 'Foto profil berhasil diperbarui.');
+    }
+
+    /**
+     * Hapus foto profil.
+     */
+    public function removePhoto(): RedirectResponse
+    {
+        $user = Auth::user();
+
+        if ($user->photo) {
+            Storage::disk('public')->delete($user->photo);
+            $user->update(['photo' => null]);
+        }
+
+        return back()->with('success', 'Foto profil berhasil dihapus.');
+    }
+
+    /**
+     * Halaman ubah password.
+     */
+    public function changePassword(): View
+    {
+        return view('guru.profile.change-password');
+    }
+
+    /**
+     * Proses ubah password.
+     */
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'current_password'      => 'required',
+            'password'              => 'required|string|min:8|confirmed',
+            'password_confirmation' => 'required',
+        ], [
+            'current_password.required' => 'Password saat ini wajib diisi.',
+            'password.required'         => 'Password baru wajib diisi.',
+            'password.min'              => 'Password baru minimal 8 karakter.',
+            'password.confirmed'        => 'Konfirmasi password tidak cocok.',
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->withErrors(['current_password' => 'Password saat ini tidak sesuai.']);
+        }
+
+        $user->update(['password' => Hash::make($request->password)]);
+
+        return redirect()->route('guru.profile.edit')
+            ->with('success', 'Password berhasil diubah.');
     }
 }

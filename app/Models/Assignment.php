@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Assignment extends Model
 {
@@ -13,10 +14,16 @@ class Assignment extends Model
     protected $fillable = [
         'guru_id',
         'class_subject_id',
+        'subject_id',
+        'kelas_id',
         'title',
         'description',
         'instructions',
         'file_url',
+        'file',
+        'file_path',
+        'file_size',
+        'file_type',
         'due_date',
         'max_score',
         'allow_late',
@@ -24,8 +31,10 @@ class Assignment extends Model
     ];
 
     protected $casts = [
-        'due_date' => 'datetime',
-        'max_score' => 'integer',
+        'due_date'   => 'datetime',
+        'max_score'  => 'integer',
+        'allow_late' => 'boolean',
+        'is_published' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -34,7 +43,8 @@ class Assignment extends Model
     // Relationships
     public function guru()
     {
-        return $this->belongsTo(User::class, 'guru_id');
+        // Pakai withTrashed agar guru yang sudah di-soft-delete masih bisa ditampilkan
+        return $this->belongsTo(UserCentral::class, 'guru_id')->withTrashed();
     }
 
     public function subject()
@@ -44,7 +54,7 @@ class Assignment extends Model
 
     public function kelas()
     {
-        return $this->belongsTo(Kelas::class);
+        return $this->belongsTo(Kelas::class, 'kelas_id');
     }
     
     // Manual relationship for class_subject
@@ -73,7 +83,7 @@ class Assignment extends Model
     public function siswa()
     {
         return $this->hasManyThrough(
-            User::class,
+            UserCentral::class,
             AssignmentSubmission::class,
             'assignment_id',
             'id',
@@ -96,8 +106,7 @@ class Assignment extends Model
     // Scopes
     public function scopePublished($query)
     {
-        // Assignments don't have published status, all are considered published
-        return $query;
+        return $query->where('is_published', true);
     }
 
     public function scopeActive($query)
@@ -123,20 +132,23 @@ class Assignment extends Model
     // Accessors
     public function getFileUrlAttribute()
     {
-        return $this->file ? asset('storage/assignments/' . $this->file) : null;
+        if (isset($this->attributes['file_url'])) {
+            return $this->attributes['file_url'];
+        }
+        return $this->attributes['file'] ? asset('storage/assignments/' . $this->attributes['file']) : null;
     }
 
     public function getStatusAttribute()
     {
-        if (!$this->deadline) {
+        if (!$this->is_published) {
             return 'draft';
         }
 
-        if ($this->deadline->isPast()) {
+        if ($this->due_date && $this->due_date->isPast()) {
             return 'expired';
         }
 
-        return $this->is_published ? 'active' : 'draft';
+        return 'active';
     }
 
     public function getSubmissionCountAttribute()

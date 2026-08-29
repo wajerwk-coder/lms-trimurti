@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Jurusan;
-use App\Models\MataPelajaran;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class JurusanController extends Controller
@@ -16,174 +17,146 @@ class JurusanController extends Controller
         $this->middleware(['auth', 'admin']);
     }
 
-    /**
-     * Display a listing of jurusan
-     */
     public function index(): View
     {
-        $jurusan = Jurusan::withCount(['kelas', 'siswa'])
-                          ->orderBy('name')
-                          ->get();
-                          
+        $jurusan = Jurusan::withCount('kelas')->orderBy('name')->get();
         return view('admin.jurusan.index', compact('jurusan'));
     }
 
-    /**
-     * Show the form for creating a new jurusan
-     */
     public function create(): View
     {
-        $subjects = MataPelajaran::orderBy('name')->get();
-        return view('admin.jurusan.create', compact('subjects'));
+        return view('admin.jurusan.create');
     }
 
-    /**
-     * Store a newly created jurusan
-     */
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'nama' => 'required|string|max:255|unique:jurusans,name',
-            'kode' => 'required|string|max:10|unique:jurusans,code',
-            'deskripsi' => 'nullable|string',
-            'mata_pelajaran' => 'required|array|min:1',
-            'mata_pelajaran.*' => 'required|integer|exists:subjects,id',
-            'kapasitas_total' => 'nullable|integer|min:1',
-            'status' => 'boolean'
+        $request->validate([
+            'name'        => 'required|string|max:255|unique:jurusans,name',
+            'code'        => 'required|string|max:20|unique:jurusans,code',
+            'description' => 'nullable|string|max:500',
+            'is_active'   => 'nullable|boolean',
+        ], [
+            'name.required' => 'Nama jurusan wajib diisi.',
+            'name.unique'   => 'Nama jurusan sudah ada.',
+            'code.required' => 'Kode jurusan wajib diisi.',
+            'code.unique'   => 'Kode jurusan sudah ada.',
         ]);
 
-        // Clean mata pelajaran array
-        $validated['mata_pelajaran'] = array_filter($validated['mata_pelajaran']);
-        
-        // Only use fields that exist in majors table
-        $jurusanData = [
-            'name' => $validated['nama'],
-            'code' => $validated['kode'],
-            'description' => $validated['deskripsi'] ?? null
-        ];
-        
-        Jurusan::create($jurusanData);
+        try {
+            $jurusan = Jurusan::create([
+                'name'        => $request->name,
+                'code'        => strtoupper($request->code),
+                'description' => $request->description,
+                'is_active'   => $request->boolean('is_active', true),
+            ]);
 
-        // If coming from Add User page, go back there
-        if ($request->filled('return_to')) {
-            return redirect($request->input('return_to'))
-                ->with('success', 'Jurusan berhasil ditambahkan.');
+            // Sinkronkan ke tabel majors (FK lama) agar tambah kelas tidak gagal
+            $this->syncToMajors($jurusan);
+
+            $returnTo = $request->input('return_to');
+            if ($returnTo) {
+                return redirect($returnTo)->with('success', "Jurusan {$jurusan->name} berhasil ditambahkan.");
+            }
+
+            return redirect()->route('admin.jurusan.index')
+                ->with('success', "Jurusan {$jurusan->name} berhasil ditambahkan.");
+
+        } catch (\Throwable $e) {
+            Log::error('JurusanController::store: ' . $e->getMessage());
+            return back()->withInput()
+                ->with('error', 'Gagal menyimpan jurusan: ' . $e->getMessage());
         }
-
-        return redirect()
-            ->route('admin.jurusan.index')
-            ->with('success', 'Jurusan berhasil ditambahkan.');
     }
 
-    /**
-     * Display the specified jurusan
-     */
     public function show(Jurusan $jurusan): View
     {
-        $jurusan->load(['kelas', 'siswa']);
-        
+        $jurusan->load('kelas');
         return view('admin.jurusan.show', compact('jurusan'));
     }
 
-    /**
-     * Show the form for editing jurusan
-     */
     public function edit(Jurusan $jurusan): View
     {
-        $subjects = MataPelajaran::orderBy('name')->get();
-        return view('admin.jurusan.edit', compact('jurusan', 'subjects'));
+        return view('admin.jurusan.edit', compact('jurusan'));
     }
 
-    /**
-     * Update the specified jurusan
-     */
     public function update(Request $request, Jurusan $jurusan): RedirectResponse
     {
-        $validated = $request->validate([
-            'nama' => 'required|string|max:255|unique:majors,name,' . $jurusan->id,
-            'kode' => 'required|string|max:10|unique:majors,code,' . $jurusan->id,
-            'deskripsi' => 'nullable|string',
-            'mata_pelajaran' => 'required|array|min:1',
-            'mata_pelajaran.*' => 'required|integer|exists:subjects,id',
-            'kapasitas_total' => 'nullable|integer|min:1',
-            'status' => 'boolean'
+        $request->validate([
+            'name'        => 'required|string|max:255|unique:jurusans,name,' . $jurusan->id,
+            'code'        => 'required|string|max:20|unique:jurusans,code,' . $jurusan->id,
+            'description' => 'nullable|string|max:500',
+            'is_active'   => 'nullable|boolean',
+        ], [
+            'name.required' => 'Nama jurusan wajib diisi.',
+            'name.unique'   => 'Nama jurusan sudah ada.',
+            'code.required' => 'Kode jurusan wajib diisi.',
+            'code.unique'   => 'Kode jurusan sudah ada.',
         ]);
 
-        // Clean mata pelajaran array
-        $validated['mata_pelajaran'] = array_filter($validated['mata_pelajaran']);
-        
-        // Only use fields that exist in majors table
-        $jurusanData = [
-            'name' => $validated['nama'],
-            'code' => $validated['kode'],
-            'description' => $validated['deskripsi'] ?? null
-        ];
-        
-        $jurusan->update($jurusanData);
+        try {
+            $jurusan->update([
+                'name'        => $request->name,
+                'code'        => strtoupper($request->code),
+                'description' => $request->description,
+                'is_active'   => $request->boolean('is_active', true),
+            ]);
 
-        return redirect()
-            ->route('admin.jurusan.index')
-            ->with('success', 'Jurusan berhasil diperbarui.');
+            // Sinkronkan perubahan ke tabel majors
+            $this->syncToMajors($jurusan);
+
+            return redirect()->route('admin.jurusan.index')
+                ->with('success', "Jurusan {$jurusan->name} berhasil diperbarui.");
+
+        } catch (\Throwable $e) {
+            Log::error('JurusanController::update: ' . $e->getMessage());
+            return back()->withInput()
+                ->with('error', 'Gagal memperbarui jurusan: ' . $e->getMessage());
+        }
     }
 
-    /**
-     * Remove the specified jurusan
-     */
     public function destroy(Jurusan $jurusan): RedirectResponse
     {
-        // Check if jurusan has related kelas or siswa
-        if ($jurusan->kelas()->count() > 0 || $jurusan->siswa()->count() > 0) {
-            return redirect()
-                ->route('admin.jurusan.index')
-                ->with('error', 'Tidak dapat menghapus jurusan yang masih memiliki kelas atau siswa.');
+        if ($jurusan->kelas()->count() > 0) {
+            return back()->with('error',
+                "Tidak dapat menghapus jurusan '{$jurusan->name}' yang masih memiliki kelas."
+            );
         }
 
+        $nama = $jurusan->name;
         $jurusan->delete();
 
-        return redirect()
-            ->route('admin.jurusan.index')
-            ->with('success', 'Jurusan berhasil dihapus.');
+        return redirect()->route('admin.jurusan.index')
+            ->with('success', "Jurusan '{$nama}' berhasil dihapus.");
     }
 
-    /**
-     * Toggle status jurusan
-     */
-    public function toggleStatus(Jurusan $jurusan): RedirectResponse
-    {
-        $jurusan->update(['status' => !$jurusan->status]);
-        
-        $status = $jurusan->status ? 'diaktifkan' : 'dinonaktifkan';
-        
-        return redirect()
-            ->route('admin.jurusan.index')
-            ->with('success', "Jurusan berhasil {$status}.");
-    }
+    // ── Private helpers ───────────────────────────────────────────────────────
 
     /**
-     * Seed default jurusan kesehatan
+     * Sinkronkan jurusan ke tabel majors (FK lama classes.major_id → majors).
+     * Dipanggil setiap store/update agar tambah kelas tidak kena FK violation.
      */
-    public function seedDefault(): RedirectResponse
+    private function syncToMajors(Jurusan $jurusan): void
     {
-        try {
-            Jurusan::seedDefault();
-            
-            return redirect()
-                ->route('admin.jurusan.index')
-                ->with('success', 'Default jurusan kesehatan berhasil ditambahkan.');
-        } catch (\Exception $e) {
-            return redirect()
-                ->route('admin.jurusan.index')
-                ->with('error', 'Gagal menambahkan default jurusan: ' . $e->getMessage());
+        $code = $jurusan->code ?? strtoupper(substr($jurusan->name, 0, 4));
+
+        $exists = DB::table('majors')->where('id', $jurusan->id)->exists();
+
+        if ($exists) {
+            DB::table('majors')->where('id', $jurusan->id)->update([
+                'name'        => $jurusan->name,
+                'code'        => $code,
+                'description' => $jurusan->description,
+                'updated_at'  => now(),
+            ]);
+        } else {
+            DB::table('majors')->insert([
+                'id'          => $jurusan->id,
+                'name'        => $jurusan->name,
+                'code'        => $code,
+                'description' => $jurusan->description,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ]);
         }
-    }
-
-    /**
-     * Get mata pelajaran for specific jurusan (for AJAX)
-     */
-    public function getMataPelajaran(Jurusan $jurusan)
-    {
-        return response()->json([
-            'mata_pelajaran' => $jurusan->mata_pelajaran
-        ]);
     }
 }

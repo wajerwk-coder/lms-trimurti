@@ -1,335 +1,218 @@
 @extends('layouts.guru')
 
 @section('title', 'Laporan Absensi')
+@section('page-title', 'Laporan Absensi')
+@section('page-subtitle', 'Rekap kehadiran siswa per mata pelajaran.')
+
+@section('breadcrumb')
+    <li class="breadcrumb-item"><a href="{{ route('guru.laporan.index') }}">Laporan</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Absensi</li>
+@endsection
+
+@section('page-actions')
+    <a href="{{ route('guru.laporan.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Kembali
+    </a>
+@endsection
+
+@push('css')
+<style>
+.lap-tbl th {
+    font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    color:#94a3b8;background:#f8fafc;border-bottom:1px solid #e8edf2!important;
+}
+.lap-tbl td { font-size:.84rem;vertical-align:middle; }
+.lap-tbl tr:hover td { background:#f8fafc; }
+.filter-bar {
+    background:#fff;border:1px solid #e8edf2;border-radius:14px;
+    padding:.875rem 1.25rem;margin-bottom:1.25rem;
+    box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+.av-sm {
+    width:32px;height:32px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:.78rem;color:#fff;flex-shrink:0;
+}
+</style>
+@endpush
 
 @section('content')
-<div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">Laporan Absensi</h1>
-    <p class="text-gray-600">Laporan kehadiran siswa per mata pelajaran</p>
+
+@if(session('success'))
+<div class="alert alert-success alert-dismissible fade show mb-4 border-0 shadow-sm" style="border-radius:12px;">
+    <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+@endif
+
+{{-- ── Stats ──────────────────────────────────────────────────── --}}
+<div class="row g-3 mb-4">
+    @foreach([
+        ['from'=>'#16a34a','to'=>'#15803d','icon'=>'fa-check-circle', 'val'=>$stats['present_count']   ?? 0,           'label'=>'Hadir'],
+        ['from'=>'#d97706','to'=>'#b45309','icon'=>'fa-clock',        'val'=>$stats['absent_count']    ?? 0,           'label'=>'Tidak Hadir'],
+        ['from'=>'#0891b2','to'=>'#0e7490','icon'=>'fa-notes-medical','val'=>$stats['izin_count']      ?? 0,           'label'=>'Izin / Sakit'],
+        ['from'=>'#7c3aed','to'=>'#6d28d9','icon'=>'fa-percentage',   'val'=>($stats['attendance_rate'] ?? 0) . '%',   'label'=>'Tingkat Kehadiran'],
+    ] as $s)
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:14px;overflow:hidden;">
+            <div class="card-body p-3 d-flex align-items-center gap-3">
+                <div style="width:44px;height:44px;border-radius:11px;background:linear-gradient(135deg,{{ $s['from'] }},{{ $s['to'] }});display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;flex-shrink:0;">
+                    <i class="fas {{ $s['icon'] }}"></i>
+                </div>
+                <div>
+                    <div class="fw-black text-dark" style="font-size:1.5rem;line-height:1;letter-spacing:-.5px;">
+                        {{ $s['val'] }}
+                    </div>
+                    <div class="text-muted" style="font-size:.73rem;">{{ $s['label'] }}</div>
+                </div>
+            </div>
+            <div style="height:3px;background:linear-gradient(90deg,{{ $s['from'] }},{{ $s['to'] }});"></div>
+        </div>
+    </div>
+    @endforeach
 </div>
 
-<div class="bg-white rounded-lg shadow overflow-hidden mb-8">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-xl font-semibold text-gray-800">Filter Laporan</h2>
-    </div>
-
-    <div class="px-6 py-4">
-        <form id="filterForm" method="GET" action="{{ route('guru.laporan.absensi') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="form-group">
-                <label for="subject" class="form-label">Mata Pelajaran</label>
-                <select name="subject" id="subject" class="form-input">
-                    <option value="">Semua Mata Pelajaran</option>
-                    @foreach($subjects as $subject)
-                    <option value="{{ $subject->id }}" {{ request('subject') == $subject->id ? 'selected' : '' }}>
-                        {{ $subject->name }}
+{{-- ── Filter ─────────────────────────────────────────────────── --}}
+<div class="filter-bar">
+    <form id="filterForm" method="GET" action="{{ route('guru.laporan.absensi') }}"
+          class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold mb-1">Dari Tanggal</label>
+            <input type="date" name="start_date" class="form-control form-control-sm"
+                   value="{{ request('start_date', now()->startOfMonth()->format('Y-m-d')) }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold mb-1">Sampai Tanggal</label>
+            <input type="date" name="end_date" class="form-control form-control-sm"
+                   value="{{ request('end_date', now()->format('Y-m-d')) }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small fw-semibold mb-1">Kelas</label>
+            <select name="kelas" class="form-select form-select-sm">
+                <option value="">Semua Kelas</option>
+                @foreach(\App\Models\Kelas::orderBy('name')->get() as $k)
+                    <option value="{{ $k->id }}" {{ request('kelas') == $k->id ? 'selected' : '' }}>
+                        {{ $k->name }}
                     </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="class" class="form-label">Kelas</label>
-                <select name="class" id="class" class="form-input">
-                    <option value="">Semua Kelas</option>
-                    <option value="X" {{ request('class') == 'X' ? 'selected' : '' }}>Kelas X</option>
-                    <option value="XI" {{ request('class') == 'XI' ? 'selected' : '' }}>Kelas XI</option>
-                    <option value="XII" {{ request('class') == 'XII' ? 'selected' : '' }}>Kelas XII</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="month" class="form-label">Bulan</label>
-                <select name="month" id="month" class="form-input">
-                    <option value="">Semua Bulan</option>
-                    @for($i = 1; $i <= 12; $i++)
-                    <option value="{{ $i }}" {{ request('month') == $i ? 'selected' : '' }}>
-                        {{ \Carbon\Carbon::create()->month($i)->locale('id')->monthName }}
-                    </option>
-                    @endfor
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="year" class="form-label">Tahun</label>
-                <select name="year" id="year" class="form-input">
-                    <option value="">Semua Tahun</option>
-                    @for($i = date('Y'); $i >= date('Y') - 5; $i--)
-                    <option value="{{ $i }}" {{ request('year') == $i ? 'selected' : '' }}>
-                        {{ $i }}
-                    </option>
-                    @endfor
-                </select>
-            </div>
-
-            <div class="md:col-span-4 flex justify-end space-x-2">
-                <button type="button" onclick="resetFilters()" class="btn-secondary">
-                    Reset
-                </button>
-                <button type="submit" class="btn-primary">
-                    Generate Laporan
-                </button>
-                <button type="button" onclick="exportReport()" class="btn-success">
-                    Ekspor
-                </button>
-            </div>
-        </form>
-    </div>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm flex-fill">
+                <i class="fas fa-search me-1"></i>Filter
+            </button>
+            <a href="{{ route('guru.laporan.absensi') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-times"></i>
+            </a>
+        </div>
+    </form>
 </div>
 
-<!-- Statistics Cards -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-3 bg-green-100 rounded-full">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </div>
-            <div class="ml-4">
-                <h2 class="text-2xl font-bold text-gray-800">{{ $stats['present_count'] ?? 0 }}</h2>
-                <p class="text-gray-600">Hadir</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-3 bg-yellow-100 rounded-full">
-                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </div>
-            <div class="ml-4">
-                <h2 class="text-2xl font-bold text-gray-800">{{ $stats['late_count'] ?? 0 }}</h2>
-                <p class="text-gray-600">Terlambat</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-3 bg-red-100 rounded-full">
-                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </div>
-            <div class="ml-4">
-                <h2 class="text-2xl font-bold text-gray-800">{{ $stats['absent_count'] ?? 0 }}</h2>
-                <p class="text-gray-600">Tidak Hadir</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-3 bg-blue-100 rounded-full">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </div>
-            <div class="ml-4">
-                <h2 class="text-2xl font-bold text-gray-800">{{ $stats['attendance_rate'] ?? 0 }}%</h2>
-                <p class="text-gray-600">Tingkat Kehadiran</p>
-            </div>
-        </div>
-    </div>
+{{-- ── Export PDF ─────────────────────────────────────────────── --}}
+<div class="d-flex justify-content-end mb-3">
+    <form method="POST" action="{{ route('guru.laporan.generate') }}" class="d-inline">
+        @csrf
+        <input type="hidden" name="type" value="absensi">
+        <input type="hidden" name="format" value="pdf">
+        <input type="hidden" name="start_date" value="{{ request('start_date', now()->startOfMonth()->format('Y-m-d')) }}">
+        <input type="hidden" name="end_date" value="{{ request('end_date', now()->format('Y-m-d')) }}">
+        <input type="hidden" name="kelas" value="{{ request('kelas') }}">
+        <button type="submit" class="btn btn-danger btn-sm" style="border-radius:8px;">
+            <i class="fas fa-file-pdf me-1"></i>Ekspor PDF
+        </button>
+    </form>
 </div>
 
-<!-- Attendance Summary -->
-<div class="bg-white rounded-lg shadow overflow-hidden mb-8">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-xl font-semibold text-gray-800">Ringkasan Kehadiran</h2>
+{{-- ── Tabel Detail Kehadiran ────────────────────────────────── --}}
+<div class="card border-0 shadow-sm" style="border-radius:14px;">
+    <div class="card-header bg-white d-flex align-items-center justify-content-between py-3 px-4"
+         style="border-radius:14px 14px 0 0;border-bottom:1px solid #e8edf2;">
+        <h6 class="mb-0 fw-bold">
+            <i class="fas fa-calendar-check me-2 text-info"></i>Detail Kehadiran Siswa
+        </h6>
+        @if(isset($attendances) && method_exists($attendances, 'total'))
+            <span class="badge bg-secondary">{{ $attendances->total() }} record</span>
+        @endif
     </div>
-    <div class="px-6 py-4">
-        <div class="overflow-x-auto">
-            <table class="w-full table-auto">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table lap-tbl align-middle mb-0">
                 <thead>
-                    <tr class="bg-gray-50">
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mata Pelajaran</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Pertemuan</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hadir</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Terlambat</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tidak Hadir</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Persentase</th>
+                    <tr>
+                        <th class="ps-4 py-3">Siswa</th>
+                        <th class="py-3">Tanggal</th>
+                        <th class="py-3">Mata Pelajaran</th>
+                        <th class="text-center py-3">Status</th>
+                        <th class="py-3">Keterangan</th>
+                        <th class="py-3">Dicatat Oleh</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($attendanceSummary as $summary)
+                <tbody>
+                    @forelse($attendances ?? [] as $att)
+                    @php
+                        $siswaName = $att->siswa?->name ?? '—';
+                        $initial   = strtoupper(substr($siswaName, 0, 1));
+                        $colors    = ['#0891b2','#7c3aed','#16a34a','#d97706','#dc2626','#0f766e'];
+                        $avBg      = $colors[abs(crc32($siswaName)) % count($colors)];
+                        $statusColors = ['hadir'=>'success','izin'=>'warning','sakit'=>'info','alpha'=>'danger'];
+                        $sc        = $statusColors[$att->status ?? ''] ?? 'secondary';
+                    @endphp
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {{ $summary->subject_name ?? 'Tidak ada data' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $summary->class ?? '-' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $summary->total_sessions ?? 0 }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $summary->present_count ?? 0 }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $summary->late_count ?? 0 }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $summary->absent_count ?? 0 }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @php
-                                $attendanceRate = $summary->attendance_rate ?? 0;
-                                $bgColor = $attendanceRate >= 90 ? 'bg-green-100 text-green-800' : ($attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800');
-                            @endphp
-                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $bgColor }}">
-                                {{ $attendanceRate }}%
-                            </span>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-                            Tidak ada data absensi
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- Student Attendance Details -->
-<div class="bg-white rounded-lg shadow overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-        <h2 class="text-xl font-semibold text-gray-800">Detail Kehadiran Siswa</h2>
-        <div class="flex items-center space-x-2">
-            <span class="text-sm text-gray-600">{{ $students->total() ?? 0 }} siswa ditemukan</span>
-        </div>
-    </div>
-
-    <div class="px-6 py-4">
-        <div class="overflow-x-auto">
-            <table class="w-full table-auto">
-                <thead>
-                    <tr class="bg-gray-50">
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Siswa</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kelas</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mata Pelajaran</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hadir</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Terlambat</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tidak Hadir</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Izin</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Persentase</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($students as $student)
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 h-8 w-8">
-                                    <img class="h-8 w-8 rounded-full object-cover" src="{{ $student->avatar_url ?? asset('images/default-avatar.png') }}" alt="{{ $student->name }}" onerror="this.src='{{ asset('images/default-avatar.png') }}'">
-                                </div>
-                                <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900">{{ $student->name ?? 'Nama tidak tersedia' }}</div>
-                                    <div class="text-sm text-gray-500">{{ $student->nis ?? '-' }}</div>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="av-sm" style="background:{{ $avBg }};">{{ $initial }}</div>
+                                <div>
+                                    <div class="fw-semibold text-dark" style="font-size:.84rem;">{{ $siswaName }}</div>
+                                    @php $siswaProfile = \App\Models\Siswa::where('user_id', $att->siswa?->id)->with('kelas')->first(); @endphp
+                                    <div class="text-muted" style="font-size:.7rem;">
+                                        {{ $siswaProfile?->kelas?->name ?? '' }}
+                                    </div>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $student->class ?? '-' }}
+                        <td style="font-size:.82rem;">
+                            {{ \Carbon\Carbon::parse($att->date ?? $att->tanggal)->format('d M Y') }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $student->subject_name ?? 'Tidak ada mata pelajaran' }}
+                        <td class="text-muted" style="font-size:.82rem;">
+                            {{ $att->subject?->name ?? '—' }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $student->present_count ?? 0 }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $student->late_count ?? 0 }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $student->absent_count ?? 0 }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $student->excused_count ?? 0 }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
+                        <td class="text-center">
                             @php
-                                $attendanceRate = $student->attendance_rate ?? 0;
-                                $bgColor = $attendanceRate >= 90 ? 'bg-green-100 text-green-800' : ($attendanceRate >= 75 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800');
+                                $statusLabels = ['hadir'=>'Hadir','izin'=>'Izin','sakit'=>'Sakit','alpha'=>'Alpha'];
+                                $sl = $statusLabels[$att->status ?? ''] ?? ucfirst($att->status ?? '—');
                             @endphp
-                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $bgColor }}">
-                                {{ $attendanceRate }}%
+                            <span class="badge bg-{{ $sc }}"
+                                  style="border-radius:20px;font-size:.68rem;padding:.2rem .65rem;">
+                                {{ $sl }}
                             </span>
+                        </td>
+                        <td class="text-muted" style="font-size:.8rem;">
+                            {{ $att->note ?? $att->keterangan ?? '—' }}
+                        </td>
+                        <td class="text-muted" style="font-size:.8rem;">
+                            {{ $att->recorder?->name ?? $att->createdBy?->name ?? '—' }}
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">
-                            Tidak ada data siswa
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <div class="rounded-circle bg-info bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3"
+                                 style="width:64px;height:64px;">
+                                <i class="fas fa-calendar-times text-info fa-lg opacity-75"></i>
+                            </div>
+                            <div>Tidak ada data absensi untuk periode ini.</div>
                         </td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-
-        @if($students->hasPages())
-        <div class="mt-4">
-            {{ $students->appends(request()->query())->links() }}
-        </div>
-        @endif
     </div>
+    @if(isset($attendances) && method_exists($attendances, 'hasPages') && $attendances->hasPages())
+    <div class="card-footer bg-white border-top px-4 py-3">
+        {{ $attendances->appends(request()->query())->links() }}
+    </div>
+    @endif
 </div>
 
-<!-- Charts Placeholder -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-    <div class="bg-white rounded-lg shadow p-6 text-center">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribusi Kehadiran</h3>
-        <p class="text-gray-500">Chart.js dinonaktifkan sementara</p>
-    </div>
-
-    <div class="bg-white rounded-lg shadow p-6 text-center">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Tren Kehadiran Bulanan</h3>
-        <p class="text-gray-500">Chart.js dinonaktifkan sementara</p>
-    </div>
-</div>
-
-<script>
-function resetFilters() {
-    document.getElementById('filterForm').reset();
-    document.getElementById('filterForm').submit();
-}
-
-function exportReport() {
-    alert('Fitur ekspor akan segera tersedia');
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Halaman laporan absensi dimuat');
-});
-</script>
-
-<style>
-@media print {
-    .btn-secondary, .btn-primary, .btn-success {
-        display: none !important;
-    }
-
-    .bg-gray-50, .bg-green-100, .bg-yellow-100, .bg-red-100, .bg-blue-100 {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .shadow {
-        box-shadow: none !important;
-    }
-
-    .rounded-lg {
-        border-radius: 0.5rem;
-        border: 1px solid #e5e7eb;
-    }
-}
-</style>
 @endsection

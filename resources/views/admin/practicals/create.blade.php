@@ -1,202 +1,197 @@
 @extends('layouts.admin')
 
 @section('title', 'Tambah Praktikum')
+@section('page-title', 'Tambah Praktikum')
+@section('page-subtitle', 'Buat praktikum baru untuk siswa.')
+
+@section('page-actions')
+    <a href="{{ route('admin.practicals.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Kembali
+    </a>
+@endsection
 
 @section('content')
-<div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">Tambah Praktikum Baru</h1>
-    <p class="text-gray-600">Buat praktikum baru untuk siswa SMK Kesehatan Trimurti Husada</p>
-</div>
 
-<div class="bg-white rounded-lg shadow">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h2 class="text-xl font-semibold text-gray-800">Form Tambah Praktikum</h2>
+{{-- Flash Message --}}
+@if($errors->any())
+    <div id="flashMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        <strong>{{ $errors->count() }} kesalahan dalam form:</strong>
+        <ul class="mb-0 mt-1 ps-3 small">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-    <div class="p-6">
-        @if($errors->any())
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6" role="alert">
-                <div class="flex items-center">
-                    <i class="fas fa-exclamation-circle mr-2"></i>
-                    <div>
-                        <p class="font-medium">Terdapat kesalahan dalam form:</p>
-                        <ul class="mt-1 list-disc list-inside text-sm">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+<form action="{{ route('admin.practicals.store') }}" method="POST">
+    @csrf
+
+    <div class="row g-4">
+        {{-- Main Fields --}}
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-flask me-2"></i>Informasi Praktikum</h6>
+                </div>
+                <div class="card-body">
+
+                    <div class="mb-3">
+                        <label for="title" class="form-label fw-bold">Judul Praktikum <span class="text-danger">*</span></label>
+                        <input type="text"
+                               class="form-control rounded-3 @error('title') is-invalid @enderror"
+                               id="title" name="title"
+                               value="{{ old('title') }}"
+                               placeholder="Masukkan judul praktikum"
+                               required>
+                        @error('title')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label fw-bold">Deskripsi <span class="text-danger">*</span></label>
+                        <textarea class="form-control rounded-3 @error('description') is-invalid @enderror"
+                                  id="description" name="description" rows="4"
+                                  placeholder="Deskripsi singkat praktikum"
+                                  required>{{ old('description') }}</textarea>
+                        @error('description')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="instructions" class="form-label fw-bold">Instruksi</label>
+                        <textarea class="form-control rounded-3 @error('instructions') is-invalid @enderror"
+                                  id="instructions" name="instructions" rows="4"
+                                  placeholder="Instruksi detail untuk siswa (opsional)">{{ old('instructions') }}</textarea>
+                        @error('instructions')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
                 </div>
             </div>
-        @endif
+        </div>
 
-        <form action="{{ route('admin.practicals.store') }}" method="POST">
-            @csrf
-            
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 space-y-6">
-                    <div>
-                        <label for="judul" class="block text-sm font-medium text-gray-700 mb-2">
-                            Judul Praktikum <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('judul') border-red-500 @enderror" 
-                               id="judul" name="judul" value="{{ old('judul') }}" required>
-                        @error('judul')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label for="deskripsi" class="block text-sm font-medium text-gray-700 mb-2">
-                            Deskripsi Praktikum <span class="text-red-500">*</span>
-                        </label>
-                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('deskripsi') border-red-500 @enderror" 
-                                  id="deskripsi" name="deskripsi" rows="4" required>{{ old('deskripsi') }}</textarea>
-                        @error('deskripsi')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label for="instruksi" class="block text-sm font-medium text-gray-700 mb-2">
-                            Instruksi Praktikum
-                        </label>
-                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('instruksi') border-red-500 @enderror" 
-                                  id="instruksi" name="instruksi" rows="4" 
-                                  placeholder="Masukkan instruksi detail untuk praktikum">{{ old('instruksi') }}</textarea>
-                        @error('instruksi')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="tools" class="block text-sm font-medium text-gray-700 mb-2">
-                                Alat & Peralatan
-                            </label>
-                            <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('tools') border-red-500 @enderror" 
-                                      id="tools" name="tools" rows="3" 
-                                      placeholder="Daftar alat dan peralatan yang dibutuhkan">{{ old('tools') }}</textarea>
-                            @error('tools')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="bahan" class="block text-sm font-medium text-gray-700 mb-2">
-                                Bahan & Material
-                            </label>
-                            <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('bahan') border-red-500 @enderror" 
-                                      id="bahan" name="bahan" rows="3" 
-                                      placeholder="Daftar bahan dan material yang dibutuhkan">{{ old('bahan') }}</textarea>
-                            @error('bahan')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
+        {{-- Sidebar Fields --}}
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-cog me-2"></i>Pengaturan</h6>
                 </div>
+                <div class="card-body">
 
-                <div class="space-y-6">
-                    <div>
-                        <label for="guru_id" class="block text-sm font-medium text-gray-700 mb-2">
-                            Guru Penanggung Jawab <span class="text-red-500">*</span>
-                        </label>
-                        <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('guru_id') border-red-500 @enderror" 
+                    <div class="mb-3">
+                        <label for="guru_id" class="form-label fw-bold">Guru <span class="text-danger">*</span></label>
+                        <select class="form-select rounded-3 @error('guru_id') is-invalid @enderror"
                                 id="guru_id" name="guru_id" required>
-                            <option value="">Pilih Guru</option>
+                            <option value="">— Pilih Guru —</option>
                             @foreach($gurus as $guru)
                                 <option value="{{ $guru->id }}" {{ old('guru_id') == $guru->id ? 'selected' : '' }}>
-                                    {{ $guru->name }} ({{ $guru->email }})
+                                    {{ $guru->name }}
                                 </option>
                             @endforeach
                         </select>
                         @error('guru_id')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <div>
-                        <label for="tanggal" class="block text-sm font-medium text-gray-700 mb-2">
-                            Tanggal & Waktu <span class="text-red-500">*</span>
-                        </label>
-                        <input type="datetime-local" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('tanggal') border-red-500 @enderror" 
-                               id="tanggal" name="tanggal" value="{{ old('tanggal') }}" required>
-                        @error('tanggal')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <div class="mb-3">
+                        <label for="subject_id" class="form-label fw-bold">Mata Pelajaran <span class="text-danger">*</span></label>
+                        <select class="form-select rounded-3 @error('subject_id') is-invalid @enderror"
+                                id="subject_id" name="subject_id" required>
+                            <option value="">— Pilih Mata Pelajaran —</option>
+                            @foreach($subjects as $subject)
+                                <option value="{{ $subject->id }}" {{ old('subject_id') == $subject->id ? 'selected' : '' }}>
+                                    {{ $subject->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('subject_id')
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <div>
-                        <label for="lokasi" class="block text-sm font-medium text-gray-700 mb-2">
-                            Lokasi <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('lokasi') border-red-500 @enderror" 
-                               id="lokasi" name="lokasi" value="{{ old('lokasi') }}" required>
-                        @error('lokasi')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <div class="mb-3">
+                        <label for="kelas_id" class="form-label fw-bold">Kelas</label>
+                        <select class="form-select rounded-3 @error('kelas_id') is-invalid @enderror"
+                                id="kelas_id" name="kelas_id">
+                            <option value="">— Semua Kelas —</option>
+                            @foreach($kelas as $k)
+                                <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>
+                                    {{ $k->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('kelas_id')
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <div>
-                        <label for="durasi" class="block text-sm font-medium text-gray-700 mb-2">
-                            Durasi (menit) <span class="text-red-500">*</span>
-                        </label>
-                        <input type="number" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 @error('durasi') border-red-500 @enderror" 
-                               id="durasi" name="durasi" value="{{ old('durasi', 120) }}" 
-                               min="30" max="480" required>
-                        <p class="mt-1 text-xs text-gray-500">Minimal 30 menit, maksimal 8 jam (480 menit)</p>
-                        @error('durasi')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <div class="mb-3">
+                        <label for="due_date" class="form-label fw-bold">Batas Waktu <span class="text-danger">*</span></label>
+                        <input type="datetime-local"
+                               class="form-control rounded-3 @error('due_date') is-invalid @enderror"
+                               id="due_date" name="due_date"
+                               value="{{ old('due_date') }}"
+                               required>
+                        @error('due_date')
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <div>
-                        <div class="flex items-center">
-                            <input type="checkbox" 
-                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" 
-                                   id="is_published" name="is_published" 
-                                   {{ old('is_published') ? 'checked' : '' }}>
-                            <label for="is_published" class="ml-2 block text-sm text-gray-700">
-                                Publikasikan Praktikum
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   id="publish_now" name="publish_now" value="1"
+                                   {{ old('publish_now') ? 'checked' : '' }}>
+                            <label class="form-check-label fw-bold" for="publish_now">
+                                Publikasikan Sekarang
                             </label>
                         </div>
-                        <p class="mt-1 text-xs text-gray-500">Centang untuk langsung mempublikasikan praktikum kepada siswa</p>
+                        <small class="text-muted">Centang agar langsung terlihat oleh siswa.</small>
                     </div>
+
                 </div>
             </div>
 
-            <div class="mt-8 flex justify-end space-x-3">
-                <a href="{{ route('admin.practicals.index') }}" 
-                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                    <i class="fas fa-arrow-left mr-2"></i> Kembali
-                </a>
-                <button type="submit" 
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <i class="fas fa-save mr-2"></i> Simpan Praktikum
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Simpan Praktikum
                 </button>
+                <a href="{{ route('admin.practicals.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Batal
+                </a>
             </div>
-        </form>
+        </div>
     </div>
-</div>
-@endsection
+</form>
 
 @push('js')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Set minimum date to today
-    const today = new Date().toISOString().slice(0, 16);
-    document.getElementById('tanggal').setAttribute('min', today);
-    
-    // Set default date to tomorrow
-    const tanggalInput = document.getElementById('tanggal');
-    if (!tanggalInput.value) {
+document.addEventListener('DOMContentLoaded', function () {
+    const dueDateInput = document.getElementById('due_date');
+    if (!dueDateInput.value) {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
-        tanggalInput.value = tomorrow.toISOString().slice(0, 16);
+        dueDateInput.value = tomorrow.toISOString().slice(0, 16);
     }
+
+    const flash = document.getElementById('flashMessage');
+    if (flash) setTimeout(() => { flash.classList.remove('show'); }, 5000);
 });
 </script>
 @endpush
+
+@endsection

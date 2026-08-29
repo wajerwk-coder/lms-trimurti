@@ -207,145 +207,78 @@
     </div>
 </div>
 
-<!-- Quick Statistics -->
-<div class="card shadow mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">
-            <i class="fas fa-chart-bar me-2"></i>Statistik Cepat
-        </h6>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card border-left-primary shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col me-2">
-                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Pengguna</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['total_users'] ?? 0 }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-users fa-2x text-gray-300"></i>
-                            </div>
-                        </div>
-                    </div>
+{{-- Quick Statistics --}}
+<div class="row g-3 mb-4">
+    @foreach([
+        ['primary', 'fa-users',            $stats['total_users']           ?? 0, 'Total Pengguna'],
+        ['success', 'fa-chart-line',       $stats['total_activities']      ?? 0, 'Aktivitas Hari Ini'],
+        ['warning', 'fa-percentage',       ($stats['attendance_rate']      ?? 0) . '%', 'Rata-rata Kehadiran'],
+        ['info',    'fa-clipboard-check',  $stats['completed_assignments'] ?? 0, 'Tugas Selesai'],
+    ] as [$color, $icon, $val, $label])
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 p-3 bg-{{ $color }} bg-opacity-10 flex-shrink-0">
+                    <i class="fas {{ $icon }} text-{{ $color }} fa-lg"></i>
                 </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card border-left-success shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col me-2">
-                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Aktivitas Hari Ini</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['total_activities'] ?? 0 }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-chart-line fa-2x text-gray-300"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card border-left-warning shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col me-2">
-                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Rata-rata Kehadiran</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['attendance_rate'] ?? 0 }}%</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-percentage fa-2x text-gray-300"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="card border-left-info shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col me-2">
-                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Tugas Selesai</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['completed_assignments'] ?? 0 }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-clipboard-check fa-2x text-gray-300"></i>
-                            </div>
-                        </div>
-                    </div>
+                <div>
+                    <div class="h4 fw-bold mb-0">{{ $val }}</div>
+                    <small class="text-muted">{{ $label }}</small>
                 </div>
             </div>
         </div>
     </div>
+    @endforeach
 </div>
 
-<!-- Recent Reports -->
-<div class="card shadow">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">
-            <i class="fas fa-history me-2"></i>Laporan Terbaru
+{{-- Laporan Terbaru --}}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3">
+        <h6 class="mb-0 fw-semibold">
+            <i class="fas fa-history me-2 text-secondary"></i>Laporan Terbaru
         </h6>
     </div>
-    <div class="card-body">
+    <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-bordered">
-                <thead>
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
                     <tr>
-                        <th>Jenis Laporan</th>
+                        <th class="ps-4">Jenis Laporan</th>
                         <th>Dibuat Oleh</th>
                         <th>Tanggal</th>
-                        <th>Status</th>
-                        <th width="120">Aksi</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center pe-4">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($recentReports ?? [] as $report)
                     <tr>
-                        <td>
-                            <div class="fw-bold">{{ $report['name'] ?? 'Tidak Diketahui' }}</div>
-                            <small class="text-muted">{{ $report['type'] ?? '-' }}</small>
+                        <td class="ps-4">
+                            <div class="fw-semibold">{{ $report['name'] ?? 'Tidak Diketahui' }}</div>
+                            <small class="text-muted">{{ $report['type'] ?? '—' }}</small>
                         </td>
-                        <td>{{ $report['created_by'] ?? 'Admin' }}</td>
-                        <td>{{ $report['date'] ?? '-' }}</td>
-                        <td>
+                        <td class="text-muted">{{ $report['created_by'] ?? 'Admin' }}</td>
+                        <td class="text-muted">{{ $report['date'] ?? '—' }}</td>
+                        <td class="text-center">
                             @php
                                 $status = $report['status'] ?? 'unknown';
-                                $statusClasses = [
-                                    'completed' => 'bg-success',
-                                    'processing' => 'bg-warning',
-                                    'failed' => 'bg-danger',
-                                    'pending' => 'bg-info',
-                                    'unknown' => 'bg-secondary'
-                                ];
-                                $statusText = [
-                                    'completed' => 'Selesai',
-                                    'processing' => 'Diproses',
-                                    'failed' => 'Gagal',
-                                    'pending' => 'Pending',
-                                    'unknown' => 'Tidak Diketahui'
-                                ];
+                                $badge = ['completed'=>'success','processing'=>'warning','failed'=>'danger','pending'=>'info','unknown'=>'secondary'][$status] ?? 'secondary';
+                                $label = ['completed'=>'Selesai','processing'=>'Diproses','failed'=>'Gagal','pending'=>'Pending','unknown'=>'—'][$status] ?? ucfirst($status);
                             @endphp
-                            <span class="badge {{ $statusClasses[$status] ?? $statusClasses['unknown'] }}">
-                                {{ $statusText[$status] ?? ucfirst($status) }}
-                            </span>
+                            <span class="badge bg-{{ $badge }}">{{ $label }}</span>
                         </td>
-                        <td>
-                            <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-info" title="Lihat">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn btn-sm btn-success" title="Unduh">
-                                    <i class="fas fa-download"></i>
-                                </button>
+                        <td class="text-center pe-4">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <button class="btn btn-outline-info btn-sm" title="Lihat"><i class="fas fa-eye"></i></button>
+                                <button class="btn btn-outline-success btn-sm" title="Unduh"><i class="fas fa-download"></i></button>
                             </div>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="text-center py-4">
-                            <i class="fas fa-file-alt fa-3x text-gray-300 mb-3"></i>
-                            <p class="text-muted">Tidak ada laporan terbaru</p>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="fas fa-file-alt fa-3x opacity-25 mb-3 d-block"></i>
+                            <p class="mb-0">Tidak ada laporan terbaru.</p>
                         </td>
                     </tr>
                     @endforelse
@@ -358,23 +291,11 @@
 @push('css')
 <style>
 .report-card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 .report-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
-}
-.border-left-primary {
-    border-left: 0.25rem solid #4e73df !important;
-}
-.border-left-success {
-    border-left: 0.25rem solid #1cc88a !important;
-}
-.border-left-info {
-    border-left: 0.25rem solid #36b9cc !important;
-}
-.border-left-warning {
-    border-left: 0.25rem solid #f6c23e !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,.12) !important;
 }
 </style>
 @endpush

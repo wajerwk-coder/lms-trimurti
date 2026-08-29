@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
-use App\Models\User;
+use App\Models\Siswa;
+use App\Models\Kelas;
+use App\Models\Subject;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
@@ -21,7 +24,7 @@ class AttendanceController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Attendance::with(['siswa']);
+            $query = Attendance::with(['siswa', 'kelas', 'subject']);
 
             // Filter by date range
             if ($request->filled('start_date')) {
@@ -41,32 +44,41 @@ class AttendanceController extends Controller
                 $query->where('siswa_id', $request->siswa_id);
             }
 
+            // Filter by class
+            if ($request->filled('kelas_id')) {
+                $query->where('kelas_id', $request->kelas_id);
+            }
+
             $attendances = $query->orderBy('date', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->paginate(20);
 
-            // Get students for filter dropdown
-            $students = User::where('role', 'siswa')
-                ->orderBy('name')
+            // Get students and classes for filter dropdown
+            // Siswa tidak punya kolom 'name' — join ke users_central
+            $students = Siswa::with('user')
+                ->whereNull('siswa.deleted_at')
+                ->join('users_central', 'siswa.user_id', '=', 'users_central.id')
+                ->orderBy('users_central.name')
+                ->select('siswa.*')
                 ->get();
+            $kelas = Kelas::orderBy('name')->get();
 
             // Get statistics
             $stats = $this->getAttendanceStats($request);
 
-            return view('admin.attendance.index', compact('attendances', 'students', 'stats'));
+            return view('admin.attendance.index', compact('attendances', 'students', 'kelas', 'stats'));
         } catch (\Exception $e) {
             return view('admin.attendance.index', [
-                'attendances' => collect(),
+                'attendances' => new \Illuminate\Pagination\LengthAwarePaginator(
+                    collect(), 0, 20, 1, ['path' => request()->url()]
+                ),
                 'students' => collect(),
-                'stats' => [
-                    'total' => 0,
-                    'hadir' => 0,
-                    'izin' => 0,
-                    'sakit' => 0,
-                    'alpha' => 0,
-                    'attendance_rate' => 0
+                'kelas'    => collect(),
+                'stats'    => [
+                    'total' => 0, 'hadir' => 0, 'izin' => 0,
+                    'sakit' => 0, 'alpha' => 0, 'attendance_rate' => 0,
                 ],
-                'error' => 'Error loading attendance data: ' . $e->getMessage()
+                'error' => 'Gagal memuat data absensi: ' . $e->getMessage(),
             ]);
         }
     }
@@ -77,15 +89,17 @@ class AttendanceController extends Controller
     public function create()
     {
         try {
-            $students = User::where('role', 'siswa')
-                ->orderBy('name')
-                ->get();
+            // Load siswa dengan user (untuk menampilkan nama)
+            $students = \App\Models\Siswa::with('user')->whereNull('deleted_at')
+                ->orderBy('id')->get();
+            $kelas    = Kelas::orderBy('name')->get();
+            $subjects = Subject::where('is_active', true)->orderBy('name')->get();
 
-            return view('admin.attendance.create', compact('students'));
+            return view('admin.attendance.create', compact('students', 'kelas', 'subjects'));
         } catch (\Exception $e) {
             return view('admin.attendance.create', [
-                'students' => collect(),
-                'error' => 'Error loading students: ' . $e->getMessage()
+                'students' => collect(), 'kelas' => collect(), 'subjects' => collect(),
+                'error'    => 'Error loading data: ' . $e->getMessage(),
             ]);
         }
     }
@@ -96,28 +110,43 @@ class AttendanceController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'siswa_id' => 'required|exists:users,id',
-            'date' => 'required|date',
-            'status' => 'required|in:hadir,izin,sakit,alpha',
-            'keterangan' => 'nullable|string|max:255',
-            'waktu_masuk' => 'nullable|date_format:H:i',
-            'waktu_keluar' => 'nullable|date_format:H:i|after:waktu_masuk',
+            'siswa_id'   => 'required|exists:siswa,id',
+            'kelas_id'   => 'nullable|exists:classes,id',
+            'subject_id' => 'nullable|exists:subjects,id',
+            'date'       => 'required|date',
+            'status'     => 'required|in:hadir,izin,sakit,alpha',
+            'note'       => 'nullable|string|max:500',
+        ], [
+            'siswa_id.required' => 'Siswa wajib dipilih.',
+            'siswa_id.exists'   => 'Siswa tidak ditemukan.',
+            'date.required'     => 'Tanggal wajib diisi.',
+            'status.required'   => 'Status kehadiran wajib dipilih.',
         ]);
 
-        $data = $request->all();
-        
-        // Combine date and time for waktu_masuk and waktu_keluar
-        if ($request->waktu_masuk) {
-            $data['waktu_masuk'] = Carbon::parse($request->date . ' ' . $request->waktu_masuk);
-        }
-        if ($request->waktu_keluar) {
-            $data['waktu_keluar'] = Carbon::parse($request->date . ' ' . $request->waktu_keluar);
-        }
+        try {
+            // siswa_id di tabel absensi menyimpan users_central.id
+            $siswa = \App\Models\Siswa::findOrFail($request->siswa_id);
+            $ucId  = $siswa->user_id;
 
-        Attendance::create($data);
+            Attendance::create([
+                'siswa_id'    => $ucId,
+                'kelas_id'    => $request->kelas_id,
+                'subject_id'  => $request->subject_id,
+                'date'        => $request->date,
+                'status'      => $request->status,
+                'note'        => $request->note,
+                'created_by'  => Auth::id(),
+                'recorded_by' => Auth::id(),
+            ]);
 
-        return redirect()->route('admin.attendance.index')
-            ->with('success', 'Data absensi berhasil ditambahkan.');
+            return redirect()->route('admin.attendance.index')
+                ->with('success', 'Data absensi berhasil ditambahkan.');
+
+        } catch (\Throwable $e) {
+            \Log::error('Admin attendance store failed: ' . $e->getMessage());
+            return back()->withInput()
+                ->with('error', 'Gagal menyimpan absensi: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -134,11 +163,22 @@ class AttendanceController extends Controller
      */
     public function edit(Attendance $attendance)
     {
-        $students = User::where('role', 'siswa')
-            ->orderBy('name')
-            ->get();
+        $students = \App\Models\Siswa::with('user')->whereNull('deleted_at')->orderBy('id')->get();
+        $kelas    = Kelas::orderBy('name')->get();
+        $subjects = Subject::where('is_active', true)->orderBy('name')->get();
 
-        return view('admin.attendance.edit', compact('attendance', 'students'));
+        // Temukan siswa yang sesuai: attendance.siswa_id = users_central.id → cari siswa.user_id
+        $currentSiswaId = null;
+        foreach ($students as $s) {
+            if ($s->user_id == $attendance->siswa_id) {
+                $currentSiswaId = $s->id;
+                break;
+            }
+        }
+
+        return view('admin.attendance.edit', compact(
+            'attendance', 'students', 'kelas', 'subjects', 'currentSiswaId'
+        ));
     }
 
     /**
@@ -147,33 +187,36 @@ class AttendanceController extends Controller
     public function update(Request $request, Attendance $attendance)
     {
         $request->validate([
-            'siswa_id' => 'required|exists:users,id',
-            'date' => 'required|date',
-            'status' => 'required|in:hadir,izin,sakit,alpha',
-            'keterangan' => 'nullable|string|max:255',
-            'waktu_masuk' => 'nullable|date_format:H:i',
-            'waktu_keluar' => 'nullable|date_format:H:i|after:waktu_masuk',
+            'siswa_id'   => 'required|exists:siswa,id',
+            'kelas_id'   => 'nullable|exists:classes,id',
+            'subject_id' => 'nullable|exists:subjects,id',
+            'date'       => 'required|date',
+            'status'     => 'required|in:hadir,izin,sakit,alpha',
+            'note'       => 'nullable|string|max:500',
         ]);
 
-        $data = $request->all();
-        
-        // Combine date and time for waktu_masuk and waktu_keluar
-        if ($request->waktu_masuk) {
-            $data['waktu_masuk'] = Carbon::parse($request->date . ' ' . $request->waktu_masuk);
-        } else {
-            $data['waktu_masuk'] = null;
-        }
-        
-        if ($request->waktu_keluar) {
-            $data['waktu_keluar'] = Carbon::parse($request->date . ' ' . $request->waktu_keluar);
-        } else {
-            $data['waktu_keluar'] = null;
-        }
+        try {
+            // Konversi siswa.id → users_central.id
+            $siswa = \App\Models\Siswa::findOrFail($request->siswa_id);
+            $ucId  = $siswa->user_id;
 
-        $attendance->update($data);
+            $attendance->update([
+                'siswa_id'   => $ucId,
+                'kelas_id'   => $request->kelas_id,
+                'subject_id' => $request->subject_id,
+                'date'       => $request->date,
+                'status'     => $request->status,
+                'note'       => $request->note,
+            ]);
 
-        return redirect()->route('admin.attendance.index')
-            ->with('success', 'Data absensi berhasil diperbarui.');
+            return redirect()->route('admin.attendance.index')
+                ->with('success', 'Data absensi berhasil diperbarui.');
+
+        } catch (\Throwable $e) {
+            \Log::error('Admin attendance update failed: ' . $e->getMessage());
+            return back()->withInput()
+                ->with('error', 'Gagal memperbarui absensi: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -181,10 +224,13 @@ class AttendanceController extends Controller
      */
     public function destroy(Attendance $attendance)
     {
-        $attendance->delete();
-
-        return redirect()->route('admin.attendance.index')
-            ->with('success', 'Data absensi berhasil dihapus.');
+        try {
+            $attendance->delete();
+            return redirect()->route('admin.attendance.index')
+                ->with('success', 'Data absensi berhasil dihapus.');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Gagal menghapus absensi: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -193,20 +239,25 @@ class AttendanceController extends Controller
     public function bulkUpdate(Request $request)
     {
         $request->validate([
-            'attendance_ids' => 'required|array',
+            'attendance_ids'   => 'required|array',
             'attendance_ids.*' => 'exists:attendances,id',
-            'status' => 'required|in:hadir,izin,sakit,alpha',
-            'keterangan' => 'nullable|string|max:255'
+            'status'           => 'required|in:hadir,izin,sakit,alpha',
+            'note'             => 'nullable|string|max:500',
         ]);
 
-        Attendance::whereIn('id', $request->attendance_ids)
-            ->update([
-                'status' => $request->status,
-                'keterangan' => $request->keterangan
-            ]);
+        try {
+            Attendance::whereIn('id', $request->attendance_ids)
+                ->update([
+                    'status' => $request->status,
+                    'note'   => $request->note,
+                ]);
 
-        return redirect()->route('admin.attendance.index')
-            ->with('success', 'Data absensi berhasil diperbarui secara massal.');
+            return redirect()->route('admin.attendance.index')
+                ->with('success', count($request->attendance_ids) . ' data absensi berhasil diperbarui.');
+
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Gagal memperbarui absensi: ' . $e->getMessage());
+        }
     }
 
     /**

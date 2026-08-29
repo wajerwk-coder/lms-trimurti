@@ -7,30 +7,27 @@ use App\Models\Material;
 use App\Models\Assignment;
 use App\Models\Practical;
 use App\Models\Attendance;
-use App\Models\PracticalScore;
+use App\Models\NilaiPraktik;
 use App\Models\AssignmentSubmission;
 use App\Models\MaterialDownload;
-use App\Models\User;
 use App\Models\Subject;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Pagination\Paginator;
+use App\Models\Siswa;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\View\View;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReportController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
-        $this->middleware('role:guru');
+        $this->middleware(['auth', 'guru']);
     }
 
     /**
@@ -38,88 +35,107 @@ class ReportController extends Controller
      */
     public function index(): View
     {
-        $guruId = Auth::id();
-        $startDate = request('start_date', Carbon::now()->subMonth()->format('Y-m-d'));
-        $endDate = request('end_date', Carbon::now()->format('Y-m-d'));
+        $guruId    = Auth::id();
+        $startDate = now()->subMonth()->format('Y-m-d');
+        $endDate   = now()->format('Y-m-d');
 
+        // ── Stats sederhana — 4 query ringkas ────────────────────────────────
         $stats = [
-            'total_materials' => Material::where('guru_id', $guruId)->count(),
-            'total_assignments' => Assignment::where('guru_id', $guruId)->count(),
-            'total_practicals' => Practical::where('guru_id', $guruId)->count(),
-            'total_attendance' => Attendance::where('recorded_by', $guruId)
-                ->whereBetween('date', [$startDate, $endDate])
-                ->count(),
-
-            'graded_assignments' => AssignmentSubmission::whereHas('assignment', function($query) use ($guruId) {
-                $query->where('guru_id', $guruId);
-            })->whereNotNull('score')->count(),
-
-            'pending_assignments' => AssignmentSubmission::whereHas('assignment', function($query) use ($guruId) {
-                $query->where('guru_id', $guruId);
-            })->whereNull('score')->count(),
-
-            'materials_downloads' => MaterialDownload::whereHas('material', function($query) use ($guruId) {
-                $query->where('guru_id', $guruId);
-            })->whereBetween('downloaded_at', [$startDate, $endDate])->count(),
-
-            'average_practical_score' => PracticalScore::whereHas('practical', function($query) use ($guruId) {
-                $query->where('guru_id', $guruId);
-            })->avg('score') ?? 0,
+            'total_materials'    => Material::where('guru_id', $guruId)->count(),
+            'total_assignments'  => Assignment::where('guru_id', $guruId)->count(),
+            'total_practicals'   => Practical::where('guru_id', $guruId)->count(),
+            'total_attendance'   => Attendance::where('recorded_by', $guruId)
+                                        ->whereBetween('date', [$startDate, $endDate])
+                                        ->count(),
+            'graded_assignments' => AssignmentSubmission::whereHas('assignment',
+                                        fn($q) => $q->where('guru_id', $guruId))
+                                        ->whereNotNull('score')->count(),
+            'pending_assignments'=> AssignmentSubmission::whereHas('assignment',
+                                        fn($q) => $q->where('guru_id', $guruId))
+                                        ->whereNull('score')->count(),
+            'materials_downloads'=> MaterialDownload::whereHas('material',
+                                        fn($q) => $q->where('guru_id', $guruId))
+                                        ->whereBetween('downloaded_at', [$startDate, $endDate])
+                                        ->count(),
+            'average_practical_score' => round(NilaiPraktik::whereNull('criteria_id')
+                                        ->whereHas('practical', fn($q) => $q->where('guru_id', $guruId))
+                                        ->avg('score') ?? 0, 1),
         ];
 
-        // Chart data for dashboard
+        // ── Chart data — pakai single GROUP BY query per tabel ────────────────
         $monthlyData = $this->getMonthlyReportData($guruId);
 
-        // Determine which view to use based on the route
-        $viewName = request()->route()->getName() === 'guru.reports.index' 
-            ? 'guru.reports.index' 
+        $viewName = request()->route()->getName() === 'guru.reports.index'
+            ? 'guru.reports.index'
             : 'guru.laporan.index';
-            
+
         return view($viewName, compact('stats', 'startDate', 'endDate', 'monthlyData'));
     }
 
-    private function getMonthlyReportData($guruId)
+    /**
+     * Monthly chart data — single query per tabel, bukan loop per bulan.
+     */
+    private function getMonthlyReportData(int $guruId): array
     {
-        $startDate = Carbon::now()->subMonths(6)->startOfMonth();
-        $endDate = Carbon::now()->endOfMonth();
+        $since = Carbon::now()->subMonths(5)->startOfMonth();
 
-        $monthlyData = [
-            'labels' => [],
-            'materials' => [],
-            'assignments' => [],
-            'practicals' => [],
-            'attendance' => []
-        ];
-
-        $current = $startDate->copy();
-        while ($current <= $endDate) {
-            $monthLabel = $current->format('M Y');
-            $monthStart = $current->copy()->startOfMonth();
-            $monthEnd = $current->copy()->endOfMonth();
-
-            $monthlyData['labels'][] = $monthLabel;
-            $monthlyData['materials'][] = Material::where('guru_id', $guruId)
-                ->whereBetween('created_at', [$monthStart, $monthEnd])
-                ->count();
-
-            $monthlyData['assignments'][] = Assignment::where('guru_id', $guruId)
-                ->whereBetween('created_at', [$monthStart, $monthEnd])
-                ->count();
-
-            $monthlyData['practicals'][] = Practical::where('guru_id', $guruId)
-                ->whereBetween('created_at', [$monthStart, $monthEnd])
-                ->count();
-
-            $monthlyData['attendance'][] = Attendance::where('recorded_by', $guruId)
-                ->whereBetween('date', [
-                    $monthStart->format('Y-m-d'),
-                    $monthEnd->format('Y-m-d')
-                ])->count();
-
-            $current->addMonth();
+        // Bangun 6 label bulan
+        $labels   = [];
+        $labelMap = []; // 'YYYY-MM' => index
+        $cur      = $since->copy();
+        for ($i = 0; $i < 6; $i++) {
+            $key            = $cur->format('Y-m');
+            $labels[]       = $cur->translatedFormat('M Y');
+            $labelMap[$key] = $i;
+            $cur->addMonth();
         }
 
-        return $monthlyData;
+        $zeros = array_fill(0, 6, 0);
+
+        // Materials — 1 query
+        $matRows = DB::table('materials')
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as ym, COUNT(*) as cnt")
+            ->where('guru_id', $guruId)
+            ->where('created_at', '>=', $since)
+            ->whereNull('deleted_at')
+            ->groupBy('ym')->get();
+
+        // Assignments — 1 query
+        $asgRows = DB::table('assignments')
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as ym, COUNT(*) as cnt")
+            ->where('guru_id', $guruId)
+            ->where('created_at', '>=', $since)
+            ->whereNull('deleted_at')
+            ->groupBy('ym')->get();
+
+        // Practicals — 1 query
+        $pracRows = DB::table('practicals')
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as ym, COUNT(*) as cnt")
+            ->where('guru_id', $guruId)
+            ->where('created_at', '>=', $since)
+            ->whereNull('deleted_at')
+            ->groupBy('ym')->get();
+
+        // Attendance — 1 query
+        $attRows = DB::table('attendances')
+            ->selectRaw("DATE_FORMAT(date, '%Y-%m') as ym, COUNT(*) as cnt")
+            ->where('recorded_by', $guruId)
+            ->where('date', '>=', $since->format('Y-m-d'))
+            ->whereNull('deleted_at')
+            ->groupBy('ym')->get();
+
+        // Map ke array index
+        $materials   = $zeros;
+        $assignments = $zeros;
+        $practicals  = $zeros;
+        $attendance  = $zeros;
+
+        foreach ($matRows  as $r) { if (isset($labelMap[$r->ym])) $materials[$labelMap[$r->ym]]   = $r->cnt; }
+        foreach ($asgRows  as $r) { if (isset($labelMap[$r->ym])) $assignments[$labelMap[$r->ym]] = $r->cnt; }
+        foreach ($pracRows as $r) { if (isset($labelMap[$r->ym])) $practicals[$labelMap[$r->ym]]  = $r->cnt; }
+        foreach ($attRows  as $r) { if (isset($labelMap[$r->ym])) $attendance[$labelMap[$r->ym]]  = $r->cnt; }
+
+        return compact('labels', 'materials', 'assignments', 'practicals', 'attendance');
     }
 
     /**
@@ -129,235 +145,100 @@ class ReportController extends Controller
     {
         $guruId = Auth::id();
 
-        $validator = Validator::make($request->all(), [
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'kelas' => 'nullable|string',
-            'skill_level' => 'nullable|in:Pemula,Menengah,Mahir',
-        ]);
-
         $filters = [
             'start_date' => $request->start_date ?? Carbon::now()->subMonth()->format('Y-m-d'),
-            'end_date' => $request->end_date ?? Carbon::now()->format('Y-m-d'),
-            'kelas' => $request->kelas,
-            'skill_level' => $request->skill_level,
+            'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
+            'kelas'      => $request->kelas,
         ];
 
-        $query = Practical::with(['scores' => function($query) {
-                $query->with(['siswa', 'criteria']);
-            }])
+        $query = Practical::withCount('scores')
             ->where('guru_id', $guruId)
-            ->whereBetween('date', [$filters['start_date'], $filters['end_date']]);
+            ->whereBetween('due_date', [$filters['start_date'] . ' 00:00:00', $filters['end_date'] . ' 23:59:59']);
 
-            if ($filters['kelas']) {
-                $query->where('kelas_id', $filters['kelas']);
-            }
-
-        if ($filters['skill_level']) {
-            $query->where('skill_level', $filters['skill_level']);
+        if ($filters['kelas']) {
+            $query->where('kelas_id', $filters['kelas']);
         }
 
         $practicals = $query->latest()->paginate(15);
 
+        $scoreBase = NilaiPraktik::whereHas('practical', function ($q) use ($guruId, $filters) {
+            $q->where('guru_id', $guruId)
+              ->whereBetween('due_date', [$filters['start_date'] . ' 00:00:00', $filters['end_date'] . ' 23:59:59']);
+            if ($filters['kelas']) $q->where('kelas_id', $filters['kelas']);
+        });
+
         $practicalStats = [
-            'total_siswa' => PracticalScore::whereHas('practical', function($query) use ($guruId, $filters) {
-                $query->where('guru_id', $guruId)
-                    ->whereBetween('date', [$filters['start_date'], $filters['end_date']]);
-                if ($filters['kelas']) {
-                    $query->where('kelas_id', $filters['kelas']);
-                }
-            })->distinct('siswa_id')->count('siswa_id'),
-
-            'average_score' => PracticalScore::whereHas('practical', function($query) use ($guruId, $filters) {
-                $query->where('guru_id', $guruId)
-                    ->whereBetween('date', [$filters['start_date'], $filters['end_date']]);
-                if ($filters['kelas']) {
-                    $query->where('kelas_id', $filters['kelas']);
-                }
-            })->avg('score') ?? 0,
-
-            'total_graded' => PracticalScore::whereHas('practical', function($query) use ($guruId, $filters) {
-                $query->where('guru_id', $guruId)
-                    ->whereBetween('date', [$filters['start_date'], $filters['end_date']]);
-                if ($filters['kelas']) {
-                    $query->where('kelas_id', $filters['kelas']);
-                }
-            })->count(),
+            'total_siswa'   => (clone $scoreBase)->whereNull('criteria_id')->distinct('siswa_id')->count('siswa_id'),
+            'average_score' => round((clone $scoreBase)->whereNull('criteria_id')->avg('score') ?? 0, 1),
+            'total_graded'  => (clone $scoreBase)->whereNull('criteria_id')->count(),
         ];
 
-        $classes = \App\Models\Kelas::whereHas('students', function($query) {
-                $query->where('role', 'siswa');
-            })
-            ->where('status', 'active')
-            ->pluck('name', 'id');
+        $classes = \App\Models\Kelas::orderBy('name')->pluck('name', 'id');
 
-        return view('guru.laporan.praktik', compact(
-            'practicals',
-            'practicalStats',
-            'classes',
-            'filters'
-        ));
+        return view('guru.laporan.praktik', compact('practicals', 'practicalStats', 'classes', 'filters'));
     }
 
-    /**
-     * Show attendance reports.
-     */
     public function absensi(Request $request): View
     {
         $guruId = Auth::id();
 
-        $validator = Validator::make($request->all(), [
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'kelas' => 'nullable|string',
-            'status' => 'nullable|in:hadir,izin,sakit,alpha',
-        ]);
-
         $filters = [
             'start_date' => $request->start_date ?? Carbon::now()->subMonth()->format('Y-m-d'),
-            'end_date' => $request->end_date ?? Carbon::now()->format('Y-m-d'),
-            'kelas' => $request->kelas,
-            'status' => $request->status,
+            'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
+            'kelas'      => $request->kelas,
+            'status'     => $request->status,
         ];
 
-        $query = Attendance::with('siswa')
+        // Filter kelas: ambil users_central.id dari tabel siswa
+        $siswaUcIds = $filters['kelas']
+            ? Siswa::where('kelas_id', $filters['kelas'])->pluck('user_id')
+            : null;
+
+        $query = Attendance::with(['siswa', 'subject', 'kelas'])
             ->where('recorded_by', $guruId)
-            ->whereBetween('date', [$filters['start_date'], $filters['end_date']]);
-
-            if ($filters['kelas']) {
-                $query->whereHas('siswa', function($q) use ($filters) {
-                    $q->where('kelas_id', $filters['kelas']);
-                });
-            }
-
-        if ($filters['status']) {
-            $query->where('status', $filters['status']);
-        }
+            ->whereBetween('date', [$filters['start_date'], $filters['end_date']])
+            ->when($siswaUcIds, fn($q) => $q->whereIn('siswa_id', $siswaUcIds))
+            ->when($filters['status'], fn($q) => $q->where('status', $filters['status']));
 
         $attendance = $query->orderBy('date', 'desc')->paginate(20);
 
-        $attendanceStats = Attendance::selectRaw('status, COUNT(*) as count')
+        $statsQuery = Attendance::selectRaw('status, COUNT(*) as count')
             ->where('recorded_by', $guruId)
             ->whereBetween('date', [$filters['start_date'], $filters['end_date']])
-            ->when($filters['kelas'], function($query) use ($filters) {
-                return $query->whereHas('siswa', function($q) use ($filters) {
-                    $q->where('kelas_id', $filters['kelas']);
-                });
-            })
+            ->when($siswaUcIds, fn($q) => $q->whereIn('siswa_id', $siswaUcIds))
             ->groupBy('status')
             ->get();
 
         $summaryStats = [
-            'total_days' => Carbon::parse($filters['start_date'])->diffInDays(Carbon::parse($filters['end_date'])) + 1,
-            'total_records' => $attendance->total(),
-            'present_count' => $attendanceStats->where('status', 'hadir')->first()?->count ?? 0,
-            'absent_count' => $attendanceStats->where('status', 'alpha')->first()?->count ?? 0,
-            'permission_count' => $attendanceStats->whereIn('status', ['izin', 'sakit'])->sum('count'),
-            'attendance_rate' => $attendance->total() > 0 ?
-                round(($attendanceStats->where('status', 'hadir')->first()?->count ?? 0) / $attendance->total() * 100, 2) : 0,
+            'total_days'      => Carbon::parse($filters['start_date'])->diffInDays(Carbon::parse($filters['end_date'])) + 1,
+            'total_records'   => $attendance->total(),
+            'present_count'   => $statsQuery->where('status', 'hadir')->first()?->count ?? 0,
+            'izin_count'      => $statsQuery->where('status', 'izin')->first()?->count ?? 0,
+            'sakit_count'     => $statsQuery->where('status', 'sakit')->first()?->count ?? 0,
+            'absent_count'    => $statsQuery->where('status', 'alpha')->first()?->count ?? 0,
+            'attendance_rate' => $attendance->total() > 0
+                ? round(($statsQuery->where('status', 'hadir')->first()?->count ?? 0) / $attendance->total() * 100, 1)
+                : 0,
         ];
 
-        $classes = \App\Models\Kelas::whereHas('students', function($query) {
-                $query->where('role', 'siswa');
-            })
-            ->where('status', 'active')
-            ->pluck('name', 'id');
+        $classes = \App\Models\Kelas::orderBy('name')->pluck('name', 'id');
 
-        // Get subjects taught by this guru - using a more flexible approach
-        try {
-            $subjects = Subject::where('guru_id', $guruId)->get();
-        } catch (\Exception $e) {
-            // If Subject table doesn't have guru_id or other issues, create default
-            $subjects = collect();
-        }
-        
-        // If no subjects found, try alternative queries or create default
-        if ($subjects->isEmpty()) {
-            try {
-                // Try to find subjects in other ways or just get first few subjects
-                $subjects = Subject::limit(5)->get();
-            } catch (\Exception $e) {
-                // Final fallback - create a mock subject
-                $subjects = collect([(object)['id' => 0, 'name' => 'General Subject']]);
-            }
-        }
-
-        // Create attendance summary data 
-        $attendanceSummary = collect();
-        foreach($subjects as $subject) {
-            $subjectAttendance = Attendance::where('recorded_by', $guruId)
-                ->whereBetween('date', [$filters['start_date'], $filters['end_date']])
-                ->when($filters['kelas'], function($query) use ($filters) {
-                    return $query->whereHas('siswa', function($q) use ($filters) {
-                        $q->where('kelas_id', $filters['kelas']);
-                    });
-                })
-                ->get();
-                
-            $summary = (object)[
-                'subject_name' => $subject->name,
-                'class' => $filters['kelas'] ? $classes[$filters['kelas']] ?? '-' : 'All Classes',
-                'total_sessions' => $subjectAttendance->groupBy('date')->count(),
-                'present_count' => $subjectAttendance->where('status', 'hadir')->count(),
-                'late_count' => $subjectAttendance->where('status', 'terlambat')->count(),
-                'absent_count' => $subjectAttendance->where('status', 'alpha')->count(),
-                'attendance_rate' => $subjectAttendance->count() > 0 ? 
-                    round($subjectAttendance->where('status', 'hadir')->count() / $subjectAttendance->count() * 100, 2) : 0
-            ];
-            
-            $attendanceSummary->push($summary);
-        }
-
-        // Get students data for the detailed table
-        $studentsQuery = User::where('role', 'siswa')
-            ->when($filters['kelas'], function($query) use ($filters) {
-                return $query->where('kelas_id', $filters['kelas']);
-            })
-            ->with(['attendances' => function($query) use ($guruId, $filters) {
-                $query->where('recorded_by', $guruId)
-                    ->whereBetween('date', [$filters['start_date'], $filters['end_date']]);
-            }]);
-            
-        $students = $studentsQuery->paginate(20);
-        
-        // Map student data with attendance calculations
-        $students->getCollection()->transform(function($student) use ($subjects) {
-            $attendances = $student->attendances;
-            $student->class = $student->kelas->name ?? '-';
-            $student->subject_name = $subjects->first()->name ?? 'No Subject';
-            $student->present_count = $attendances->where('status', 'hadir')->count();
-            $student->late_count = $attendances->where('status', 'terlambat')->count();
-            $student->absent_count = $attendances->where('status', 'alpha')->count();
-            $student->excused_count = $attendances->whereIn('status', ['izin', 'sakit'])->count();
-            $totalRecords = $attendances->count();
-            $student->attendance_rate = $totalRecords > 0 ? 
-                round($student->present_count / $totalRecords * 100, 2) : 0;
-            return $student;
-        });
-
-        // Update stats to match view expectations
         $stats = [
-            'present_count' => $summaryStats['present_count'],
-            'late_count' => $attendanceStats->where('status', 'terlambat')->first()?->count ?? 0,
-            'absent_count' => $summaryStats['absent_count'],
-            'attendance_rate' => $summaryStats['attendance_rate']
+            'present_count'   => $summaryStats['present_count'],
+            'absent_count'    => $summaryStats['absent_count'],
+            'izin_count'      => $summaryStats['izin_count'] + $summaryStats['sakit_count'],
+            'attendance_rate' => $summaryStats['attendance_rate'],
         ];
 
-        // Determine which view to use based on the route
-        $viewName = request()->route()->getName() === 'guru.reports.attendance' 
-            ? 'guru.reports.attendance' 
+        $attendances  = $attendance; // alias untuk view baru
+        $attendanceStats = $statsQuery;
+
+        $viewName = request()->route()->getName() === 'guru.reports.attendance'
+            ? 'guru.reports.attendance'
             : 'guru.laporan.absensi';
-            
+
         return view($viewName, compact(
-            'attendance',
-            'attendanceStats', 
-            'attendanceSummary',
-            'summaryStats',
-            'classes',
-            'subjects',
-            'students',
-            'stats',
-            'filters'
+            'attendance', 'attendances', 'attendanceStats', 'summaryStats', 'classes', 'stats', 'filters'
         ));
     }
 
@@ -368,54 +249,34 @@ class ReportController extends Controller
     {
         $guruId = Auth::id();
 
-        $validator = Validator::make($request->all(), [
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'status' => 'nullable|in:graded,pending',
-        ]);
-
         $filters = [
             'start_date' => $request->start_date ?? Carbon::now()->subMonth()->format('Y-m-d'),
-            'end_date' => $request->end_date ?? Carbon::now()->format('Y-m-d'),
-            'status' => $request->status,
+            'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
+            'status'     => $request->status,
         ];
 
         $query = Assignment::withCount([
-                'submissions',
-                'submissions as graded_count' => function($query) {
-                    $query->whereNotNull('score');
-                },
-                'submissions as pending_count' => function($query) {
-                    $query->whereNull('score');
-                }
-            ])
-            ->where('guru_id', $guruId)
-            ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+            'submissions',
+            'submissions as graded_count'  => fn($q) => $q->whereNotNull('score'),
+            'submissions as pending_count' => fn($q) => $q->whereNull('score'),
+        ])
+        ->where('guru_id', $guruId)
+        ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
 
         $assignments = $query->latest()->paginate(15);
 
+        $subBase = AssignmentSubmission::whereHas('assignment', fn($q) => $q
+            ->where('guru_id', $guruId)
+            ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']])
+        );
+
         $assignmentStats = [
-            'total_submissions' => AssignmentSubmission::whereHas('assignment', function($query) use ($guruId, $filters) {
-                $query->where('guru_id', $guruId)
-                    ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
-            })->count(),
-
-            'graded_submissions' => AssignmentSubmission::whereHas('assignment', function($query) use ($guruId, $filters) {
-                $query->where('guru_id', $guruId)
-                    ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
-            })->whereNotNull('score')->count(),
-
-            'average_score' => AssignmentSubmission::whereHas('assignment', function($query) use ($guruId, $filters) {
-                $query->where('guru_id', $guruId)
-                    ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
-            })->whereNotNull('score')->avg('score') ?? 0,
+            'total_submissions' => (clone $subBase)->count(),
+            'graded_submissions'=> (clone $subBase)->whereNotNull('score')->count(),
+            'average_score'     => round((clone $subBase)->whereNotNull('score')->avg('score') ?? 0, 1),
         ];
 
-        return view('guru.laporan.tugas', compact(
-            'assignments',
-            'assignmentStats',
-            'filters'
-        ));
+        return view('guru.laporan.tugas', compact('assignments', 'assignmentStats', 'filters'));
     }
 
     /**
@@ -425,69 +286,32 @@ class ReportController extends Controller
     {
         $guruId = Auth::id();
 
-        $validator = Validator::make($request->all(), [
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'category' => 'nullable|string',
-        ]);
-
         $filters = [
             'start_date' => $request->start_date ?? Carbon::now()->subMonth()->format('Y-m-d'),
-            'end_date' => $request->end_date ?? Carbon::now()->format('Y-m-d'),
-            'category' => $request->category,
+            'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
         ];
 
-        $query = Material::withCount('downloads')
+        $materials = Material::withCount('downloads')
             ->where('guru_id', $guruId)
-            ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+            ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']])
+            ->latest()->paginate(15);
 
-        if ($filters['category']) {
-            $query->where('category', $filters['category']);
-        }
-
-        $materials = $query->latest()->paginate(15);
+        $dlBase = MaterialDownload::whereHas('material', fn($q) => $q
+            ->where('guru_id', $guruId)
+            ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']])
+        )->whereBetween('downloaded_at', [$filters['start_date'], $filters['end_date']]);
 
         $materialStats = [
-            'total_downloads' => MaterialDownload::whereHas('material', function($query) use ($guruId, $filters) {
-                $query->where('guru_id', $guruId)
-                    ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
-                if ($filters['category']) {
-                    $query->where('category', $filters['category']);
-                }
-            })->whereBetween('downloaded_at', [$filters['start_date'], $filters['end_date']])->count(),
-
-            'total_views' => Material::where('guru_id', $guruId)
+            'total_downloads'  => (clone $dlBase)->count(),
+            'total_views'      => Material::where('guru_id', $guruId)
                 ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']])
-                ->when($filters['category'], function($query) use ($filters) {
-                    return $query->where('category', $filters['category']);
-                })
                 ->sum('views_count') ?? 0,
-
-            'most_downloaded' => Material::where('guru_id', $guruId)
+            'most_downloaded'  => Material::where('guru_id', $guruId)
                 ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']])
-                ->when($filters['category'], function($query) use ($filters) {
-                    return $query->where('category', $filters['category']);
-                })
-                ->orderBy('downloads_count', 'desc')
-                ->first(),
+                ->orderByDesc('downloads_count')->first(),
         ];
 
-        $categories = [
-            'Anatomi' => 'Anatomi',
-            'Fisiologi' => 'Fisiologi',
-            'Keperawatan' => 'Keperawatan',
-            'Kebidanan' => 'Kebidanan',
-            'Farmasi' => 'Farmasi',
-            'Gizi' => 'Gizi',
-            'Umum' => 'Umum'
-        ];
-
-        return view('guru.laporan.materi', compact(
-            'materials',
-            'materialStats',
-            'categories',
-            'filters'
-        ));
+        return view('guru.laporan.materi', compact('materials', 'materialStats', 'filters'));
     }
 
     /**
@@ -507,6 +331,132 @@ class ReportController extends Controller
     }
 
     /**
+     * Laporan nilai siswa — rekap nilai tugas dan praktikum.
+     */
+    public function nilai(Request $request): View
+    {
+        $guruId = Auth::id();
+
+        $filters = [
+            'start_date' => $request->start_date ?? Carbon::now()->subMonth()->format('Y-m-d'),
+            'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
+            'kelas_id'   => $request->kelas_id,
+        ];
+
+        // Rekap nilai tugas per siswa
+        $nilaiTugasQuery = AssignmentSubmission::with(['siswa', 'assignment.subject'])
+            ->whereHas('assignment', fn($q) => $q->where('guru_id', $guruId))
+            ->whereNotNull('score')
+            ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+
+        // Filter kelas: siswa_id ada di tabel siswa yang kelas_id sesuai
+        if ($filters['kelas_id']) {
+            $siswaUcIds = Siswa::where('kelas_id', $filters['kelas_id'])
+                ->pluck('user_id');
+            $nilaiTugasQuery->whereIn('siswa_id', $siswaUcIds);
+        }
+
+        $nilaiTugas = $nilaiTugasQuery->latest()->get();
+
+        // Rekap nilai praktikum per siswa
+        $nilaiPraktikQuery = NilaiPraktik::with(['siswa', 'practical.subject'])
+            ->whereHas('practical', fn($q) => $q->where('guru_id', $guruId))
+            ->whereNull('criteria_id')
+            ->whereNotNull('score')
+            ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+
+        if ($filters['kelas_id']) {
+            $siswaUcIds = $siswaUcIds ?? Siswa::where('kelas_id', $filters['kelas_id'])->pluck('user_id');
+            $nilaiPraktikQuery->whereIn('siswa_id', $siswaUcIds);
+        }
+
+        $nilaiPraktik = $nilaiPraktikQuery->latest()->get();
+
+        $kelas = \App\Models\Kelas::orderBy('name')->get();
+
+        $stats = [
+            'avg_tugas'   => round($nilaiTugas->avg('score') ?? 0, 1),
+            'avg_praktik' => round($nilaiPraktik->avg('score') ?? 0, 1),
+            'total_siswa_dinilai' => $nilaiTugas->pluck('siswa_id')->merge($nilaiPraktik->pluck('siswa_id'))->unique()->count(),
+        ];
+
+        return view('guru.laporan.nilai', compact('nilaiTugas', 'nilaiPraktik', 'kelas', 'filters', 'stats'));
+    }
+
+    /**
+     * Laporan siswa — rekap kehadiran, nilai, dan aktivitas per siswa.
+     * Dioptimalkan: bulk query per kelas, bukan N+1 per siswa.
+     */
+    public function siswa(Request $request): View
+    {
+        $guruId = Auth::id();
+
+        $filters = [
+            'start_date' => $request->start_date ?? Carbon::now()->subMonth()->format('Y-m-d'),
+            'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
+            'kelas_id'   => $request->kelas_id,
+        ];
+
+        $kelas = \App\Models\Kelas::orderBy('name')->get();
+
+        // Ambil daftar siswa
+        $siswaList = Siswa::with(['user', 'kelas'])
+            ->whereNull('deleted_at')
+            ->when($filters['kelas_id'], fn($q) => $q->where('kelas_id', $filters['kelas_id']))
+            ->get();
+
+        if ($siswaList->isEmpty()) {
+            return view('guru.laporan.siswa', compact('filters', 'kelas') + ['siswaData' => collect()]);
+        }
+
+        // Ambil semua user_id (users_central.id) dari list siswa
+        $ucIds = $siswaList->pluck('user_id')->filter()->values();
+
+        // Bulk query: semua absensi untuk siswa-siswa ini
+        $allAbsensi = \App\Models\Attendance::selectRaw('siswa_id, status, COUNT(*) as cnt')
+            ->whereIn('siswa_id', $ucIds)
+            ->whereBetween('date', [$filters['start_date'], $filters['end_date']])
+            ->groupBy('siswa_id', 'status')
+            ->get()
+            ->groupBy('siswa_id');
+
+        // Bulk query: rata-rata nilai tugas per siswa
+        $avgTugasList = AssignmentSubmission::selectRaw('siswa_id, AVG(score) as avg_score')
+            ->whereIn('siswa_id', $ucIds)
+            ->whereHas('assignment', fn($q) => $q->where('guru_id', $guruId))
+            ->whereNotNull('score')
+            ->groupBy('siswa_id')
+            ->pluck('avg_score', 'siswa_id');
+
+        // Bulk query: rata-rata nilai praktik per siswa
+        $avgPraktikList = NilaiPraktik::selectRaw('siswa_id, AVG(score) as avg_score')
+            ->whereIn('siswa_id', $ucIds)
+            ->whereHas('practical', fn($q) => $q->where('guru_id', $guruId))
+            ->whereNull('criteria_id')
+            ->whereNotNull('score')
+            ->groupBy('siswa_id')
+            ->pluck('avg_score', 'siswa_id');
+
+        // Map data per siswa menggunakan hasil bulk query
+        $siswaData = $siswaList->map(function ($s) use ($allAbsensi, $avgTugasList, $avgPraktikList) {
+            $ucId        = $s->user_id;
+            $absensiRows = $allAbsensi->get($ucId, collect());
+
+            $totalAbsensi = $absensiRows->sum('cnt');
+            $hadir        = $absensiRows->where('status', 'hadir')->sum('cnt');
+
+            $s->total_absensi = $totalAbsensi;
+            $s->hadir         = $hadir;
+            $s->pct_hadir     = $totalAbsensi > 0 ? round($hadir / $totalAbsensi * 100) : 0;
+            $s->avg_tugas     = isset($avgTugasList[$ucId])   ? round((float)$avgTugasList[$ucId],  1) : null;
+            $s->avg_praktik   = isset($avgPraktikList[$ucId]) ? round((float)$avgPraktikList[$ucId], 1) : null;
+            return $s;
+        });
+
+        return view('guru.laporan.siswa', compact('siswaData', 'kelas', 'filters'));
+    }
+
+    /**
      * Generate report (for guru.reports.generate route).
      */
     public function generate(Request $request)
@@ -522,10 +472,7 @@ class ReportController extends Controller
     {
         $guruId = Auth::id();
 
-        $validClasses = \App\Models\Kelas::whereHas('students', function($query) {
-                $query->where('role', 'siswa');
-            })
-            ->where('status', 'active')
+        $validClasses = \App\Models\Kelas::orderBy('name')
             ->pluck('id')
             ->toArray();
 
@@ -584,14 +531,15 @@ class ReportController extends Controller
 
     private function exportAttendancePdf($filters, $filename, $guruId)
     {
-        $attendance = Attendance::with('siswa')
+        // Filter kelas: ambil siswa_id (users_central.id) dari tabel siswa
+        $siswaUcIds = $filters['kelas']
+            ? Siswa::where('kelas_id', $filters['kelas'])->pluck('user_id')
+            : null;
+
+        $attendance = Attendance::with(['siswa', 'subject', 'kelas'])
             ->where('recorded_by', $guruId)
             ->whereBetween('date', [$filters['start_date'], $filters['end_date']])
-            ->when($filters['kelas'], function($query) use ($filters) {
-                return $query->whereHas('siswa', function($q) use ($filters) {
-                    $q->where('kelas_id', $filters['kelas']);
-                });
-            })
+            ->when($siswaUcIds, fn($q) => $q->whereIn('siswa_id', $siswaUcIds))
             ->orderBy('date', 'desc')
             ->limit(1000)
             ->get();
@@ -599,11 +547,7 @@ class ReportController extends Controller
         $stats = Attendance::selectRaw('status, COUNT(*) as count')
             ->where('recorded_by', $guruId)
             ->whereBetween('date', [$filters['start_date'], $filters['end_date']])
-            ->when($filters['kelas'], function($query) use ($filters) {
-                return $query->whereHas('siswa', function($q) use ($filters) {
-                    $q->where('kelas_id', $filters['kelas']);
-                });
-            })
+            ->when($siswaUcIds, fn($q) => $q->whereIn('siswa_id', $siswaUcIds))
             ->groupBy('status')
             ->get();
 
@@ -613,32 +557,41 @@ class ReportController extends Controller
 
     private function exportPracticalPdf($filters, $filename, $guruId)
     {
-        $practicals = Practical::with(['scores.siswa', 'scores.criteria'])
+        // Pakai NilaiPraktik (bukan PracticalScore) — model yang benar
+        $practicals = Practical::with(['subject', 'kelas'])
+            ->withCount([
+                'scores as scores_count' => fn($q) => $q->whereNull('criteria_id'),
+            ])
             ->where('guru_id', $guruId)
-            ->whereBetween('date', [$filters['start_date'], $filters['end_date']])
-            ->when($filters['kelas'], function($query) use ($filters) {
-                return $query->where('kelas_id', $filters['kelas']);
-            })
-            ->latest()
-            ->limit(1000)
-            ->get();
+            ->whereBetween('due_date', [
+                $filters['start_date'] . ' 00:00:00',
+                $filters['end_date']   . ' 23:59:59',
+            ])
+            ->when($filters['kelas'], fn($q) => $q->where('kelas_id', $filters['kelas']))
+            ->latest()->limit(1000)->get();
+
+        // Attach scores per practical untuk view PDF
+        $practicals->each(function ($p) {
+            $p->setRelation('scores', NilaiPraktik::with('siswa')
+                ->where('practical_id', $p->id)
+                ->whereNull('criteria_id')
+                ->whereNotNull('score')
+                ->get());
+        });
+
+        $scoreBase = NilaiPraktik::whereHas('practical', function ($q) use ($guruId, $filters) {
+            $q->where('guru_id', $guruId)
+              ->whereBetween('due_date', [
+                  $filters['start_date'] . ' 00:00:00',
+                  $filters['end_date']   . ' 23:59:59',
+              ]);
+            if ($filters['kelas']) $q->where('kelas_id', $filters['kelas']);
+        })->whereNull('criteria_id');
 
         $stats = [
             'total_practicals' => $practicals->count(),
-            'total_scores' => PracticalScore::whereHas('practical', function($query) use ($guruId, $filters) {
-                $query->where('guru_id', $guruId)
-                    ->whereBetween('date', [$filters['start_date'], $filters['end_date']]);
-                if ($filters['kelas']) {
-                    $query->where('kelas_id', $filters['kelas']);
-                }
-            })->count(),
-            'average_score' => PracticalScore::whereHas('practical', function($query) use ($guruId, $filters) {
-                $query->where('guru_id', $guruId)
-                    ->whereBetween('date', [$filters['start_date'], $filters['end_date']]);
-            if ($filters['kelas']) {
-                $query->where('kelas_id', $filters['kelas']);
-            }
-            })->avg('score') ?? 0,
+            'total_scores'     => (clone $scoreBase)->count(),
+            'average_score'    => round((clone $scoreBase)->avg('score') ?? 0, 1),
         ];
 
         $pdf = Pdf::loadView('guru.laporan.pdf.praktik', compact('practicals', 'stats', 'filters'));

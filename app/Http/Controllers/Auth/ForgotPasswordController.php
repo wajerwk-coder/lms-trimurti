@@ -25,7 +25,7 @@ class ForgotPasswordController extends Controller
     public function sendResetLinkEmail(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|exists:users,email',
+            'email' => 'required|email|exists:users_central,email',
         ], [
             'email.required' => 'Email harus diisi',
             'email.email' => 'Format email tidak valid',
@@ -59,7 +59,7 @@ class ForgotPasswordController extends Controller
     public function apiSendResetLink(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email|exists:users,email',
+            'email' => 'required|email|exists:users_central,email',
         ]);
 
         if ($validator->fails()) {
