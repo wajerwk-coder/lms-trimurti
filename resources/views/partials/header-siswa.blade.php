@@ -2,10 +2,10 @@
 
     {{-- KIRI: Toggle + Panel Label --}}
     <div class="d-flex align-items-center gap-2">
-        <button id="sidebarToggle" class="btn-icon d-none d-md-flex" title="Toggle Sidebar">
+        <button type="button" id="sidebarToggle" class="btn-icon d-none d-md-flex" title="Toggle Sidebar" aria-label="Toggle Sidebar">
             <i class="fas fa-bars"></i>
         </button>
-        <button id="mobileSidebarToggle" class="btn-icon d-md-none" title="Menu">
+        <button type="button" id="mobileSidebarToggle" class="btn-icon d-md-none" title="Menu" aria-label="Buka Menu">
             <i class="fas fa-bars"></i>
         </button>
         <div class="d-none d-lg-block">
