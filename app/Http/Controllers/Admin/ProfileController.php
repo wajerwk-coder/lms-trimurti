@@ -5,61 +5,58 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateProfileRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
-    /**
-     * Show the form for editing the user's profile.
-     */
+    public function __construct()
+    {
+        $this->middleware(['auth', 'admin']);
+    }
+
     public function edit()
     {
-        /** @var \App\Models\User $user */
         $user = Auth::user();
-
-        // Optional: defense in depth
-        // if (! $user->hasRole('admin')) { abort(403); }
-
         return view('admin.profile.edit', compact('user'));
     }
 
-    /**
-     * Update the user's profile.
-     */
     public function update(UpdateProfileRequest $request)
     {
-        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         try {
-            $data = $request->only([
-                'name',
-                'email',
-                'phone',
-                'address',
-                'birth_date',
-                'gender',
-            ]);
+            // Hanya kolom yang benar-benar ada di tabel users_central
+            $data = [
+                'name'  => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone ?? $user->phone,
+            ];
 
+            // Upload foto baru
             if ($request->hasFile('photo')) {
-                // Hapus foto lama jika ada
                 if (!empty($user->photo) && Storage::disk('public')->exists($user->photo)) {
                     Storage::disk('public')->delete($user->photo);
                 }
+                $data['photo'] = $request->file('photo')
+                    ->store('profiles/admin', 'public');
+            }
 
-                $path = $request->file('photo')->store('photos', 'public');
-                $data['photo'] = $path;
+            // Ubah password jika diisi
+            if ($request->filled('password')) {
+                $data['password'] = Hash::make($request->password);
             }
 
             $user->update($data);
 
-            return redirect()->back()->with('success', 'Profil berhasil diperbarui.');
-        } catch (\Exception $e) {
-            Log::error('Profile Update Error: ' . $e->getMessage());
+            return redirect()->route('admin.profile.edit')
+                ->with('success', 'Profil berhasil diperbarui.');
 
+        } catch (\Exception $e) {
+            Log::error('Admin Profile Update: ' . $e->getMessage());
             return redirect()->back()
-                ->with('error', 'Terjadi kesalahan saat memperbarui profil. Silakan coba lagi.')
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
                 ->withInput();
         }
     }

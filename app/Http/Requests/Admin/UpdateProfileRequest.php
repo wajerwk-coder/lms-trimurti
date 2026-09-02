@@ -8,45 +8,34 @@ use Illuminate\Support\Facades\Auth;
 
 class UpdateProfileRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return Auth::check();
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'email' => [
+            'name'     => 'required|string|max:255',
+            'email'    => [
                 'required',
                 'email',
-                Rule::unique('users')->ignore(Auth::id()),
+                Rule::unique('users_central', 'email')->ignore(Auth::id()),
             ],
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'birth_date' => 'nullable|date',
-            'gender' => 'nullable|in:L,P',
-            'photo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
+            'phone'    => 'nullable|string|max:20',
+            'photo'    => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
+            'password' => 'nullable|string|min:8|confirmed',
         ];
     }
 
-    /**
-     * Get custom messages for validator errors.
-     *
-     * @return array<string, string>
-     */
     public function messages(): array
     {
         return [
-            'email.unique' => 'Email sudah digunakan oleh pengguna lain.',
+            'email.unique'       => 'Email sudah digunakan oleh pengguna lain.',
+            'password.min'       => 'Password minimal 8 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'photo.max'          => 'Ukuran foto maksimal 5 MB.',
+            'photo.mimes'        => 'Format foto: JPG, PNG, atau WEBP.',
         ];
     }
 }
