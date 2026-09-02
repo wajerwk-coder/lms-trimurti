@@ -48,7 +48,7 @@ class UserUpdateRequest extends FormRequest
             'address'   => 'nullable|string|max:500',
             'birth_date'=> 'nullable|date|before:today',
             'gender'    => 'nullable|in:L,P',
-            'photo'     => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'photo'     => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'status'    => 'required|in:aktif,nonaktif',
         ];
 

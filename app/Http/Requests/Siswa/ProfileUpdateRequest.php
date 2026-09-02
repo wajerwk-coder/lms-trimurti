@@ -29,7 +29,7 @@ class ProfileUpdateRequest extends FormRequest
             'address' => 'nullable|string|max:500',
             'birth_date' => 'nullable|date|before:today',
             'gender' => 'nullable|in:male,female',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'current_password' => 'required_with:password|current_password',
             'password' => [
                 'nullable',

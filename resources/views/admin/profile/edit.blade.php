@@ -55,7 +55,7 @@
                             <div class="flex-grow-1">
                                 <label class="form-label mb-1">Ganti Foto Profil</label>
                                 <input type="file" name="photo" class="form-control" accept="image/jpeg,image/png,image/webp">
-                                <small class="text-muted d-block mt-1">Format: JPG, JPEG, PNG, atau WEBP. Maks 2 MB.</small>
+                                <small class="text-muted d-block mt-1">Format: JPG, JPEG, PNG, atau WEBP. Maks 5 MB.</small>
                                 @error('photo')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
