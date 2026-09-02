@@ -402,17 +402,18 @@ class ModernUserController extends BaseController
                 'mata_pelajaran' => $subjectNames ?? $user->guruProfile?->mata_pelajaran,
                 'name'           => $request->name,
                 'email'          => $request->email,
-                'address'        => $request->alamat   ?: null,
-                'phone'          => $request->phone    ?: null,
+                'address'        => $request->alamat          ?: null,
+                'phone'          => $request->phone           ?: null,
+                // Selalu update field ini — bukan hanya jika filled()
+                'jenis_kelamin'      => $request->jenis_kelamin      ?: null,
+                'tempat_lahir'       => $request->tempat_lahir       ?: null,
+                'tanggal_lahir'      => $request->tanggal_lahir      ?: null,
+                'pendidikan_terakhir'=> $request->pendidikan_terakhir ?: $user->guruProfile?->pendidikan_terakhir,
             ];
 
-            if ($request->filled('jenis_kelamin'))       $guruData['jenis_kelamin']       = $request->jenis_kelamin;
-            if ($request->filled('tempat_lahir'))        $guruData['tempat_lahir']        = $request->tempat_lahir;
-            if ($request->filled('tanggal_lahir'))       $guruData['tanggal_lahir']       = $request->tanggal_lahir;
-            if ($request->filled('email_pribadi'))       $guruData['email_pribadi']       = $request->email_pribadi;
-            if ($request->filled('pendidikan_terakhir')) $guruData['pendidikan_terakhir'] = $request->pendidikan_terakhir;
-            if ($request->filled('jurusan_pendidikan'))  $guruData['jurusan_pendidikan']  = $request->jurusan_pendidikan;
-            if ($request->filled('tahun_mulai_kerja'))   $guruData['tahun_mulai_kerja']   = $request->tahun_mulai_kerja;
+            if ($request->filled('email_pribadi'))      $guruData['email_pribadi']       = $request->email_pribadi;
+            if ($request->filled('jurusan_pendidikan')) $guruData['jurusan_pendidikan']  = $request->jurusan_pendidikan;
+            if ($request->filled('tahun_mulai_kerja'))  $guruData['tahun_mulai_kerja']   = $request->tahun_mulai_kerja;
 
             if ($user->guruProfile) {
                 $user->guruProfile->update($guruData);
