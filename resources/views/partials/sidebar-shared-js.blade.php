@@ -1,19 +1,21 @@
 <script>
+// Tunggu DOM benar-benar siap — pakai window.onload sebagai fallback
 (function() {
     'use strict';
 
-    var STORAGE_KEY = 'lms_sidebar_collapsed';
-    var MOBILE_BP   = 768;
+    function initSidebar() {
+        var STORAGE_KEY = 'lms_sidebar_collapsed';
+        var MOBILE_BP   = 768;
 
-    var sidebar      = document.getElementById('sidebar');
-    var overlay      = document.getElementById('sidebarOverlay');
-    var lmsMain      = document.getElementById('lms-main');
-    var collapseBtn  = document.getElementById('sidebarCollapseBtn');
-    var collapseIcon = document.getElementById('collapseIcon');
-    var headerToggle = document.getElementById('sidebarToggle');
-    var mobileToggle = document.getElementById('mobileSidebarToggle');
+        var sidebar      = document.getElementById('sidebar');
+        var overlay      = document.getElementById('sidebarOverlay');
+        var lmsMain      = document.getElementById('lms-main');
+        var collapseBtn  = document.getElementById('sidebarCollapseBtn');
+        var collapseIcon = document.getElementById('collapseIcon');
+        var headerToggle = document.getElementById('sidebarToggle');
+        var mobileToggle = document.getElementById('mobileSidebarToggle');
 
-    if (!sidebar) return;
+        if (!sidebar) return;
 
     /* ── Collapse helpers ──────────────────────────────────── */
     function setCollapsed(collapsed) {
@@ -134,6 +136,22 @@
     } else {
         init();
     }
+
+    } // end initSidebar
+
+    // Jalankan saat DOM siap, dengan multiple fallback untuk HP
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSidebar);
+    } else {
+        initSidebar();
+    }
+    // Fallback untuk browser mobile yang lambat
+    window.addEventListener('load', function() {
+        var sb = document.getElementById('sidebar');
+        if (sb && !sb._sidebarInitialized) {
+            initSidebar();
+        }
+    });
 
 })();
 </script>
