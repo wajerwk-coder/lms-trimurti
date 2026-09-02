@@ -24,6 +24,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force HTTPS scheme for all generated URLs when running in production
+        // (Railway terminates TLS at the proxy, so this ensures forms/redirects use https).
+        if ($this->app->environment('production')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         // ── Header composer — suntikkan notifications, unreadCount, stats ke semua partial header
         View::composer([
             'partials.header-admin',
