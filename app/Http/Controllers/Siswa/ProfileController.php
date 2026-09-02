@@ -100,7 +100,7 @@ class ProfileController extends Controller
             'no_hp'           => 'nullable|string|max:20',
             'nama_ortu'       => 'nullable|string|max:255',
             'no_telepon_ortu' => 'nullable|string|max:20',
-            'foto'            => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'foto'            => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
             'current_password'=> 'required_with:password',
             'password'        => 'nullable|string|min:6|confirmed',
         ]);

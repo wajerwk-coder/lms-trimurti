@@ -41,7 +41,7 @@ class ProfileController extends Controller
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users_central,email,' . $user->id,
             'phone'    => 'nullable|string|max:20',
-            'foto'     => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'foto'     => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
             // Profil guru
             'nip'                => 'nullable|string|max:50',
             'tempat_lahir'       => 'nullable|string|max:100',
@@ -111,7 +111,7 @@ class ProfileController extends Controller
     public function updatePhoto(Request $request): RedirectResponse
     {
         $request->validate([
-            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'foto' => 'required|image|mimes:jpeg,png,jpg|max:5120',
         ], [
             'foto.required' => 'Foto harus dipilih.',
             'foto.image'    => 'File harus berupa gambar.',

@@ -55,7 +55,7 @@ class ProfileController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users_central,email,' . $user->id,
             'phone' => 'nullable|string|max:20',
-            'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
             'current_password' => 'required_with:password',
             'password' => 'nullable|min:6|confirmed'
         ];

@@ -112,7 +112,7 @@
                     @error('foto')
                         <div class="text-danger mt-1" style="font-size:.75rem;">{{ $message }}</div>
                     @enderror
-                    <div class="text-muted mt-1" style="font-size:.7rem;">JPG, PNG · maks 2 MB</div>
+                    <div class="text-muted mt-1" style="font-size:.7rem;">JPG, PNG · maks 5 MB</div>
                 </div>
             </div>
         </div>
@@ -340,9 +340,9 @@ function previewAvatar(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    const maxMB = 2;
+    const maxMB = 5;
     if (file.size > maxMB * 1024 * 1024) {
-        alert('Ukuran file terlalu besar. Maksimal 2 MB.');
+        alert('Ukuran file terlalu besar. Maksimal 5 MB.');
         event.target.value = '';
         return;
     }
