@@ -25,19 +25,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Force HTTPS di production (Railway berada di belakang proxy/load balancer)
-        if ($this->app->environment('production') || request()->header('X-Forwarded-Proto') === 'https') {
+        // Force HTTPS ketika aplikasi berjalan di production (Railway)
+        if (app()->environment('production')) {
             URL::forceScheme('https');
         }
 
-        // ── Header composer — suntikkan notifications, unreadCount, stats ke semua partial header
+        // Header composer
         View::composer([
             'partials.header-admin',
             'partials.header-guru',
             'partials.header-siswa',
         ], \App\Http\ViewComposers\HeaderComposer::class);
 
-        // Register view composers (legacy — tetap ada untuk backward compat)
+        // Register view composers
         View::composer('partials.notifications', NotificationComposer::class);
         View::composer('layouts.admin', NotificationComposer::class);
         View::composer('layouts.guru', NotificationComposer::class);
@@ -48,9 +48,13 @@ class AppServiceProvider extends ServiceProvider
         View::composer('layouts.guru', GuruStatsComposer::class);
 
         // Supply upcoming exams and related data for Guru views
-        View::composer(['layouts.guru', 'partials.header-guru', 'guru.dashboard'], GuruDashboardComposer::class);
+        View::composer([
+            'layouts.guru',
+            'partials.header-guru',
+            'guru.dashboard'
+        ], GuruDashboardComposer::class);
 
-        // Register admin stats composer for admin layout & sidebar (can be disabled via env)
+        // Register admin stats composer
         if (!env('ADMIN_STATS_DISABLE', false)) {
             View::composer('layouts.admin', AdminStatsComposer::class);
             View::composer('partials.sidebar-admin', AdminStatsComposer::class);
