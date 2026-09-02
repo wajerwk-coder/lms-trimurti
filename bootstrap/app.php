@@ -11,6 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Percayai semua proxy (Railway berjalan di belakang load balancer/proxy)
+        // sehingga header X-Forwarded-Proto dari Railway dikenali dan URL::forceScheme('https') bekerja dengan benar.
+        $middleware->trustProxies(at: '*');
+
         $middleware->web(append: [
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,

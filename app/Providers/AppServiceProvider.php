@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\URL;
 use App\Http\ViewComposers\NotificationComposer;
 use App\Http\ViewComposers\GuruStatsComposer;
 use App\Http\ViewComposers\GuruDashboardComposer;
@@ -24,6 +25,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force HTTPS di production (Railway berada di belakang proxy/load balancer)
+        if ($this->app->environment('production') || request()->header('X-Forwarded-Proto') === 'https') {
+            URL::forceScheme('https');
+        }
+
         // ── Header composer — suntikkan notifications, unreadCount, stats ke semua partial header
         View::composer([
             'partials.header-admin',
