@@ -154,6 +154,21 @@
         .lms-main { margin-left: 0 !important; }
         .lms-body { padding: 1rem; }
         .lms-page-header { padding: 1rem; }
+
+        /* Pastikan sidebar tampil di atas semua konten saat mobile */
+        .sidebar {
+            z-index: 1050 !important;
+        }
+        /* Overlay gelap saat sidebar terbuka di mobile */
+        .sidebar-overlay.active {
+            z-index: 1040 !important;
+        }
+        /* Header tetap di atas */
+        .lms-header {
+            z-index: 1030 !important;
+            position: sticky;
+            top: 0;
+        }
     }
     </style>
 </head>

@@ -119,6 +119,9 @@
         .lms-main { margin-left: 0 !important; }
         .lms-body { padding: 1rem; }
         .lms-page-header { padding: 1rem; }
+        .sidebar { z-index: 1050 !important; }
+        .sidebar-overlay.active { z-index: 1040 !important; }
+        .lms-header { z-index: 1030 !important; position: sticky; top: 0; }
     }
     </style>
 </head>

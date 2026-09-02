@@ -424,9 +424,12 @@
 /* ── Mobile ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
     .sidebar {
+        position: fixed !important;
+        top: 0; left: 0; bottom: 0;
         transform: translateX(-100%);
         width: var(--sb-width) !important;
         transition: transform var(--sb-transition) !important;
+        z-index: 1050 !important;
     }
     .sidebar.show { transform: translateX(0); }
     .sidebar.collapsed { width: var(--sb-width) !important; }
