@@ -154,21 +154,41 @@
         .lms-main { margin-left: 0 !important; }
         .lms-body { padding: 1rem; }
         .lms-page-header { padding: 1rem; }
+        .sidebar { z-index: 1050 !important; }
+        .sidebar-overlay.active { z-index: 1040 !important; }
+        .lms-header { z-index: 1030 !important; position: sticky; top: 0; }
 
-        /* Pastikan sidebar tampil di atas semua konten saat mobile */
-        .sidebar {
-            z-index: 1050 !important;
-        }
-        /* Overlay gelap saat sidebar terbuka di mobile */
-        .sidebar-overlay.active {
-            z-index: 1040 !important;
-        }
-        /* Header tetap di atas */
-        .lms-header {
-            z-index: 1030 !important;
-            position: sticky;
-            top: 0;
-        }
+        /* Tabel scroll horizontal */
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .table td, .table th { white-space: nowrap; font-size: .78rem; padding: .45rem .6rem; }
+
+        /* Cegah zoom otomatis iOS */
+        .form-control, .form-select, .form-check-input { font-size: 16px !important; }
+
+        /* Card padding lebih kecil */
+        .card-body { padding: 1rem !important; }
+        .card-header, .card-footer { padding: .75rem 1rem !important; }
+
+        /* Tombol lebih mudah ditekan */
+        .btn { min-height: 38px; }
+        .btn-sm { min-height: 32px; }
+
+        /* Dropdown tidak keluar layar */
+        .dropdown-menu { max-width: calc(100vw - 2rem); }
+
+        /* Gambar tidak overflow */
+        img { max-width: 100%; height: auto; }
+
+        /* Page title */
+        .lms-page-title { font-size: 1.1rem !important; }
+        .lms-page-subtitle { font-size: .78rem !important; }
+    }
+
+    @media (max-width: 480px) {
+        .lms-body { padding: .75rem; }
+        .card-body { padding: .75rem !important; }
+        h4, .h4 { font-size: 1.1rem; }
+        h5, .h5 { font-size: 1rem; }
     }
     </style>
 </head>

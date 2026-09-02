@@ -122,6 +122,23 @@
         .sidebar { z-index: 1050 !important; }
         .sidebar-overlay.active { z-index: 1040 !important; }
         .lms-header { z-index: 1030 !important; position: sticky; top: 0; }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .table td, .table th { white-space: nowrap; font-size: .78rem; padding: .45rem .6rem; }
+        .form-control, .form-select { font-size: 16px !important; }
+        .card-body { padding: 1rem !important; }
+        .card-header, .card-footer { padding: .75rem 1rem !important; }
+        .btn { min-height: 38px; }
+        .btn-sm { min-height: 32px; }
+        .dropdown-menu { max-width: calc(100vw - 2rem); }
+        img { max-width: 100%; height: auto; }
+        .lms-page-title { font-size: 1.1rem !important; }
+        .lms-page-subtitle { font-size: .78rem !important; }
+    }
+    @media (max-width: 480px) {
+        .lms-body { padding: .75rem; }
+        .card-body { padding: .75rem !important; }
+        h4, .h4 { font-size: 1.1rem; }
+        h5, .h5 { font-size: 1rem; }
     }
     </style>
 </head>
