@@ -265,8 +265,8 @@
 <script>
 // ── Cloudinary Upload Widget ─────────────────────────────────────────
 // Ganti CLOUD_NAME dengan cloud name Cloudinary kamu
-var CLOUDINARY_CLOUD_NAME = '{{ env("CLOUDINARY_CLOUD_NAME", "your_cloud_name") }}';
-var CLOUDINARY_UPLOAD_PRESET = '{{ env("CLOUDINARY_UPLOAD_PRESET", "lms_photos") }}';
+var CLOUDINARY_CLOUD_NAME = '{{ config("cloudinary.cloud_name", env("CLOUDINARY_CLOUD_NAME", "aw9h9icb")) }}';
+var CLOUDINARY_UPLOAD_PRESET = '{{ config("cloudinary.upload_preset", env("CLOUDINARY_UPLOAD_PRESET", "lms_photos")) }}';
 
 var uploadWidget = null;
 
@@ -303,9 +303,18 @@ document.getElementById('uploadPhotoBtn')?.addEventListener('click', function() 
             }
         }, function(error, result) {
             if (error) {
-                console.error('Upload error:', error);
+                console.error('Cloudinary error:', error);
                 document.getElementById('uploadLoading')?.classList.add('d-none');
-                alert('Gagal upload foto. Pastikan Cloudinary sudah dikonfigurasi.');
+                // Tampilkan error yang lebih informatif
+                var msg = 'Gagal upload foto.\n';
+                if (error.status === 400 || (error.message && error.message.includes('preset'))) {
+                    msg += 'Upload preset "' + CLOUDINARY_UPLOAD_PRESET + '" tidak ditemukan.\nBuat preset Unsigned di Cloudinary Dashboard.';
+                } else if (error.message && error.message.includes('cloud')) {
+                    msg += 'Cloud name "' + CLOUDINARY_CLOUD_NAME + '" tidak valid.';
+                } else {
+                    msg += JSON.stringify(error);
+                }
+                alert(msg);
                 return;
             }
 

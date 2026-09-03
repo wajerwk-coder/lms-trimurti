@@ -199,8 +199,8 @@
 @push('js')
 <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
 <script>
-var CLOUDINARY_CLOUD_NAME   = '{{ env("CLOUDINARY_CLOUD_NAME", "aw9h9icb") }}';
-var CLOUDINARY_UPLOAD_PRESET = '{{ env("CLOUDINARY_UPLOAD_PRESET", "lms_photos") }}';
+var CLOUDINARY_CLOUD_NAME   = '{{ config("cloudinary.cloud_name", env("CLOUDINARY_CLOUD_NAME", "aw9h9icb")) }}';
+var CLOUDINARY_UPLOAD_PRESET = '{{ config("cloudinary.upload_preset", env("CLOUDINARY_UPLOAD_PRESET", "lms_photos")) }}';
 var uploadWidget = null;
 
 document.getElementById('uploadPhotoBtn')?.addEventListener('click', function () {
