@@ -70,10 +70,15 @@
             <div class="card-body text-center py-4">
 
                 {{-- Avatar --}}
+                @php
+                    $avatarSrc = $user->photo_url;
+                    $avatarFallback = 'https://ui-avatars.com/api/?name='.urlencode($user->name ?? 'A').'&background=3b82f6&color=fff&size=128&bold=true';
+                @endphp
                 @if($user->photo)
-                    <img src="{{ asset('storage/'.$user->photo) }}"
+                    <img src="{{ $avatarSrc }}"
                          alt="Avatar" class="profile-avatar d-block mx-auto mb-3"
-                         id="avatarPreview">
+                         id="avatarPreview"
+                         onerror="this.onerror=null;this.src='{{ $avatarFallback }}'">
                 @else
                     <div class="avatar-initials d-inline-flex mb-3" id="avatarInitials">
                         {{ strtoupper(substr($user->name ?? 'A', 0, 1)) }}

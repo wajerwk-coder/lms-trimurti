@@ -48,9 +48,19 @@ class UserCentral extends Authenticatable
     public function getPhotoUrlAttribute()
     {
         if ($this->photo) {
-            return asset('storage/' . $this->photo);
+            // Coba URL storage langsung — di Railway pakai full URL
+            $url = asset('storage/' . $this->photo);
+            return $url;
         }
-        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=7F9CF5&background=EBF4FF';
+        // Fallback: generate avatar otomatis berdasarkan nama
+        $initials = urlencode($this->name ?? 'User');
+        $colors = [
+            'admin' => ['bg' => '3b82f6', 'color' => 'fff'],
+            'guru'  => ['bg' => '0f766e', 'color' => 'fff'],
+            'siswa' => ['bg' => '7c3aed', 'color' => 'fff'],
+        ];
+        $c = $colors[$this->role ?? ''] ?? ['bg' => '6366f1', 'color' => 'fff'];
+        return "https://ui-avatars.com/api/?name={$initials}&background={$c['bg']}&color={$c['color']}&size=128&bold=true";
     }
 
     public function getRoleDisplayAttribute()
