@@ -125,11 +125,19 @@ class ProfileController extends Controller
         $request->validate(['photo_url' => 'required|url|max:500']);
 
         $user = Auth::user();
-        $user->update(['photo' => $request->photo_url]);
 
-        Log::info('Guru photo_url updated', ['user_id' => $user->id, 'photo' => $request->photo_url]);
+        // Pastikan URL bersih dari escape characters yang mungkin masuk
+        $photoUrl = stripslashes($request->photo_url);
+        $photoUrl = trim($photoUrl, '"\'');
 
-        return response()->json(['success' => true, 'photo' => $request->photo_url]);
+        // Simpan langsung via query builder untuk menghindari transformasi model
+        \Illuminate\Support\Facades\DB::table('users_central')
+            ->where('id', $user->id)
+            ->update(['photo' => $photoUrl, 'updated_at' => now()]);
+
+        Log::info('Guru photo_url updated', ['user_id' => $user->id, 'photo' => $photoUrl]);
+
+        return response()->json(['success' => true, 'photo' => $photoUrl]);
     }
 
     /**

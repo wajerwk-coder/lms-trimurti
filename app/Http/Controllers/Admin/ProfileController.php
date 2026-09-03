@@ -27,12 +27,13 @@ class ProfileController extends Controller
     {
         $request->validate(['photo_url' => 'required|url|max:500']);
         $user = Auth::user();
-        $user->photo = $request->photo_url;
-        $user->save();
-        // Paksa refresh auth user dari DB agar sesi terupdate
-        Auth::setUser($user->fresh());
-        \Illuminate\Support\Facades\Log::info('Admin photo_url updated', ['user_id' => $user->id]);
-        return response()->json(['success' => true, 'photo' => $request->photo_url]);
+        $photoUrl = stripslashes($request->photo_url);
+        $photoUrl = trim($photoUrl, '"\'');
+        \Illuminate\Support\Facades\DB::table('users_central')
+            ->where('id', $user->id)
+            ->update(['photo' => $photoUrl, 'updated_at' => now()]);
+        \Illuminate\Support\Facades\Log::info('Admin photo_url updated', ['user_id' => $user->id, 'photo' => $photoUrl]);
+        return response()->json(['success' => true, 'photo' => $photoUrl]);
     }
 
     public function update(UpdateProfileRequest $request)

@@ -33,7 +33,7 @@
                      class="rounded-circle border mb-3"
                      id="avatarPreview"
                      style="width:90px;height:90px;object-fit:cover;"
-                     onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=0f766e&color=fff&size=128&bold=true'">
+                     onerror="console.error('Avatar load failed:', this.src); this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=0f766e&color=fff&size=128&bold=true'">
                 @if($user->photo)
                 <div class="small text-muted mb-1" style="font-size:.65rem;">
                     <i class="fas fa-check-circle text-success me-1"></i>Foto tersimpan
