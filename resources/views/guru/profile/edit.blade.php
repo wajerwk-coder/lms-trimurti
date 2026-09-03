@@ -33,7 +33,14 @@
                      class="rounded-circle border mb-3"
                      id="avatarPreview"
                      style="width:90px;height:90px;object-fit:cover;"
-                     onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=0f766e&color=fff&size=128&bold=true'">
+                     onerror="this.style.border='3px solid red'; console.error('Photo load failed:', this.src);">
+                {{-- Debug: tampilkan URL foto --}}
+                @if($user->photo)
+                <div class="small text-muted mb-2" style="font-size:.65rem;word-break:break-all;">
+                    <i class="fas fa-link me-1"></i>
+                    <a href="{{ $user->photo }}" target="_blank" style="font-size:.65rem;">Lihat foto</a>
+                </div>
+                @endif
 
                 <h6 class="fw-semibold mb-0">{{ $user->name }}</h6>
                 <small class="text-muted d-block mb-2">{{ $user->email }}</small>
@@ -218,11 +225,14 @@ document.getElementById('uploadPhotoBtn')?.addEventListener('click', function ()
             resourceType: 'image',
             clientAllowedFormats: ['jpg','jpeg','png','webp'],
         }, function (error, result) {
+            // DEBUG: log semua event
+            console.log('Cloudinary event:', result?.event, result, error);
+
             if (error) {
                 document.getElementById('uploadLoading')?.classList.add('d-none');
                 var msg = 'Gagal upload foto.\n';
                 if (error.status === 400 || (error.message && error.message.includes('preset'))) {
-                    msg += 'Upload preset "' + CLOUDINARY_UPLOAD_PRESET + '" tidak ditemukan.\nBuat preset Unsigned di Cloudinary Dashboard.';
+                    msg += 'Upload preset "' + CLOUDINARY_UPLOAD_PRESET + '" tidak ditemukan di Cloudinary.\nBuka Cloudinary → Settings → Upload → Upload presets → Buat "lms_photos" mode Unsigned.';
                 } else {
                     msg += (error.message || JSON.stringify(error));
                 }
@@ -234,6 +244,7 @@ document.getElementById('uploadPhotoBtn')?.addEventListener('click', function ()
             }
             if (result && result.event === 'success') {
                 var url = result.info.secure_url;
+                console.log('Upload success, URL:', url);
                 var preview = document.getElementById('avatarPreview');
                 if (preview) preview.src = url;
                 document.getElementById('uploadLoading')?.classList.add('d-none');
@@ -249,17 +260,27 @@ document.getElementById('uploadPhotoBtn')?.addEventListener('click', function ()
                     },
                     body: JSON.stringify({ photo_url: url }),
                 })
-                .then(function(res) { return res.json(); })
-                .then(function(data) {
-                    if (data.success) {
-                        window.location.href = '{{ route("guru.profile.edit") }}';
-                    } else {
-                        alert('Gagal menyimpan: ' + JSON.stringify(data));
+                .then(function(res) {
+                    console.log('Server response status:', res.status);
+                    return res.text();
+                })
+                .then(function(text) {
+                    console.log('Server response:', text);
+                    try {
+                        var data = JSON.parse(text);
+                        if (data.success) {
+                            window.location.href = '{{ route("guru.profile.edit") }}';
+                        } else {
+                            alert('Server error: ' + JSON.stringify(data));
+                        }
+                    } catch(e) {
+                        // Server mungkin return HTML (error page)
+                        alert('Server response tidak valid. Cek console untuk detail.\n' + text.substring(0, 200));
                     }
                 })
                 .catch(function(err) {
-                    console.error('Error:', err);
-                    alert('Error: ' + err.message);
+                    console.error('Fetch error:', err);
+                    alert('Network error: ' + err.message);
                 });
             }
         });
