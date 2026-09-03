@@ -100,13 +100,8 @@
         <div class="dropdown">
             @php
                 $guruProfile = Auth::user()->guruProfile;
-                // Foto disimpan di users_central.photo saat upload via profil
-                // Fallback ke gurus.photo jika ada, lalu ui-avatars
-                $guruPhotoSrc = Auth::user()->photo
-                    ? asset('storage/'.Auth::user()->photo)
-                    : ($guruProfile?->photo
-                        ? asset('storage/'.$guruProfile->photo)
-                        : 'https://ui-avatars.com/api/?name='.urlencode(Auth::user()->name).'&background=0f766e&color=fff&size=64');
+                // Gunakan photo_url accessor yang sudah handle http URL (Cloudinary) vs path lokal
+                $guruPhotoSrc = Auth::user()->photo_url;
                 $guruPhotoFallback = 'https://ui-avatars.com/api/?name='.urlencode(Auth::user()->name).'&background=0f766e&color=fff&size=64';
             @endphp
             <button class="btn p-0 d-flex align-items-center gap-2 border-0 bg-transparent"

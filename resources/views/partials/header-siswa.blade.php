@@ -103,11 +103,15 @@
 
                 {{-- Avatar --}}
                 <div class="flex-shrink-0 position-relative">
-                    <img src="{{ $siswaProfile?->foto ? asset('storage/'.$siswaProfile->foto) : (Auth::user()->photo_url ?? 'https://ui-avatars.com/api/?name='.urlencode(Auth::user()->name).'&background=7c3aed&color=fff&size=64') }}"
+                    @php
+                        // Prioritas: users_central.photo (Cloudinary URL), lalu siswa.foto (lokal), lalu ui-avatars
+                        $siswaAvatarSrc = Auth::user()->photo_url;
+                    @endphp
+                    <img src="{{ $siswaAvatarSrc }}"
                          alt="Avatar"
                          class="rounded-circle border border-2 shadow-sm"
                          style="width:38px;height:38px;object-fit:cover;border-color:rgba(124,58,237,.3)!important;"
-                         onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=7c3aed&color=fff'">
+                         onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=7c3aed&color=fff'">
                     {{-- Online dot --}}
                     <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white"
                           style="width:10px;height:10px;"></span>
