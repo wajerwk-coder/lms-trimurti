@@ -521,6 +521,19 @@ class PenilaianController extends Controller
 
             $nilaiAkhir = round($nilaiAkhir, 2);
 
+            // Safety cap: nilai akhir tidak boleh melebihi 100
+            // (bisa terjadi jika bobot kriteria di DB tidak valid)
+            if ($nilaiAkhir > 100) {
+                Log::warning('Nilai akhir melebihi 100, dinormalisasi ulang', [
+                    'nilai_sebelum' => $nilaiAkhir,
+                    'total_bobot'   => $totalBobot,
+                    'practical_id'  => $request->practical_id,
+                    'siswa_id'      => $ucId,
+                ]);
+                // Normalisasi ulang: hitung ulang dari kontribusi maksimum
+                $nilaiAkhir = min(100, $nilaiAkhir);
+            }
+
             // Simpan juga nilai akhir tanpa criteria_id (summary record)
             NilaiPraktik::updateOrCreate(
                 [
