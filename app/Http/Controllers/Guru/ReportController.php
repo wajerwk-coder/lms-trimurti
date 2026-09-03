@@ -347,7 +347,19 @@ class ReportController extends Controller
         $nilaiTugasQuery = AssignmentSubmission::with(['siswa', 'assignment.subject'])
             ->whereHas('assignment', fn($q) => $q->where('guru_id', $guruId))
             ->whereNotNull('score')
-            ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+            ->where(function($q) use ($filters) {
+                $q->whereBetween('submitted_at', [
+                        $filters['start_date'] . ' 00:00:00',
+                        $filters['end_date']   . ' 23:59:59',
+                    ])
+                  ->orWhere(function($q2) use ($filters) {
+                      $q2->whereNull('submitted_at')
+                         ->whereBetween('created_at', [
+                             $filters['start_date'] . ' 00:00:00',
+                             $filters['end_date']   . ' 23:59:59',
+                         ]);
+                  });
+            });
 
         // Filter kelas: siswa_id ada di tabel siswa yang kelas_id sesuai
         if ($filters['kelas_id']) {
@@ -359,18 +371,49 @@ class ReportController extends Controller
         $nilaiTugas = $nilaiTugasQuery->latest()->get();
 
         // Rekap nilai praktikum per siswa
+        // Tidak filter criteria_id=null karena penilaian praktik bisa pakai criteria_id
+        // Group per siswa+praktikum: ambil nilai terbaru atau rata-rata
         $nilaiPraktikQuery = NilaiPraktik::with(['siswa', 'practical.subject'])
             ->whereHas('practical', fn($q) => $q->where('guru_id', $guruId))
-            ->whereNull('criteria_id')
-            ->whereNotNull('score')
-            ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+            ->whereNotNull('score');
+
+        // Filter tanggal: pakai graded_at jika ada, fallback ke created_at
+        $nilaiPraktikQuery->where(function($q) use ($filters) {
+            $q->whereBetween('graded_at', [
+                    $filters['start_date'] . ' 00:00:00',
+                    $filters['end_date']   . ' 23:59:59',
+                ])
+              ->orWhere(function($q2) use ($filters) {
+                  $q2->whereNull('graded_at')
+                     ->whereBetween('created_at', [
+                         $filters['start_date'] . ' 00:00:00',
+                         $filters['end_date']   . ' 23:59:59',
+                     ]);
+              });
+        });
 
         if ($filters['kelas_id']) {
             $siswaUcIds = $siswaUcIds ?? Siswa::where('kelas_id', $filters['kelas_id'])->pluck('user_id');
             $nilaiPraktikQuery->whereIn('siswa_id', $siswaUcIds);
         }
 
-        $nilaiPraktik = $nilaiPraktikQuery->latest()->get();
+        // Ambil 1 nilai per siswa per praktikum (criteria_id=null dulu, kalau tidak ada ambil semua)
+        $allNilaiPraktik = $nilaiPraktikQuery->latest('graded_at')->get();
+
+        // Deduplikasi: jika ada criteria_id=null pakai itu, jika tidak pakai rata-rata per siswa+praktikum
+        $nilaiPraktik = $allNilaiPraktik
+            ->groupBy(fn($n) => $n->siswa_id . '_' . $n->practical_id)
+            ->map(function($group) {
+                // Prioritas: ambil yang criteria_id = null (nilai total)
+                $total = $group->whereNull('criteria_id')->first();
+                if ($total) return $total;
+                // Jika tidak ada, buat aggregate dari criteria
+                $avg = $group->avg('score');
+                $first = $group->first();
+                $first->score = round($avg, 1);
+                return $first;
+            })
+            ->values();
 
         $kelas = \App\Models\Kelas::orderBy('name')->get();
 
