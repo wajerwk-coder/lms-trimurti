@@ -67,11 +67,16 @@ class ProfileController extends Controller
 
             // Handle upload foto ke users_central.photo
             if ($request->hasFile('foto')) {
-                if ($user->photo) {
+                if ($user->photo && !str_starts_with($user->photo, 'http')) {
                     Storage::disk('public')->delete($user->photo);
                 }
                 $userData['photo'] = $request->file('foto')
                     ->store('profiles/guru', 'public');
+            }
+
+            // Handle URL foto dari Cloudinary
+            if ($request->filled('photo_url') && str_starts_with($request->photo_url, 'http')) {
+                $userData['photo'] = $request->photo_url;
             }
 
             $user->update($userData);

@@ -134,15 +134,20 @@ class ProfileController extends Controller
             ];
 
             if ($request->hasFile('foto')) {
-                // Delete old photo if exists
-                if ($student->foto) {
+                // Delete old photo if local path
+                if ($student->foto && !str_starts_with($student->foto, 'http')) {
                     Storage::disk('public')->delete($student->foto);
                 }
 
                 $foto = $request->file('foto');
-                $filename = time() . '_' . $foto->getClientOriginalName();
+                $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9.\-_]/', '_', $foto->getClientOriginalName());
                 $path = $foto->storeAs('student_photos', $filename, 'public');
                 $studentData['foto'] = 'student_photos/' . $filename;
+            }
+
+            // Handle URL foto dari Cloudinary (di users_central.photo)
+            if ($request->filled('photo_url') && str_starts_with($request->photo_url, 'http')) {
+                $userData['photo'] = $request->photo_url;
             }
 
             if ($request->filled('jenis_kelamin')) {

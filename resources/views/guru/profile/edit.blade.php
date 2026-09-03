@@ -26,17 +26,14 @@
     <div class="col-lg-3">
         <div class="card border-0 shadow-sm text-center">
             <div class="card-body py-4">
-                @if($user->photo)
-                    <img src="{{ asset('storage/' . $user->photo) }}"
-                         alt="{{ $user->name }}"
-                         class="rounded-circle border mb-3"
-                         style="width:90px;height:90px;object-fit:cover;">
-                @else
-                    <div class="rounded-circle bg-success d-inline-flex align-items-center justify-content-center mb-3 border"
-                         style="width:90px;height:90px;font-size:2rem;color:#fff;">
-                        {{ strtoupper(substr($user->name ?? 'G', 0, 1)) }}
-                    </div>
-                @endif
+                {{-- Avatar --}}
+                @php $avatarSrc = $user->photo_url; @endphp
+                <img src="{{ $avatarSrc }}"
+                     alt="{{ $user->name }}"
+                     class="rounded-circle border mb-3"
+                     id="avatarPreview"
+                     style="width:90px;height:90px;object-fit:cover;"
+                     onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=0f766e&color=fff&size=128&bold=true'">
 
                 <h6 class="fw-semibold mb-0">{{ $user->name }}</h6>
                 <small class="text-muted d-block mb-2">{{ $user->email }}</small>
@@ -46,26 +43,30 @@
 
                 <hr class="my-3">
 
-                {{-- Upload foto --}}
-                <form action="{{ route('guru.profile.update-photo') }}" method="POST"
-                      enctype="multipart/form-data" id="photoForm">
-                    @csrf
-                    <label class="btn btn-outline-primary btn-sm w-100 mb-2" for="fotoInput">
-                        <i class="fas fa-camera me-1"></i>Ganti Foto
-                    </label>
-                    <input type="file" id="fotoInput" name="foto" class="d-none"
-                           accept="image/*" onchange="submitPhoto()">
-                </form>
+                {{-- Cloudinary Upload Widget --}}
+                <button type="button" id="uploadPhotoBtn"
+                        class="btn btn-outline-primary btn-sm w-100 mb-2">
+                    <i class="fas fa-camera me-1"></i>Ganti Foto
+                </button>
+                <div class="text-muted mb-2" style="font-size:.7rem;">JPG, PNG · maks 5 MB</div>
 
-                @if($user->photo)
-                    <form action="{{ route('guru.profile.remove-photo') }}" method="POST">
-                        @csrf
-                        <button type="submit" class="btn btn-outline-danger btn-sm w-100"
-                                onclick="return confirm('Hapus foto profil?')">
-                            <i class="fas fa-trash me-1"></i>Hapus Foto
-                        </button>
-                    </form>
-                @endif
+                {{-- Loading + Success indicator --}}
+                <div id="uploadLoading" class="d-none text-center mb-2">
+                    <span class="spinner-border spinner-border-sm text-primary me-1"></span>
+                    <small class="text-muted">Mengupload...</small>
+                </div>
+                <div id="uploadSuccess" class="d-none mb-2 p-2 rounded-2"
+                     style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);font-size:.75rem;color:#16a34a;">
+                    <i class="fas fa-check-circle me-1"></i>Foto berhasil diupload!
+                </div>
+
+                {{-- Form hidden untuk simpan URL foto --}}
+                <form action="{{ route('guru.profile.update') }}" method="POST" id="photoUrlForm">
+                    @csrf @method('PUT')
+                    <input type="hidden" name="name"      value="{{ $user->name }}">
+                    <input type="hidden" name="email"     value="{{ $user->email }}">
+                    <input type="hidden" name="photo_url" id="hiddenPhotoUrl" value="">
+                </form>
 
                 <div class="mt-3 text-start small text-muted">
                     <div><i class="fas fa-calendar me-1"></i>Bergabung: {{ $user->created_at->format('M Y') }}</div>
@@ -196,14 +197,60 @@
 </div>
 
 @push('js')
+<script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
 <script>
-function submitPhoto() {
-    document.getElementById('photoForm').submit();
-}
+var CLOUDINARY_CLOUD_NAME   = '{{ env("CLOUDINARY_CLOUD_NAME", "aw9h9icb") }}';
+var CLOUDINARY_UPLOAD_PRESET = '{{ env("CLOUDINARY_UPLOAD_PRESET", "lms_photos") }}';
+var uploadWidget = null;
+
+document.getElementById('uploadPhotoBtn')?.addEventListener('click', function () {
+    if (!uploadWidget) {
+        uploadWidget = cloudinary.createUploadWidget({
+            cloudName: CLOUDINARY_CLOUD_NAME,
+            uploadPreset: CLOUDINARY_UPLOAD_PRESET,
+            sources: ['local', 'camera'],
+            multiple: false,
+            maxFileSize: 5242880,
+            cropping: true,
+            croppingAspectRatio: 1,
+            folder: 'profiles/guru',
+            resourceType: 'image',
+            clientAllowedFormats: ['jpg','jpeg','png','webp'],
+        }, function (error, result) {
+            if (error) {
+                document.getElementById('uploadLoading')?.classList.add('d-none');
+                alert('Gagal upload foto. Pastikan Cloudinary sudah dikonfigurasi di Railway.');
+                return;
+            }
+            if (result && result.event === 'queues-start') {
+                document.getElementById('uploadLoading')?.classList.remove('d-none');
+            }
+            if (result && result.event === 'success') {
+                var url = result.info.secure_url;
+                var preview = document.getElementById('avatarPreview');
+                if (preview) preview.src = url;
+                document.getElementById('hiddenPhotoUrl').value = url;
+                document.getElementById('uploadLoading')?.classList.add('d-none');
+                document.getElementById('uploadSuccess')?.classList.remove('d-none');
+                setTimeout(function () {
+                    document.getElementById('photoUrlForm').submit();
+                }, 800);
+            }
+        });
+    }
+    uploadWidget.open();
+});
+
 document.getElementById('profileForm').addEventListener('submit', function () {
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
+});
+
+window.addEventListener('pageshow', function (e) {
+    if (!e.persisted) return;
+    const btn = document.getElementById('submitBtn');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-1"></i>Simpan Perubahan'; }
 });
 </script>
 @endpush
