@@ -27,20 +27,24 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         try {
-            // Hanya kolom yang benar-benar ada di tabel users_central
             $data = [
                 'name'  => $request->name,
                 'email' => $request->email,
                 'phone' => $request->phone ?? $user->phone,
             ];
 
-            // Upload foto baru
+            // Upload foto file (lokal) — hanya untuk development
             if ($request->hasFile('photo')) {
-                if (!empty($user->photo) && Storage::disk('public')->exists($user->photo)) {
-                    Storage::disk('public')->delete($user->photo);
+                if (!empty($user->photo) && \Storage::disk('public')->exists($user->photo)) {
+                    \Storage::disk('public')->delete($user->photo);
                 }
                 $data['photo'] = $request->file('photo')
                     ->store('profiles/admin', 'public');
+            }
+
+            // URL foto dari external (imgbb, dll) — untuk production/Railway
+            if ($request->filled('photo_url')) {
+                $data['photo'] = $request->photo_url;
             }
 
             // Ubah password jika diisi

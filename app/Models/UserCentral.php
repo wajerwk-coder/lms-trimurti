@@ -48,11 +48,14 @@ class UserCentral extends Authenticatable
     public function getPhotoUrlAttribute()
     {
         if ($this->photo) {
-            // Coba URL storage langsung — di Railway pakai full URL
-            $url = asset('storage/' . $this->photo);
-            return $url;
+            // Jika photo berisi URL lengkap (dari imgbb dll), pakai langsung
+            if (str_starts_with($this->photo, 'http')) {
+                return $this->photo;
+            }
+            // Jika path lokal (storage), buat URL storage
+            return asset('storage/' . $this->photo);
         }
-        // Fallback: generate avatar otomatis berdasarkan nama
+        // Fallback: generate avatar otomatis berdasarkan nama + role
         $initials = urlencode($this->name ?? 'User');
         $colors = [
             'admin' => ['bg' => '3b82f6', 'color' => 'fff'],

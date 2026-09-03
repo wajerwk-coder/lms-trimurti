@@ -69,24 +69,14 @@
             </div>
             <div class="card-body text-center py-4">
 
-                {{-- Avatar --}}
                 @php
                     $avatarSrc = $user->photo_url;
                     $avatarFallback = 'https://ui-avatars.com/api/?name='.urlencode($user->name ?? 'A').'&background=3b82f6&color=fff&size=128&bold=true';
                 @endphp
-                @if($user->photo)
-                    <img src="{{ $avatarSrc }}"
-                         alt="Avatar" class="profile-avatar d-block mx-auto mb-3"
-                         id="avatarPreview"
-                         onerror="this.onerror=null;this.src='{{ $avatarFallback }}'">
-                @else
-                    <div class="avatar-initials d-inline-flex mb-3" id="avatarInitials">
-                        {{ strtoupper(substr($user->name ?? 'A', 0, 1)) }}
-                    </div>
-                    <img src="" alt="Preview"
-                         class="profile-avatar d-none d-block mx-auto mb-3"
-                         id="avatarPreview">
-                @endif
+                <img src="{{ $avatarSrc }}"
+                     alt="Avatar" class="profile-avatar d-block mx-auto mb-3"
+                     id="avatarPreview"
+                     onerror="this.onerror=null;this.src='{{ $avatarFallback }}'">
 
                 <div class="fw-bold text-dark mb-1">{{ $user->name }}</div>
                 <div class="text-muted small mb-2">{{ $user->email }}</div>
@@ -95,24 +85,33 @@
                     <i class="fas fa-shield-alt me-1"></i>Administrator
                 </span>
 
-                {{-- Ganti foto --}}
+                {{-- Ganti foto: input URL --}}
                 <form action="{{ route('admin.profile.update') }}" method="POST"
-                      enctype="multipart/form-data" id="photoForm">
+                      id="photoForm">
                     @csrf @method('PUT')
                     <input type="hidden" name="name"  value="{{ $user->name }}">
                     <input type="hidden" name="email" value="{{ $user->email }}">
                     <input type="hidden" name="phone" value="{{ $user->phone }}">
 
                     <div class="mt-3">
-                        <label for="photoInput" class="btn btn-sm w-100 fw-semibold"
-                               style="border-radius:9px;background:rgba(59,130,246,.1);color:#3b82f6;border:1px solid rgba(59,130,246,.2);cursor:pointer;">
-                            <i class="fas fa-camera me-1"></i>Ganti Foto
-                        </label>
-                        <input type="file" id="photoInput" name="photo" class="d-none"
-                               accept="image/jpeg,image/png,image/jpg,image/webp"
-                               onchange="previewAndSubmitPhoto(event)">
-                        <div class="text-muted mt-1" style="font-size:.7rem;">JPG, PNG, WEBP · maks 5 MB</div>
-                        @error('photo')
+                        <label class="form-label small fw-semibold">URL Foto Profil</label>
+                        <div class="input-group input-group-sm">
+                            <input type="url" name="photo_url" id="photoUrlInput"
+                                   class="form-control"
+                                   placeholder="https://contoh.com/foto.jpg"
+                                   value="{{ $user->photo ?? '' }}"
+                                   style="border-radius:8px 0 0 8px;">
+                            <button type="submit" class="btn btn-primary btn-sm"
+                                    style="border-radius:0 8px 8px 0;">
+                                Simpan
+                            </button>
+                        </div>
+                        <div class="text-muted mt-1" style="font-size:.7rem;">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Upload foto ke <a href="https://imgbb.com" target="_blank">imgbb.com</a>
+                            lalu paste URL-nya di sini.
+                        </div>
+                        @error('photo_url')
                             <div class="text-danger mt-1" style="font-size:.75rem;">{{ $message }}</div>
                         @enderror
                     </div>
