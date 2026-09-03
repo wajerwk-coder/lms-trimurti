@@ -148,17 +148,21 @@
         border-radius: 14px; padding: 1.25rem 1.5rem;
         margin-bottom: 1.5rem; flex-wrap: wrap;
         box-shadow: 0 4px 20px rgba(8,145,178,.2);
-        position: relative; overflow: hidden;
+        position: relative;
+        /* hapus overflow:hidden agar tombol tidak terpotong */
         display: flex; align-items: flex-start;
         justify-content: space-between; gap: 1rem;
     }
     .lms-page-header::before {
         content:''; position:absolute; top:-40px; right:-40px;
         width:160px; height:160px; background:rgba(255,255,255,.06); border-radius:50%;
+        pointer-events: none; /* tidak menghalangi klik */
+        z-index: 0;
     }
     .lms-page-title  { color: #fff !important; position:relative; z-index:1; }
     .lms-page-subtitle { color: rgba(255,255,255,.8) !important; position:relative; z-index:1; }
     .lms-page-header .flex-shrink-0 { position:relative; z-index:1; }
+    .lms-page-header > * { position:relative; z-index:1; }
     .lms-page-header .btn-sm,
     .lms-page-header .btn {
         font-size:.82rem; border-radius:8px; font-weight:500;

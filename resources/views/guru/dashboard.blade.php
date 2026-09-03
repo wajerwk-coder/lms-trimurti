@@ -19,6 +19,8 @@
     width: 260px; height: 260px;
     background: rgba(255,255,255,.07);
     border-radius: 50%;
+    pointer-events: none; /* tidak menghalangi klik */
+    z-index: 0;
 }
 .hero-guru::after {
     content: '';
@@ -26,7 +28,11 @@
     width: 180px; height: 180px;
     background: rgba(255,255,255,.04);
     border-radius: 50%;
+    pointer-events: none; /* tidak menghalangi klik */
+    z-index: 0;
 }
+/* konten hero selalu di atas pseudo-elements */
+.hero-guru > * { position: relative; z-index: 1; }
 .hero-mini-card {
     background: rgba(255,255,255,.14);
     border-radius: 12px;
