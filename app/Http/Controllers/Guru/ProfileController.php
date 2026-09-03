@@ -78,6 +78,10 @@ class ProfileController extends Controller
             // Handle URL foto dari Cloudinary
             if ($request->filled('photo_url') && str_starts_with($request->photo_url, 'http')) {
                 $userData['photo'] = $request->photo_url;
+                Log::info('Guru photo updated via Cloudinary', [
+                    'user_id'   => $user->id,
+                    'photo_url' => $request->photo_url,
+                ]);
             }
 
             $user->update($userData);

@@ -379,19 +379,31 @@ document.getElementById('uploadPhotoBtn')?.addEventListener('click', function ()
                 var url = result.info.secure_url;
                 var preview = document.getElementById('avatarPreview');
                 if (preview) preview.src = url;
-                document.getElementById('hiddenPhotoUrl').value = url;
                 document.getElementById('uploadLoading')?.classList.add('d-none');
                 document.getElementById('uploadSuccess')?.classList.remove('d-none');
 
-                var checkUrl = document.getElementById('hiddenPhotoUrl').value;
-                if (!checkUrl || !checkUrl.startsWith('http')) {
-                    alert('URL foto tidak valid, coba lagi.');
-                    return;
-                }
+                // Kirim via AJAX
+                var formData = new FormData();
+                formData.append('_method', 'PUT');
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+                formData.append('name',      '{{ addslashes($user->name) }}');
+                formData.append('email',     '{{ $user->email }}');
+                formData.append('nisn',      '{{ $student->nisn ?? "" }}');
+                formData.append('photo_url', url);
 
-                setTimeout(function () {
-                    document.getElementById('photoUrlForm').submit();
-                }, 1200);
+                fetch('{{ route("siswa.profile.update") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    redirect: 'follow',
+                })
+                .then(function() {
+                    window.location.href = '{{ route("siswa.profile.edit") }}';
+                })
+                .catch(function(err) {
+                    console.error('Fetch error:', err);
+                    alert('Gagal menyimpan foto: ' + err.message);
+                });
             }
         });
     }

@@ -332,24 +332,32 @@ document.getElementById('uploadPhotoBtn')?.addEventListener('click', function() 
                     preview.classList.remove('d-none');
                 }
 
-                // Set URL di form hidden
-                document.getElementById('hiddenPhotoUrl').value = secureUrl;
-
                 // Hide loading, show success
                 document.getElementById('uploadLoading')?.classList.add('d-none');
                 document.getElementById('uploadSuccess')?.classList.remove('d-none');
 
-                // Verifikasi URL sudah terisi sebelum submit
-                var checkUrl = document.getElementById('hiddenPhotoUrl').value;
-                if (!checkUrl || !checkUrl.startsWith('http')) {
-                    alert('URL foto tidak valid, coba lagi.');
-                    return;
-                }
+                // Kirim via AJAX — reliable, tidak ada masalah timing
+                var formData = new FormData();
+                formData.append('_method', 'PUT');
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+                formData.append('name',      '{{ addslashes($user->name) }}');
+                formData.append('email',     '{{ $user->email }}');
+                formData.append('phone',     '{{ $user->phone ?? "" }}');
+                formData.append('photo_url', secureUrl);
 
-                // Auto-submit untuk simpan URL ke DB
-                setTimeout(function() {
-                    document.getElementById('photoUrlForm').submit();
-                }, 1200);
+                fetch('{{ route("admin.profile.update") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    redirect: 'follow',
+                })
+                .then(function() {
+                    window.location.href = '{{ route("admin.profile.edit") }}';
+                })
+                .catch(function(err) {
+                    console.error('Fetch error:', err);
+                    alert('Gagal menyimpan foto: ' + err.message);
+                });
             }
         });
     }
