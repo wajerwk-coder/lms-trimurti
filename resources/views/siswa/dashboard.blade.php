@@ -24,6 +24,27 @@
 }
 /* Pastikan konten hero berada di atas pseudo-elements */
 .hero-siswa > * { position: relative; z-index: 1; }
+
+/* ── Hero banner buttons — konsisten semua role ───────────────── */
+.hero-siswa .btn-light,
+.hero-siswa .btn-outline-light {
+    background: rgba(255,255,255,.92) !important;
+    color: #4f46e5 !important;
+    border: none !important;
+    font-weight: 600 !important;
+    font-size: .82rem !important;
+    padding: .38rem .9rem !important;
+    border-radius: 8px !important;
+    transition: background .15s, transform .15s, box-shadow .15s !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,.12);
+}
+.hero-siswa .btn-light:hover,
+.hero-siswa .btn-outline-light:hover {
+    background: #fff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.18);
+}
+
 .stat-card-s {
     border-radius: 14px; border: none;
     transition: transform .2s, box-shadow .2s;
@@ -104,7 +125,7 @@
                         <span class="badge bg-danger ms-1" style="font-size:.65rem;vertical-align:middle;">{{ $pendingCount }}</span>
                     @endif
                 </a>
-                <a href="{{ route('siswa.absensi.index') }}" class="btn btn-outline-light btn-sm">
+                <a href="{{ route('siswa.absensi.index') }}" class="btn btn-light btn-sm fw-semibold">
                     <i class="fas fa-calendar-check me-1"></i>Absensi
                 </a>
             </div>

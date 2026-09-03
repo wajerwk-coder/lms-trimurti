@@ -41,6 +41,26 @@
     backdrop-filter: blur(4px);
 }
 
+/* ── Hero banner buttons — konsisten semua role ───────────────── */
+.hero-guru .btn-light,
+.hero-guru .btn-outline-light {
+    background: rgba(255,255,255,.92) !important;
+    color: #0f766e !important;
+    border: none !important;
+    font-weight: 600 !important;
+    font-size: .82rem !important;
+    padding: .38rem .9rem !important;
+    border-radius: 8px !important;
+    transition: background .15s, transform .15s, box-shadow .15s !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,.12);
+}
+.hero-guru .btn-light:hover,
+.hero-guru .btn-outline-light:hover {
+    background: #fff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.18);
+}
+
 /* ── Stat cards ───────────────────────────────────────────────── */
 .stat-card {
     border: none;
@@ -176,16 +196,16 @@
             </p>
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ route('guru.absensi.create') }}"
-                   class="btn btn-light btn-sm fw-semibold shadow-sm">
-                    <i class="fas fa-clipboard-check me-1"></i> Input Absensi
+                   class="btn btn-light btn-sm fw-semibold">
+                    <i class="fas fa-clipboard-check me-1"></i>Input Absensi
                 </a>
                 <a href="{{ route('guru.materials.create') }}"
-                   class="btn btn-outline-light btn-sm">
-                    <i class="fas fa-book-open me-1"></i> Upload Materi
+                   class="btn btn-light btn-sm fw-semibold">
+                    <i class="fas fa-book-open me-1"></i>Upload Materi
                 </a>
                 <a href="{{ route('guru.assignments.create') }}"
-                   class="btn btn-outline-light btn-sm">
-                    <i class="fas fa-tasks me-1"></i> Buat Tugas
+                   class="btn btn-light btn-sm fw-semibold">
+                    <i class="fas fa-tasks me-1"></i>Buat Tugas
                 </a>
             </div>
         </div>

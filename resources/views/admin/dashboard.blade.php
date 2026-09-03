@@ -35,6 +35,27 @@
 }
 /* konten welcome-card selalu di atas pseudo-elements */
 .welcome-card > * { position: relative; z-index: 1; }
+
+/* ── Hero banner buttons — konsisten semua role ───────────────── */
+.welcome-card .btn-light,
+.welcome-card .btn-outline-light {
+    background: rgba(255,255,255,.92) !important;
+    color: #1e40af !important;
+    border: none !important;
+    font-weight: 600 !important;
+    font-size: .82rem !important;
+    padding: .38rem .9rem !important;
+    border-radius: 8px !important;
+    transition: background .15s, transform .15s, box-shadow .15s !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,.12);
+}
+.welcome-card .btn-light:hover,
+.welcome-card .btn-outline-light:hover {
+    background: #fff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.18);
+}
+
 .stat-card {
     border-radius: 14px;
     border: none;
@@ -115,10 +136,10 @@
                 <a href="{{ route('admin.users.create.admin') }}" class="btn btn-light btn-sm fw-semibold">
                     <i class="fas fa-user-plus me-1"></i>Tambah Admin
                 </a>
-                <a href="{{ route('admin.users.create.guru') }}" class="btn btn-outline-light btn-sm">
+                <a href="{{ route('admin.users.create.guru') }}" class="btn btn-light btn-sm fw-semibold">
                     <i class="fas fa-chalkboard-teacher me-1"></i>Tambah Guru
                 </a>
-                <a href="{{ route('admin.users.create.siswa') }}" class="btn btn-outline-light btn-sm">
+                <a href="{{ route('admin.users.create.siswa') }}" class="btn btn-light btn-sm fw-semibold">
                     <i class="fas fa-user-graduate me-1"></i>Tambah Siswa
                 </a>
             </div>
