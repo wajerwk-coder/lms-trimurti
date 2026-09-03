@@ -382,9 +382,16 @@ document.getElementById('uploadPhotoBtn')?.addEventListener('click', function ()
                 document.getElementById('hiddenPhotoUrl').value = url;
                 document.getElementById('uploadLoading')?.classList.add('d-none');
                 document.getElementById('uploadSuccess')?.classList.remove('d-none');
+
+                var checkUrl = document.getElementById('hiddenPhotoUrl').value;
+                if (!checkUrl || !checkUrl.startsWith('http')) {
+                    alert('URL foto tidak valid, coba lagi.');
+                    return;
+                }
+
                 setTimeout(function () {
                     document.getElementById('photoUrlForm').submit();
-                }, 800);
+                }, 1200);
             }
         });
     }

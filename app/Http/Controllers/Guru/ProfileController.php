@@ -42,6 +42,7 @@ class ProfileController extends Controller
             'email'    => 'required|email|unique:users_central,email,' . $user->id,
             'phone'    => 'nullable|string|max:20',
             'foto'     => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'photo_url'=> 'nullable|url|max:500',
             // Profil guru
             'nip'                => 'nullable|string|max:50',
             'tempat_lahir'       => 'nullable|string|max:100',
@@ -53,7 +54,7 @@ class ProfileController extends Controller
             'email.unique' => 'Email sudah digunakan akun lain.',
             'foto.image'   => 'File harus berupa gambar.',
             'foto.mimes'   => 'Format foto: JPEG, PNG, JPG.',
-            'foto.max'     => 'Ukuran foto maksimal 2MB.',
+            'foto.max'     => 'Ukuran foto maksimal 5MB.',
         ]);
 
         DB::beginTransaction();

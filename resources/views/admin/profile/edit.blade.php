@@ -339,10 +339,17 @@ document.getElementById('uploadPhotoBtn')?.addEventListener('click', function() 
                 document.getElementById('uploadLoading')?.classList.add('d-none');
                 document.getElementById('uploadSuccess')?.classList.remove('d-none');
 
+                // Verifikasi URL sudah terisi sebelum submit
+                var checkUrl = document.getElementById('hiddenPhotoUrl').value;
+                if (!checkUrl || !checkUrl.startsWith('http')) {
+                    alert('URL foto tidak valid, coba lagi.');
+                    return;
+                }
+
                 // Auto-submit untuk simpan URL ke DB
                 setTimeout(function() {
                     document.getElementById('photoUrlForm').submit();
-                }, 800);
+                }, 1200);
             }
         });
     }

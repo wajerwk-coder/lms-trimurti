@@ -65,6 +65,7 @@
                     @csrf @method('PUT')
                     <input type="hidden" name="name"      value="{{ $user->name }}">
                     <input type="hidden" name="email"     value="{{ $user->email }}">
+                    <input type="hidden" name="phone"     value="{{ $user->phone ?? '' }}">
                     <input type="hidden" name="photo_url" id="hiddenPhotoUrl" value="">
                 </form>
 
@@ -238,9 +239,17 @@ document.getElementById('uploadPhotoBtn')?.addEventListener('click', function ()
                 document.getElementById('hiddenPhotoUrl').value = url;
                 document.getElementById('uploadLoading')?.classList.add('d-none');
                 document.getElementById('uploadSuccess')?.classList.remove('d-none');
+
+                // Verifikasi URL sudah terisi sebelum submit
+                var checkUrl = document.getElementById('hiddenPhotoUrl').value;
+                if (!checkUrl || !checkUrl.startsWith('http')) {
+                    alert('URL foto tidak valid: ' + checkUrl);
+                    return;
+                }
+
                 setTimeout(function () {
                     document.getElementById('photoUrlForm').submit();
-                }, 800);
+                }, 1200);
             }
         });
     }
