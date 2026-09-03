@@ -109,8 +109,17 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 2.5rem 3rem;
+            padding: 0;
             box-shadow: -8px 0 40px rgba(0,0,0,.08);
+        }
+
+        /* Desktop: inner sama dengan lama */
+        .login-right-inner {
+            padding: 2.5rem 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
         }
 
         .login-back {
@@ -212,12 +221,53 @@
 
         /* Responsive */
         @media (max-width: 900px) {
-            .login-left { display: none; }
-            .login-right { width: 100%; padding: 2rem 1.5rem; box-shadow: none; }
+            .login-left { display: none !important; }
+            .login-right {
+                width: 100%;
+                box-shadow: none;
+                /* Gradient background di mobile */
+                background: linear-gradient(160deg, #3b82f6 0%, #6d28d9 55%, #fff 55%);
+                padding: 0;
+                justify-content: flex-start;
+            }
+
+            /* Card putih melayang di atas gradient */
+            .login-right-inner {
+                background: #fff;
+                border-radius: 24px 24px 0 0;
+                margin-top: 140px;
+                padding: 1.75rem 1.5rem 2rem;
+                min-height: calc(100vh - 140px);
+                box-shadow: 0 -8px 32px rgba(0,0,0,.12);
+                position: relative;
+            }
+
+            /* Logo mobile di bagian atas gradient */
+            .login-mobile-header {
+                display: flex !important;
+                flex-direction: column;
+                align-items: center;
+                padding: 2rem 1.5rem 1rem;
+                position: absolute;
+                top: 0; left: 0; right: 0;
+            }
+        }
+
+        @media (min-width: 901px) {
+            .login-mobile-header { display: none !important; }
+            .login-right-inner {
+                padding: 0;
+                margin: 0;
+                border-radius: 0;
+                box-shadow: none;
+                background: transparent;
+                min-height: auto;
+            }
         }
 
         @media (max-width: 480px) {
-            .login-right { padding: 1.5rem 1.25rem; }
+            .login-right-inner { padding: 1.5rem 1.25rem 2rem; }
+            .login-mobile-header { padding: 1.5rem 1.25rem .75rem; }
         }
     </style>
 </head>
@@ -265,6 +315,21 @@
 
     {{-- ── Right Panel (Form) ── --}}
     <div class="login-right">
+
+        {{-- Header mobile (tampil di atas gradient, hanya di HP) --}}
+        <div class="login-mobile-header" style="display:none;">
+            <div style="width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.2);
+                        backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;margin-bottom:.75rem;">
+                <i class="fas fa-graduation-cap fa-xl text-white"></i>
+            </div>
+            <div class="text-white text-center">
+                <div class="fw-bold" style="font-size:1.05rem;">LMS Trimurti Husada</div>
+                <div style="font-size:.78rem;opacity:.85;">SMK Kesehatan Trimurti Husada Ambon</div>
+            </div>
+        </div>
+
+        {{-- Card form --}}
+        <div class="login-right-inner">
         <a href="{{ route('welcome') }}" class="login-back">
             <i class="fas fa-arrow-left"></i> Kembali ke Beranda
         </a>
@@ -350,7 +415,8 @@
         <div class="login-footer">
             &copy; {{ date('Y') }} SMK Kesehatan Trimurti Husada Ambon
         </div>
-    </div>
+        </div>{{-- /login-right-inner --}}
+    </div>{{-- /login-right --}}
 
 </div>
 
