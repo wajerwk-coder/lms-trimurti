@@ -50,8 +50,8 @@ class ProfileController extends Controller
      */
     public function edit()
     {
-        // fresh() memaksa reload dari DB, bukan dari cache sesi
-        $user = Auth::user()->fresh();
+        // Query langsung dari DB — hindari cache Auth session
+        $user = \App\Models\UserCentral::find(Auth::id());
 
         if ($user->role !== 'siswa') {
             return redirect()->route('dashboard')
