@@ -20,6 +20,8 @@
     width: 220px; height: 220px;
     background: rgba(255,255,255,.07);
     border-radius: 50%;
+    pointer-events: none; /* tidak menghalangi klik */
+    z-index: 0;
 }
 .welcome-card::after {
     content: '';
@@ -28,7 +30,11 @@
     width: 160px; height: 160px;
     background: rgba(255,255,255,.05);
     border-radius: 50%;
+    pointer-events: none; /* tidak menghalangi klik */
+    z-index: 0;
 }
+/* konten welcome-card selalu di atas pseudo-elements */
+.welcome-card > * { position: relative; z-index: 1; }
 .stat-card {
     border-radius: 14px;
     border: none;

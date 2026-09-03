@@ -76,13 +76,17 @@
         background: linear-gradient(135deg, var(--brand-from) 0%, var(--brand-to) 100%);
         border-radius: 14px; padding: 1.25rem 1.5rem;
         box-shadow: 0 4px 20px rgba(59,130,246,.25);
-        position: relative; overflow: hidden;
+        position: relative;
+        /* hapus overflow:hidden agar tombol di page-header tidak terblokir */
     }
     .lms-page-header::before {
         content: ''; position: absolute; top: -40px; right: -40px;
         width: 160px; height: 160px;
         background: rgba(255,255,255,.07); border-radius: 50%;
+        pointer-events: none; /* tidak menghalangi klik */
+        z-index: 0;
     }
+    .lms-page-header > * { position: relative; z-index: 1; }
     .lms-page-header-left { position: relative; z-index: 1; }
     .lms-page-header .flex-shrink-0 { position: relative; z-index: 1; }
 
