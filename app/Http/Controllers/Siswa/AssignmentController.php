@@ -74,19 +74,27 @@ class AssignmentController extends Controller
      */
     public function show($id): View
     {
+        $ucId = Auth::id();
+
         $assignment = Assignment::with(['guru', 'subject', 'kelas'])
             ->where('is_published', true)
             ->findOrFail($id);
 
         $submission = AssignmentSubmission::where('assignment_id', $id)
-            ->where('siswa_id', Auth::id())
+            ->where('siswa_id', $ucId)
             ->first();
 
-        $isExpired = $assignment->due_date && now() > $assignment->due_date;
-        $canSubmit = !$isExpired || $assignment->allow_late;
+        $isExpired  = $assignment->due_date && now()->gt($assignment->due_date);
+        $isSubmitted = !is_null($submission);
+        $isGraded   = $isSubmitted && $submission->score !== null;
+
+        // canSubmit: belum dikumpulkan ATAU sudah dikumpulkan tapi belum dinilai (boleh edit ulang)
+        // tapi deadline belum lewat — atau terlambat tapi diizinkan
+        $canSubmit  = !$isGraded && $assignment->is_published
+                      && (!$isExpired || $assignment->allow_late);
 
         return view('siswa.assignments.show', compact(
-            'assignment', 'submission', 'isExpired', 'canSubmit'
+            'assignment', 'submission', 'isExpired', 'canSubmit', 'isSubmitted', 'isGraded'
         ));
     }
 
@@ -95,71 +103,95 @@ class AssignmentController extends Controller
      */
     public function submit(Request $request, $id): RedirectResponse
     {
+        // Validasi: minimal file ATAU teks harus diisi
         $request->validate([
             'submission_text' => 'nullable|string|max:5000',
-            'file' => 'nullable|file|mimes:pdf,doc,docx,txt,zip,rar,jpg,jpeg,png|max:5120', // ✅ Perbaikan: gunakan 'file'
+            'file'            => 'nullable|file|mimes:pdf,doc,docx,txt,zip,rar,jpg,jpeg,png|max:5120',
         ]);
 
-        $assignment = Assignment::where('is_published', true)
-            ->findOrFail($id);
+        // Server-side: wajib salah satu
+        if (!$request->hasFile('file') && empty(trim($request->submission_text ?? ''))) {
+            return back()
+                ->withInput()
+                ->with('error', 'Tugas tidak dapat dikumpulkan kosong. Lampirkan file atau isi catatan terlebih dahulu.');
+        }
+
+        $assignment = Assignment::where('is_published', true)->findOrFail($id);
+        $ucId       = Auth::id(); // users_central.id
 
         // Validasi deadline
-        if ($assignment->due_date && now() > $assignment->due_date && !$assignment->allow_late) {
-            return back()->with('error', 'Batas waktu pengumpulan telah berlalu.');
+        $isLate = $assignment->due_date && now()->gt($assignment->due_date);
+        if ($isLate && !$assignment->allow_late) {
+            return back()->with('error', 'Batas waktu pengumpulan telah berlalu dan pengumpulan terlambat tidak diizinkan.');
         }
 
         try {
-            $submission = AssignmentSubmission::firstOrNew([
-                'assignment_id' => $id,
-                'siswa_id'      => Auth::id(),
-            ]);
+            // Cari submission yang sudah ada berdasarkan siswa_id (users_central)
+            $submission = AssignmentSubmission::where('assignment_id', $id)
+                ->where('siswa_id', $ucId)
+                ->first();
 
-            // Jika sudah ada submission dan sudah dinilai, tidak boleh edit
-            if ($submission->exists && $submission->score !== null) {
-                return back()->with('error', 'Tugas sudah dinilai dan tidak dapat diubah.');
+            // Jika sudah dinilai, tidak boleh diubah
+            if ($submission && $submission->score !== null) {
+                return back()->with('error', 'Tugas sudah dinilai oleh guru dan tidak dapat diubah.');
             }
 
-            // student_id (NOT NULL) harus sama dengan siswa_id (users_central.id)
-            $submission->student_id      = Auth::id();
-            $submission->submission_text = $request->submission_text;
+            // Buat baru jika belum ada
+            if (!$submission) {
+                $submission = new AssignmentSubmission();
+                $submission->assignment_id = $id;
+                $submission->siswa_id      = $ucId;
+                $submission->student_id    = $ucId; // legacy FK, isi sama
+            }
 
-            if ($request->hasFile('file')) { // ✅ Perbaikan: gunakan 'file'
+            $submission->submission_text = $request->submission_text;
+            // Selalu update submitted_at saat kumpul/edit ulang
+            $submission->submitted_at    = now();
+            $submission->status          = $isLate ? 'late' : 'submitted';
+
+            // Handle upload file
+            if ($request->hasFile('file')) {
                 // Hapus file lama jika ada
                 if ($submission->file_path) {
                     Storage::disk('public')->delete('assignment_submissions/' . $submission->file_path);
                 }
 
-                $file = $request->file('file'); // ✅ Perbaikan: gunakan 'file'
-                $filename = time() . '_' . $file->getClientOriginalName();
-                $path = $file->storeAs('assignment_submissions', $filename, 'public');
-                $submission->file_path = $filename;
-            }
+                $file     = $request->file('file');
+                // Sanitize nama file: hapus spasi & karakter khusus
+                $origName = preg_replace('/[^a-zA-Z0-9.\-_]/', '_', $file->getClientOriginalName());
+                $filename = time() . '_' . $origName;
 
-            // Set submitted_at hanya jika belum ada
-            if (!$submission->submitted_at) {
-                $submission->submitted_at = now();
+                $file->storeAs('assignment_submissions', $filename, 'public');
+
+                $submission->file_path = $filename;
+                $submission->file_size = $file->getSize(); // simpan ukuran file
+                $submission->file_url  = 'assignment_submissions/' . $filename; // simpan relative path
             }
 
             $submission->save();
 
-            Log::info('Assignment submitted successfully', [
+            Log::info('Assignment submitted', [
                 'assignment_id' => $id,
-                'siswa_id' => Auth::id(),
-                'file_uploaded' => $request->hasFile('file'),
-                'ip' => $request->ip()
+                'siswa_id'      => $ucId,
+                'is_late'       => $isLate,
+                'has_file'      => $request->hasFile('file'),
+                'ip'            => $request->ip(),
             ]);
 
-            return redirect()->route('siswa.assignments.show', $id)
-                ->with('success', 'Tugas berhasil dikumpulkan!');
+            $msg = $isLate
+                ? 'Tugas berhasil dikumpulkan (terlambat). Menunggu penilaian guru.'
+                : 'Tugas berhasil dikumpulkan!';
+
+            return redirect()->route('siswa.assignments.show', $id)->with('success', $msg);
 
         } catch (\Exception $e) {
             Log::error('Error submitting assignment: ' . $e->getMessage(), [
                 'assignment_id' => $id,
-                'siswa_id' => Auth::id(),
-                'ip' => $request->ip()
+                'siswa_id'      => $ucId,
+                'ip'            => $request->ip(),
             ]);
 
-            return back()->with('error', 'Terjadi kesalahan saat mengumpulkan tugas.');
+            return back()->withInput()->with('error', 'Terjadi kesalahan saat mengumpulkan tugas: ' . $e->getMessage());
         }
     }
 
@@ -188,13 +220,20 @@ class AssignmentController extends Controller
             abort(404, 'File tidak ditemukan.');
         }
 
-        $filePath = storage_path('app/public/assignment_submissions/' . $submission->file_path);
+        // Cari file di lokasi yang mungkin
+        $possiblePaths = [
+            storage_path('app/public/assignment_submissions/' . $submission->file_path),
+            storage_path('app/public/' . $submission->file_path),
+            public_path('storage/assignment_submissions/' . $submission->file_path),
+        ];
 
-        if (!file_exists($filePath)) {
-            abort(404, 'File tidak ditemukan di server.');
+        foreach ($possiblePaths as $filePath) {
+            if (file_exists($filePath)) {
+                return response()->download($filePath, basename($submission->file_path));
+            }
         }
 
-        return response()->download($filePath, $submission->file_path);
+        abort(404, 'File tidak ditemukan di server.');
     }
 
     /**
