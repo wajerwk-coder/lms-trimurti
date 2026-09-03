@@ -89,8 +89,14 @@
                 <a href="{{ route('siswa.materials.index') }}" class="btn btn-light btn-sm fw-semibold">
                     <i class="fas fa-book me-1"></i>Materi
                 </a>
-                <a href="{{ route('siswa.assignments.index') }}" class="btn btn-outline-light btn-sm">
+                <a href="{{ route('siswa.assignments.index') }}" class="btn btn-light btn-sm fw-semibold">
                     <i class="fas fa-tasks me-1"></i>Tugas
+                    @php
+                        $pendingCount = $stats['pending_assignments'] ?? 0;
+                    @endphp
+                    @if($pendingCount > 0)
+                        <span class="badge bg-danger ms-1" style="font-size:.65rem;vertical-align:middle;">{{ $pendingCount }}</span>
+                    @endif
                 </a>
                 <a href="{{ route('siswa.absensi.index') }}" class="btn btn-outline-light btn-sm">
                     <i class="fas fa-calendar-check me-1"></i>Absensi
@@ -122,12 +128,12 @@
 {{-- ── Stats Cards ─────────────────────────────────────── --}}
 <div class="row g-3 mb-4">
     @foreach([
-        ['primary',  'fa-book',          $stats['total_materials']       ?? 0, 'Materi',         route('siswa.materials.index'),   'Tersedia'],
-        ['success',  'fa-tasks',         $stats['completed_assignments'] ?? 0, 'Tugas Selesai',  route('siswa.assignments.index'), 'Dikumpulkan'],
-        ['info',     'fa-flask',         $stats['completed_practicals']  ?? 0, 'Praktikum',      route('siswa.praktikum.index'),   'Selesai'],
-        ['warning',  'fa-chart-bar',     $stats['average_score']         ?? 0, 'Nilai Rata-rata',route('siswa.nilai.index'),       '/100'],
-        ['danger',   'fa-calendar-check',$stats['attendance_percentage'] ?? 0, 'Kehadiran',      route('siswa.absensi.index'),     '%'],
-        ['secondary','fa-clipboard',     $stats['pending_assignments']   ?? 0, 'Tugas Pending',  route('siswa.assignments.index'), 'Belum dikerjakan'],
+        ['primary',  'fa-book',          $stats['total_materials']       ?? 0, 'Materi',         route('siswa.materials.index'),                              'Tersedia'],
+        ['success',  'fa-tasks',         $stats['completed_assignments'] ?? 0, 'Tugas Selesai',  route('siswa.assignments.index', ['status'=>'submitted']),    'Dikumpulkan'],
+        ['info',     'fa-flask',         $stats['completed_practicals']  ?? 0, 'Praktikum',      route('siswa.praktikum.index'),                               'Selesai'],
+        ['warning',  'fa-chart-bar',     $stats['average_score']         ?? 0, 'Nilai Rata-rata',route('siswa.nilai.index'),                                   '/100'],
+        ['danger',   'fa-calendar-check',$stats['attendance_percentage'] ?? 0, 'Kehadiran',      route('siswa.absensi.index'),                                 '%'],
+        ['secondary','fa-clipboard',     $stats['pending_assignments']   ?? 0, 'Tugas Pending',  route('siswa.assignments.index', ['status'=>'pending']),      'Belum dikerjakan'],
     ] as [$color, $icon, $val, $label, $url, $sub])
     <div class="col-6 col-md-4 col-xl-2">
         <div class="card stat-card-s shadow-sm h-100">
