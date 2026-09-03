@@ -50,15 +50,14 @@ class ProfileController extends Controller
      */
     public function edit()
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
+        // fresh() memaksa reload dari DB, bukan dari cache sesi
+        $user = Auth::user()->fresh();
 
         if ($user->role !== 'siswa') {
             return redirect()->route('dashboard')
                 ->with('error', 'Akses ditolak.');
         }
 
-        /** @var \\App\\Models\\Siswa $student */
         $student = Siswa::with('kelas')->where('user_id', $user->id)->first();
 
         if (!$student) {
@@ -76,7 +75,10 @@ class ProfileController extends Controller
     {
         $request->validate(['photo_url' => 'required|url|max:500']);
         $user = Auth::user();
-        $user->update(['photo' => $request->photo_url]);
+        $user->photo = $request->photo_url;
+        $user->save();
+        // Paksa refresh auth user dari DB agar sesi terupdate
+        Auth::setUser($user->fresh());
         \Illuminate\Support\Facades\Log::info('Siswa photo_url updated', ['user_id' => $user->id]);
         return response()->json(['success' => true, 'photo' => $request->photo_url]);
     }

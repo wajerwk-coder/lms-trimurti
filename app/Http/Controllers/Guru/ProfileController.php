@@ -25,7 +25,8 @@ class ProfileController extends Controller
      */
     public function edit(): View
     {
-        $user       = Auth::user();
+        // fresh() memaksa reload dari DB, bukan dari cache sesi
+        $user        = Auth::user()->fresh();
         $guruProfile = Guru::where('user_id', $user->id)->first();
         return view('guru.profile.edit', compact('user', 'guruProfile'));
     }

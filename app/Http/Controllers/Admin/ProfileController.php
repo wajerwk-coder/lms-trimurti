@@ -18,7 +18,8 @@ class ProfileController extends Controller
 
     public function edit()
     {
-        $user = Auth::user();
+        // fresh() memaksa reload dari DB, bukan dari cache sesi
+        $user = Auth::user()->fresh();
         return view('admin.profile.edit', compact('user'));
     }
 
@@ -26,7 +27,10 @@ class ProfileController extends Controller
     {
         $request->validate(['photo_url' => 'required|url|max:500']);
         $user = Auth::user();
-        $user->update(['photo' => $request->photo_url]);
+        $user->photo = $request->photo_url;
+        $user->save();
+        // Paksa refresh auth user dari DB agar sesi terupdate
+        Auth::setUser($user->fresh());
         \Illuminate\Support\Facades\Log::info('Admin photo_url updated', ['user_id' => $user->id]);
         return response()->json(['success' => true, 'photo' => $request->photo_url]);
     }
