@@ -22,6 +22,15 @@ class ProfileController extends Controller
         return view('admin.profile.edit', compact('user'));
     }
 
+    public function updatePhotoUrl(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate(['photo_url' => 'required|url|max:500']);
+        $user = Auth::user();
+        $user->update(['photo' => $request->photo_url]);
+        \Illuminate\Support\Facades\Log::info('Admin photo_url updated', ['user_id' => $user->id]);
+        return response()->json(['success' => true, 'photo' => $request->photo_url]);
+    }
+
     public function update(UpdateProfileRequest $request)
     {
         $user = Auth::user();

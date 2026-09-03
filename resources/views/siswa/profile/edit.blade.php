@@ -382,27 +382,27 @@ document.getElementById('uploadPhotoBtn')?.addEventListener('click', function ()
                 document.getElementById('uploadLoading')?.classList.add('d-none');
                 document.getElementById('uploadSuccess')?.classList.remove('d-none');
 
-                // Kirim via AJAX
-                var formData = new FormData();
-                formData.append('_method', 'PUT');
-                formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
-                formData.append('name',      '{{ addslashes($user->name) }}');
-                formData.append('email',     '{{ $user->email }}');
-                formData.append('nisn',      '{{ $student->nisn ?? "" }}');
-                formData.append('photo_url', url);
-
-                fetch('{{ route("siswa.profile.update") }}', {
+                // Kirim via AJAX ke endpoint khusus photo
+                fetch('{{ route("siswa.profile.update-photo-url") }}', {
                     method: 'POST',
-                    body: formData,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    redirect: 'follow',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ photo_url: url }),
                 })
-                .then(function() {
-                    window.location.href = '{{ route("siswa.profile.edit") }}';
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        window.location.href = '{{ route("siswa.profile.edit") }}';
+                    } else {
+                        alert('Gagal menyimpan: ' + JSON.stringify(data));
+                    }
                 })
                 .catch(function(err) {
-                    console.error('Fetch error:', err);
-                    alert('Gagal menyimpan foto: ' + err.message);
+                    console.error('Error:', err);
+                    alert('Error: ' + err.message);
                 });
             }
         });

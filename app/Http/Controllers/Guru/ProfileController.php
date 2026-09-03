@@ -116,6 +116,22 @@ class ProfileController extends Controller
     }
 
     /**
+     * Update foto profil via Cloudinary URL — endpoint dedicated POST.
+     * Lebih sederhana dan reliable daripada PUT dengan semua field.
+     */
+    public function updatePhotoUrl(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate(['photo_url' => 'required|url|max:500']);
+
+        $user = Auth::user();
+        $user->update(['photo' => $request->photo_url]);
+
+        Log::info('Guru photo_url updated', ['user_id' => $user->id, 'photo' => $request->photo_url]);
+
+        return response()->json(['success' => true, 'photo' => $request->photo_url]);
+    }
+
+    /**
      * Update foto profil saja.
      */
     public function updatePhoto(Request $request): RedirectResponse

@@ -158,6 +158,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Profile
     Route::get('profile', [AdminProfileController::class, 'edit'])->name('profile.edit');
     Route::put('profile', [AdminProfileController::class, 'update'])->name('profile.update');
+    Route::post('profile/update-photo-url', [AdminProfileController::class, 'updatePhotoUrl'])->name('profile.update-photo-url');
 });
 
 // ✅ GURU ROUTES - middleware digabung dalam array
@@ -310,6 +311,7 @@ Route::prefix('guru')->name('guru.')->middleware(['auth', 'guru'])->group(functi
     // Profile
     Route::get('profile', [GuruProfileController::class, 'edit'])->name('profile.edit');
     Route::put('profile', [GuruProfileController::class, 'update'])->name('profile.update');
+    Route::post('profile/update-photo-url', [GuruProfileController::class, 'updatePhotoUrl'])->name('profile.update-photo-url');
     Route::post('profile/photo', [GuruProfileController::class, 'updatePhoto'])->name('profile.update-photo');
     Route::post('profile/remove-photo', [GuruProfileController::class, 'removePhoto'])->name('profile.remove-photo');
     Route::get('profile/change-password', [GuruProfileController::class, 'changePassword'])->name('profile.change-password');
@@ -372,9 +374,10 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'siswa'])->group(fun
     Route::get('absensi/{attendance}', [SiswaAttendanceController::class, 'show'])->name('absensi.show');
     
     // Kelola Profil Siswa — CUSTOM ROUTES SEBELUM {profile}
-    Route::get('profile',          [\App\Http\Controllers\Siswa\ProfileController::class, 'index'])->name('profile.index');
-    Route::get('profile/edit',     [SiswaProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('profile',          [SiswaProfileController::class, 'update'])->name('profile.update');
+    Route::get('profile',                 [\App\Http\Controllers\Siswa\ProfileController::class, 'index'])->name('profile.index');
+    Route::get('profile/edit',            [SiswaProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('profile',                 [SiswaProfileController::class, 'update'])->name('profile.update');
+    Route::post('profile/update-photo-url',[SiswaProfileController::class, 'updatePhotoUrl'])->name('profile.update-photo-url');
     Route::get('profile/medical',  [\App\Http\Controllers\Siswa\ProfileController::class, 'medicalInfo'])->name('profile.medical');
     Route::post('profile/medical', [\App\Http\Controllers\Siswa\ProfileController::class, 'updateMedicalInfo'])->name('profile.medical.update');
     Route::post('profile/password',[SiswaProfileController::class, 'updatePassword'])->name('profile.password');

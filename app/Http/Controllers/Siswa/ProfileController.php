@@ -70,6 +70,18 @@ class ProfileController extends Controller
     }
 
     /**
+     * Update foto via Cloudinary URL saja — endpoint POST dedicated.
+     */
+    public function updatePhotoUrl(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate(['photo_url' => 'required|url|max:500']);
+        $user = Auth::user();
+        $user->update(['photo' => $request->photo_url]);
+        \Illuminate\Support\Facades\Log::info('Siswa photo_url updated', ['user_id' => $user->id]);
+        return response()->json(['success' => true, 'photo' => $request->photo_url]);
+    }
+
+    /**
      * Update the student profile.
      */
     public function update(Request $request): RedirectResponse
