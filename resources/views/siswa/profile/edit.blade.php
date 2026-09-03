@@ -81,17 +81,12 @@
                 </h6>
             </div>
             <div class="card-body text-center py-4">
-                @if($student->foto)
-                    <img src="{{ asset('storage/'.$student->foto) }}"
-                         alt="Foto Profil"
-                         class="profile-avatar mb-3 d-block mx-auto"
-                         id="avatarPreview">
-                @else
-                    <div class="avatar-initials d-inline-flex mb-3" id="avatarInitials">
-                        {{ strtoupper(substr($user->name ?? 'S', 0, 1)) }}
-                    </div>
-                    <img src="" alt="Preview" class="profile-avatar mb-3 d-none mx-auto" id="avatarPreview">
-                @endif
+                @php $avatarSrc = $user->photo_url; @endphp
+                <img src="{{ $avatarSrc }}"
+                     alt="Foto Profil"
+                     class="profile-avatar mb-3 d-block mx-auto"
+                     id="avatarPreview"
+                     onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=7c3aed&color=fff&size=128&bold=true'">
 
                 <div class="fw-bold text-dark mb-1">{{ $user->name }}</div>
                 <div class="text-muted small mb-2">{{ $user->email }}</div>
@@ -101,19 +96,30 @@
                 </span>
 
                 <div class="mt-3">
-                    <label for="foto" class="btn btn-sm w-100 fw-semibold"
-                           style="border-radius:9px;background:rgba(124,58,237,.1);color:#7c3aed;border:1px solid rgba(124,58,237,.2);cursor:pointer;">
+                    <button type="button" id="uploadPhotoBtn"
+                            class="btn btn-sm w-100 fw-semibold"
+                            style="border-radius:9px;background:rgba(124,58,237,.1);color:#7c3aed;border:1px solid rgba(124,58,237,.2);">
                         <i class="fas fa-camera me-1"></i>Ganti Foto
-                    </label>
-                    <input type="file" id="foto" name="foto" form="profileForm"
-                           accept="image/jpeg,image/png,image/jpg"
-                           class="d-none @error('foto') is-invalid @enderror"
-                           onchange="previewAvatar(event)">
-                    @error('foto')
-                        <div class="text-danger mt-1" style="font-size:.75rem;">{{ $message }}</div>
-                    @enderror
+                    </button>
                     <div class="text-muted mt-1" style="font-size:.7rem;">JPG, PNG · maks 5 MB</div>
+                    <div id="uploadLoading" class="d-none text-center mt-2">
+                        <span class="spinner-border spinner-border-sm text-primary me-1"></span>
+                        <small class="text-muted">Mengupload...</small>
+                    </div>
+                    <div id="uploadSuccess" class="d-none mt-2 p-2 rounded-2"
+                         style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);font-size:.75rem;color:#16a34a;">
+                        <i class="fas fa-check-circle me-1"></i>Foto berhasil diupload!
+                    </div>
                 </div>
+
+                {{-- Form hidden Cloudinary URL --}}
+                <form action="{{ route('siswa.profile.update') }}" method="POST" id="photoUrlForm">
+                    @csrf @method('PUT')
+                    <input type="hidden" name="name"      value="{{ $user->name }}">
+                    <input type="hidden" name="email"     value="{{ $user->email }}">
+                    <input type="hidden" name="nisn"      value="{{ $student->nisn }}">
+                    <input type="hidden" name="photo_url" id="hiddenPhotoUrl" value="">
+                </form>
             </div>
         </div>
 
@@ -161,7 +167,7 @@
             </div>
             <div class="card-body p-4">
                 <form action="{{ route('siswa.profile.update') }}" method="POST"
-                      enctype="multipart/form-data" id="profileForm">
+                      id="profileForm">
                     @csrf @method('PUT')
 
                     <div class="row g-3">
@@ -334,31 +340,58 @@
 @endsection
 
 @push('js')
+<script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
 <script>
-// Preview foto sebelum upload
-function previewAvatar(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+var CLOUDINARY_CLOUD_NAME    = '{{ config("cloudinary.cloud_name", env("CLOUDINARY_CLOUD_NAME", "aw9h9icb")) }}';
+var CLOUDINARY_UPLOAD_PRESET = '{{ config("cloudinary.upload_preset", env("CLOUDINARY_UPLOAD_PRESET", "lms_photos")) }}';
+var uploadWidget = null;
 
-    const maxMB = 5;
-    if (file.size > maxMB * 1024 * 1024) {
-        alert('Ukuran file terlalu besar. Maksimal 5 MB.');
-        event.target.value = '';
-        return;
+// ── Cloudinary Upload ────────────────────────────────────────────────
+document.getElementById('uploadPhotoBtn')?.addEventListener('click', function () {
+    if (!uploadWidget) {
+        uploadWidget = cloudinary.createUploadWidget({
+            cloudName:    CLOUDINARY_CLOUD_NAME,
+            uploadPreset: CLOUDINARY_UPLOAD_PRESET,
+            sources:      ['local', 'camera'],
+            multiple:     false,
+            maxFileSize:  5242880,
+            cropping:     true,
+            croppingAspectRatio: 1,
+            folder:       'profiles/siswa',
+            resourceType: 'image',
+            clientAllowedFormats: ['jpg','jpeg','png','webp'],
+        }, function (error, result) {
+            if (error) {
+                document.getElementById('uploadLoading')?.classList.add('d-none');
+                var msg = 'Gagal upload foto.\n';
+                if (error.status === 400 || (error.message && error.message.includes('preset'))) {
+                    msg += 'Upload preset "' + CLOUDINARY_UPLOAD_PRESET + '" tidak ditemukan.\nBuat preset Unsigned di Cloudinary Dashboard.';
+                } else {
+                    msg += (error.message || JSON.stringify(error));
+                }
+                alert(msg);
+                return;
+            }
+            if (result && result.event === 'queues-start') {
+                document.getElementById('uploadLoading')?.classList.remove('d-none');
+            }
+            if (result && result.event === 'success') {
+                var url = result.info.secure_url;
+                var preview = document.getElementById('avatarPreview');
+                if (preview) preview.src = url;
+                document.getElementById('hiddenPhotoUrl').value = url;
+                document.getElementById('uploadLoading')?.classList.add('d-none');
+                document.getElementById('uploadSuccess')?.classList.remove('d-none');
+                setTimeout(function () {
+                    document.getElementById('photoUrlForm').submit();
+                }, 800);
+            }
+        });
     }
+    uploadWidget.open();
+});
 
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        const preview    = document.getElementById('avatarPreview');
-        const initials   = document.getElementById('avatarInitials');
-        preview.src      = e.target.result;
-        preview.classList.remove('d-none');
-        if (initials) initials.classList.add('d-none');
-    };
-    reader.readAsDataURL(file);
-}
-
-// Spinner saat submit
+// ── Spinner submit form profil ───────────────────────────────────────
 document.getElementById('profileForm').addEventListener('submit', function () {
     const btn = document.getElementById('saveBtn');
     btn.disabled = true;

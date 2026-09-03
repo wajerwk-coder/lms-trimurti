@@ -219,7 +219,13 @@ document.getElementById('uploadPhotoBtn')?.addEventListener('click', function ()
         }, function (error, result) {
             if (error) {
                 document.getElementById('uploadLoading')?.classList.add('d-none');
-                alert('Gagal upload foto. Pastikan Cloudinary sudah dikonfigurasi di Railway.');
+                var msg = 'Gagal upload foto.\n';
+                if (error.status === 400 || (error.message && error.message.includes('preset'))) {
+                    msg += 'Upload preset "' + CLOUDINARY_UPLOAD_PRESET + '" tidak ditemukan.\nBuat preset Unsigned di Cloudinary Dashboard.';
+                } else {
+                    msg += (error.message || JSON.stringify(error));
+                }
+                alert(msg);
                 return;
             }
             if (result && result.event === 'queues-start') {
