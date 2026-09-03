@@ -69,11 +69,14 @@
         background: linear-gradient(135deg, #7c3aed 0%, #a21caf 50%, #db2777 100%);
         border-radius: 14px; padding: 1.25rem 1.5rem;
         box-shadow: 0 4px 20px rgba(124,58,237,.2);
-        position: relative; overflow: hidden;
+        position: relative;
+        /* Hapus overflow:hidden — bisa memotong elemen yang clickable */
     }
     .lms-page-header::before {
         content:''; position:absolute; top:-40px; right:-40px;
         width:160px; height:160px; background:rgba(255,255,255,.06); border-radius:50%;
+        pointer-events: none; /* Tidak menghalangi klik */
+        z-index: 0;
     }
     .lms-page-title {
         font-size: 1.2rem; font-weight: 700; color: #fff;
@@ -84,6 +87,7 @@
         margin: .15rem 0 0; position: relative; z-index: 1;
     }
     .lms-page-header .flex-shrink-0 { position: relative; z-index: 1; }
+    .lms-page-header > * { position: relative; z-index: 1; }
     .lms-page-header .btn {
         font-size: .82rem; border-radius: 8px; font-weight: 500;
     }

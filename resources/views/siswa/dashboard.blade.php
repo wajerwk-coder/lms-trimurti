@@ -13,11 +13,17 @@
 .hero-siswa::before {
     content:''; position:absolute; top:-60px; right:-60px;
     width:220px; height:220px; background:rgba(255,255,255,.07); border-radius:50%;
+    pointer-events: none; /* PENTING: pseudo-element tidak menghalangi klik */
+    z-index: 0;
 }
 .hero-siswa::after {
     content:''; position:absolute; bottom:-50px; right:140px;
     width:150px; height:150px; background:rgba(255,255,255,.04); border-radius:50%;
+    pointer-events: none; /* PENTING: pseudo-element tidak menghalangi klik */
+    z-index: 0;
 }
+/* Pastikan konten hero berada di atas pseudo-elements */
+.hero-siswa > * { position: relative; z-index: 1; }
 .stat-card-s {
     border-radius: 14px; border: none;
     transition: transform .2s, box-shadow .2s;
