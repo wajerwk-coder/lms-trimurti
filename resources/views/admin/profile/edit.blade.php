@@ -85,36 +85,36 @@
                     <i class="fas fa-shield-alt me-1"></i>Administrator
                 </span>
 
-                {{-- Ganti foto: input URL --}}
-                <form action="{{ route('admin.profile.update') }}" method="POST"
-                      id="photoForm">
-                    @csrf @method('PUT')
-                    <input type="hidden" name="name"  value="{{ $user->name }}">
-                    <input type="hidden" name="email" value="{{ $user->email }}">
-                    <input type="hidden" name="phone" value="{{ $user->phone }}">
-
-                    <div class="mt-3">
-                        <label class="form-label small fw-semibold">URL Foto Profil</label>
-                        <div class="input-group input-group-sm">
-                            <input type="url" name="photo_url" id="photoUrlInput"
-                                   class="form-control"
-                                   placeholder="https://contoh.com/foto.jpg"
-                                   value="{{ $user->photo ?? '' }}"
-                                   style="border-radius:8px 0 0 8px;">
-                            <button type="submit" class="btn btn-primary btn-sm"
-                                    style="border-radius:0 8px 8px 0;">
-                                Simpan
-                            </button>
-                        </div>
-                        <div class="text-muted mt-1" style="font-size:.7rem;">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Upload foto ke <a href="https://imgbb.com" target="_blank">imgbb.com</a>
-                            lalu paste URL-nya di sini.
-                        </div>
-                        @error('photo_url')
-                            <div class="text-danger mt-1" style="font-size:.75rem;">{{ $message }}</div>
-                        @enderror
+                {{-- Ganti foto via Cloudinary Upload Widget --}}
+                <div class="mt-3" id="photoSection">
+                    <button type="button" id="uploadPhotoBtn"
+                            class="btn btn-sm w-100 fw-semibold"
+                            style="border-radius:9px;background:rgba(59,130,246,.1);color:#3b82f6;border:1px solid rgba(59,130,246,.2);">
+                        <i class="fas fa-camera me-1"></i>Ganti Foto
+                    </button>
+                    <div class="text-muted mt-1" style="font-size:.7rem;">
+                        JPG, PNG, WEBP · maks 5 MB
                     </div>
+                    {{-- Loading indicator --}}
+                    <div id="uploadLoading" class="d-none text-center mt-2">
+                        <span class="spinner-border spinner-border-sm text-primary me-1"></span>
+                        <small class="text-muted">Mengupload...</small>
+                    </div>
+                    {{-- Success indicator --}}
+                    <div id="uploadSuccess" class="d-none mt-2 p-2 rounded-2"
+                         style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);font-size:.75rem;color:#16a34a;">
+                        <i class="fas fa-check-circle me-1"></i>Foto berhasil diupload!
+                    </div>
+                </div>
+
+                {{-- Form hidden untuk simpan URL foto --}}
+                <form action="{{ route('admin.profile.update') }}" method="POST"
+                      id="photoUrlForm">
+                    @csrf @method('PUT')
+                    <input type="hidden" name="name"      value="{{ $user->name }}">
+                    <input type="hidden" name="email"     value="{{ $user->email }}">
+                    <input type="hidden" name="phone"     value="{{ $user->phone }}">
+                    <input type="hidden" name="photo_url" id="hiddenPhotoUrl" value="">
                 </form>
 
                 {{-- Info akun --}}
@@ -259,32 +259,89 @@
 @endsection
 
 @push('js')
-<script>
-// Preview avatar + auto-submit saat pilih foto
-function previewAndSubmitPhoto(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+{{-- Cloudinary Upload Widget --}}
+<script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
 
-    if (file.size > 5 * 1024 * 1024) {
-        alert('Ukuran file terlalu besar. Maksimal 5 MB.');
-        event.target.value = '';
-        return;
+<script>
+// ── Cloudinary Upload Widget ─────────────────────────────────────────
+// Ganti CLOUD_NAME dengan cloud name Cloudinary kamu
+var CLOUDINARY_CLOUD_NAME = '{{ env("CLOUDINARY_CLOUD_NAME", "your_cloud_name") }}';
+var CLOUDINARY_UPLOAD_PRESET = '{{ env("CLOUDINARY_UPLOAD_PRESET", "lms_photos") }}';
+
+var uploadWidget = null;
+
+document.getElementById('uploadPhotoBtn')?.addEventListener('click', function() {
+    if (!uploadWidget) {
+        uploadWidget = cloudinary.createUploadWidget({
+            cloudName:    CLOUDINARY_CLOUD_NAME,
+            uploadPreset: CLOUDINARY_UPLOAD_PRESET,
+            sources:      ['local', 'camera'],
+            multiple:     false,
+            maxFileSize:  5242880, // 5MB
+            cropping:     true,
+            croppingAspectRatio: 1,
+            croppingShowDimensions: true,
+            folder:       'profiles/admin',
+            resourceType: 'image',
+            clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
+            styles: {
+                palette: {
+                    window:       '#FFFFFF',
+                    windowBorder: '#3b82f6',
+                    tabIcon:      '#3b82f6',
+                    menuIcons:    '#3b82f6',
+                    textDark:     '#1e293b',
+                    textLight:    '#FFFFFF',
+                    link:         '#3b82f6',
+                    action:       '#3b82f6',
+                    inactiveTabIcon: '#94a3b8',
+                    error:        '#dc2626',
+                    inProgress:   '#3b82f6',
+                    complete:     '#16a34a',
+                    sourceBg:     '#f8fafc',
+                }
+            }
+        }, function(error, result) {
+            if (error) {
+                console.error('Upload error:', error);
+                document.getElementById('uploadLoading')?.classList.add('d-none');
+                alert('Gagal upload foto. Pastikan Cloudinary sudah dikonfigurasi.');
+                return;
+            }
+
+            if (result && result.event === 'queues-start') {
+                document.getElementById('uploadLoading')?.classList.remove('d-none');
+            }
+
+            if (result && result.event === 'success') {
+                var secureUrl = result.info.secure_url;
+
+                // Update avatar preview
+                var preview = document.getElementById('avatarPreview');
+                if (preview) {
+                    preview.src = secureUrl;
+                    preview.classList.remove('d-none');
+                }
+
+                // Set URL di form hidden
+                document.getElementById('hiddenPhotoUrl').value = secureUrl;
+
+                // Hide loading, show success
+                document.getElementById('uploadLoading')?.classList.add('d-none');
+                document.getElementById('uploadSuccess')?.classList.remove('d-none');
+
+                // Auto-submit untuk simpan URL ke DB
+                setTimeout(function() {
+                    document.getElementById('photoUrlForm').submit();
+                }, 800);
+            }
+        });
     }
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const preview  = document.getElementById('avatarPreview');
-        const initials = document.getElementById('avatarInitials');
-        preview.src = e.target.result;
-        preview.classList.remove('d-none');
-        if (initials) initials.classList.add('d-none');
-        // Submit form foto
-        document.getElementById('photoForm').submit();
-    };
-    reader.readAsDataURL(file);
-}
+    uploadWidget.open();
+});
 
-// Spinner saat simpan profil
+// ── Form profil spinner ──────────────────────────────────────────────
 document.getElementById('profileForm')?.addEventListener('submit', function() {
     const btn = document.getElementById('saveBtn');
     if (!btn) return;
@@ -292,20 +349,12 @@ document.getElementById('profileForm')?.addEventListener('submit', function() {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
 });
 
-// Validasi + spinner saat ubah password
+// ── Form password ────────────────────────────────────────────────────
 document.getElementById('pwForm')?.addEventListener('submit', function(e) {
     const pw  = this.querySelector('[name=password]').value;
     const pwc = this.querySelector('[name=password_confirmation]').value;
-    if (!pw) {
-        e.preventDefault();
-        alert('Password baru wajib diisi.');
-        return;
-    }
-    if (pw !== pwc) {
-        e.preventDefault();
-        alert('Konfirmasi password tidak cocok.');
-        return;
-    }
+    if (!pw) { e.preventDefault(); alert('Password baru wajib diisi.'); return; }
+    if (pw !== pwc) { e.preventDefault(); alert('Konfirmasi password tidak cocok.'); return; }
     const btn = document.getElementById('pwBtn');
     if (btn) {
         btn.disabled = true;
@@ -313,7 +362,7 @@ document.getElementById('pwForm')?.addEventListener('submit', function(e) {
     }
 });
 
-// Reset spinner saat navigasi back/forward di HP
+// ── Reset spinner di HP ──────────────────────────────────────────────
 window.addEventListener('pageshow', function(e) {
     if (!e.persisted) return;
     const s = document.getElementById('saveBtn');
