@@ -453,7 +453,10 @@ class PenilaianController extends Controller
         try {
             $nilaiAkhir   = 0;
             $detailScores = [];
+            $totalBobot   = 0; // akumulasi bobot aktual semua kriteria yang dinilai
 
+            // Pass 1: hitung nilai per kriteria dan akumulasi total bobot
+            $kriteriaResults = [];
             foreach ($request->kriteria as $kriteriaData) {
                 $kriteria    = KriteriaPenilaian::findOrFail($kriteriaData['id']);
                 $sopList     = is_array($kriteria->sop_checklist) ? $kriteria->sop_checklist : [];
@@ -464,10 +467,26 @@ class PenilaianController extends Controller
                 // Nilai per kriteria: persentase SOP terpenuhi × 100
                 $nilaiKriteria = $totalSop > 0
                     ? round((count($checkedSop) / $totalSop) * 100, 2)
-                    : 0;
+                    : 100; // jika tidak ada SOP, anggap penuh
 
-                // Kontribusi ke nilai akhir berdasarkan bobot
-                $nilaiAkhir += ($nilaiKriteria * $kriteria->weight / 100);
+                $totalBobot += $kriteria->weight;
+
+                $kriteriaResults[] = compact('kriteria', 'sopList', 'totalSop', 'checkedSop', 'nilaiKriteria');
+            }
+
+            // Pass 2: hitung nilai akhir dengan normalisasi bobot
+            // Jika total bobot = 100, hasil normal. Jika < 100, dinormalisasi agar tidak merugikan siswa.
+            $totalBobot = $totalBobot > 0 ? $totalBobot : 100;
+
+            foreach ($kriteriaResults as $item) {
+                $kriteria      = $item['kriteria'];
+                $nilaiKriteria = $item['nilaiKriteria'];
+                $sopList       = $item['sopList'];
+                $totalSop      = $item['totalSop'];
+                $checkedSop    = $item['checkedSop'];
+
+                // Kontribusi ke nilai akhir — dinormalisasi dengan total bobot aktual
+                $nilaiAkhir += ($nilaiKriteria * $kriteria->weight / $totalBobot);
 
                 // Simpan per kriteria
                 NilaiPraktik::updateOrCreate(
@@ -480,7 +499,6 @@ class PenilaianController extends Controller
                         'guru_id'    => $guruId,
                         'graded_by'  => $guruId,
                         'score'      => $nilaiKriteria,
-                        // Simpan detail SOP yang dicentang sebagai JSON di feedback
                         'feedback'   => json_encode([
                             'checked_sop'   => $checkedSop,
                             'total_sop'     => $totalSop,

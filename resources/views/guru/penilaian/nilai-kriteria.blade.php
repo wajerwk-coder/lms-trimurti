@@ -389,15 +389,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Recalculate all scores ─────────────────────────────────────────────
     function recalcAll() {
-        let finalScore  = 0;
-        let totalChecked = 0;
+        let totalWeighted = 0;
+        let totalBobot    = 0;
+        let totalChecked  = 0;
 
+        // Pass 1: kumpulkan data per kriteria dan total bobot
+        const kriteriaData = [];
         kriteriaBlocks.forEach(block => {
             const kriteriaId = block.dataset.kriteriaId;
             const weight     = parseFloat(block.dataset.weight) || 0;
             const totalSop   = parseInt(block.dataset.totalSop) || 0;
 
-            // Find ki (kriteria array index) from hidden input
             const hiddenInput = block.querySelector('input[name^="kriteria"][name$="[id]"]');
             if (!hiddenInput) return;
             const match = hiddenInput.name.match(/kriteria\[(\d+)\]/);
@@ -405,29 +407,33 @@ document.addEventListener('DOMContentLoaded', function () {
             const ki = match[1];
 
             const checkboxes = block.querySelectorAll('.sop-checkbox');
-            let checked      = 0;
+            let checked = 0;
             checkboxes.forEach(cb => { if (cb.checked) checked++; });
             totalChecked += checked;
 
-            // Nilai kriteria ini
-            const nilaiKriteria = totalSop > 0 ? (checked / totalSop) * 100 : 0;
-            const contribution  = (nilaiKriteria * weight / 100);
-            finalScore += contribution;
+            const nilaiKriteria = totalSop > 0 ? (checked / totalSop) * 100 : 100;
+            totalBobot += weight;
+            totalWeighted += nilaiKriteria * weight;
 
-            // Update per-kriteria score display
-            const scoreEl = document.getElementById(`score-${kriteriaId}`);
-            if (scoreEl) scoreEl.textContent = nilaiKriteria.toFixed(1);
+            kriteriaData.push({ kriteriaId, weight, totalSop, checked, nilaiKriteria, ki });
+        });
 
-            // Update progress bar
-            const progressBar = block.querySelector(`.checklist-progress-${ki}`);
-            const labelEl     = block.querySelector(`.checked-label-${ki}`);
-            const pctEl       = block.querySelector(`.checked-pct-${ki}`);
+        // Pass 2: hitung nilai akhir dengan normalisasi bobot aktual
+        const bobotDivisor = totalBobot > 0 ? totalBobot : 100;
+        const finalScore   = Math.round((totalWeighted / bobotDivisor) * 10) / 10;
+
+        // Update tampilan per kriteria
+        kriteriaData.forEach(({ kriteriaId, totalSop, checked, nilaiKriteria, ki }) => {
+            const scoreEl    = document.getElementById(`score-${kriteriaId}`);
+            const progressBar = document.querySelector(`.checklist-progress-${ki}`);
+            const labelEl    = document.querySelector(`.checked-label-${ki}`);
+            const pctEl      = document.querySelector(`.checked-pct-${ki}`);
+
+            if (scoreEl)     scoreEl.textContent = nilaiKriteria.toFixed(1);
             if (progressBar) progressBar.style.width = (totalSop > 0 ? (checked/totalSop)*100 : 0) + '%';
             if (labelEl)     labelEl.textContent = `${checked}/${totalSop} item`;
             if (pctEl)       pctEl.textContent   = (totalSop > 0 ? Math.round(checked/totalSop*100) : 0) + '%';
         });
-
-        finalScore = Math.round(finalScore * 10) / 10;
 
         // Update live panel
         const liveScore = document.getElementById('liveScore');
