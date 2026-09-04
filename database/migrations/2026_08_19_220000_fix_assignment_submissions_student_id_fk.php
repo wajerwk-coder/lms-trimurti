@@ -6,60 +6,52 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Fix FK student_id di assignment_submissions.
- *
- * Masalah: student_id FK ke tabel `users` (lama) tapi user disimpan di `users_central`.
- * Solusi:  Drop FK constraint student_id, buat ulang FK ke users_central.
- * Efek:    Pengumpulan tugas tidak lagi gagal karena FK violation.
+ * Fix FK student_id di assignment_submissions:
+ * Sebelumnya FK ke tabel 'users' (lama), sekarang FK ke 'users_central'.
+ * Juga tambah kolom siswa_id jika belum ada.
  */
 return new class extends Migration
 {
     public function up(): void
     {
         Schema::table('assignment_submissions', function (Blueprint $table) {
-            // Drop FK lama ke tabel users
+            // Drop FK lama ke tabel users jika ada
             try {
-                $table->dropForeign('assignment_submissions_student_id_foreign');
+                $table->dropForeign(['student_id']);
+            } catch (\Throwable $e) {
+                // Mungkin sudah tidak ada, lanjut
+            }
+
+            // Hapus unique constraint lama [assignment_id, student_id] jika ada
+            try {
+                $table->dropUnique('as_unique_submission');
             } catch (\Throwable $e) {
                 // Mungkin sudah tidak ada
             }
-        });
 
-        // Sync: isi student_id dengan nilai dari siswa_id (users_central.id)
-        // agar konsisten — student_id sekarang sama nilainya dengan siswa_id
-        DB::statement("
-            UPDATE assignment_submissions
-            SET student_id = siswa_id
-            WHERE siswa_id IS NOT NULL
-              AND (student_id IS NULL OR student_id != siswa_id)
-        ");
+            // Buat FK student_id ke users_central
+            // student_id sekarang nullable karena kita pakai siswa_id sebagai primary
+            if (Schema::hasColumn('assignment_submissions', 'student_id')) {
+                // Ubah jadi nullable dulu agar tidak error
+                $table->unsignedBigInteger('student_id')->nullable()->change();
+            }
 
-        Schema::table('assignment_submissions', function (Blueprint $table) {
-            // Buat FK baru ke users_central
+            // Pastikan siswa_id ada
+            if (!Schema::hasColumn('assignment_submissions', 'siswa_id')) {
+                $table->unsignedBigInteger('siswa_id')->nullable()->after('student_id');
+            }
+
+            // Unique constraint baru berdasarkan assignment_id + siswa_id
             try {
-                $table->foreign('student_id')
-                      ->references('id')
-                      ->on('users_central')
-                      ->onDelete('cascade');
+                $table->unique(['assignment_id', 'siswa_id'], 'as_unique_siswa_submission');
             } catch (\Throwable $e) {
-                // Jika FK sudah ada atau gagal, biarkan nullable saja
+                // Mungkin sudah ada
             }
         });
     }
 
     public function down(): void
     {
-        Schema::table('assignment_submissions', function (Blueprint $table) {
-            try {
-                $table->dropForeign('assignment_submissions_student_id_foreign');
-            } catch (\Throwable $e) {}
-
-            try {
-                $table->foreign('student_id')
-                      ->references('id')
-                      ->on('users')
-                      ->onDelete('cascade');
-            } catch (\Throwable $e) {}
-        });
+        // Tidak di-rollback untuk keamanan
     }
 };

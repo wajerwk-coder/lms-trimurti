@@ -1,6 +1,8 @@
 @php
-    // Baca fresh dari DB agar selalu dapat foto terbaru
+    // Baca SELALU fresh dari DB — bypass semua cache sesi
     $user         = \App\Models\UserCentral::find(Auth::id());
+    // Sync Auth::user() dengan data fresh agar header juga dapat data terbaru
+    if ($user) { Auth::setUser($user); }
     $pendingGrade = isset($stats['pending_grading']) ? (int)$stats['pending_grading'] : 0;
     $guruProfile  = $user->guruProfile;
     // Foto disimpan di users_central.photo — pakai photo_url accessor yang sudah handle http URL
