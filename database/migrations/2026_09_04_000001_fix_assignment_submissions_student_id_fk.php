@@ -6,30 +6,36 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Drop FK constraint pada student_id yang merujuk ke tabel `users` (lama).
- * Tabel users_central adalah tabel user aktif, bukan `users`.
- * student_id akan tetap ada sebagai kolom biasa tanpa FK constraint.
+ * Fix FK constraint: student_id di assignment_submissions references tabel users (lama)
+ * tapi semua user sekarang ada di users_central.
+ * Solusi: drop FK constraint student_id, ubah menjadi kolom biasa.
+ * siswa_id (FK ke users_central) sudah ada dan sudah benar.
  */
 return new class extends Migration
 {
     public function up(): void
     {
+        // Drop FK constraint student_id yang references tabel users lama
         Schema::table('assignment_submissions', function (Blueprint $table) {
-            // Drop FK lama yang merujuk ke tabel `users`
+            // Cek apakah FK ada sebelum drop
             try {
                 $table->dropForeign('assignment_submissions_student_id_foreign');
-            } catch (\Exception $e) {
-                // FK mungkin sudah tidak ada
+            } catch (\Throwable $e) {
+                // FK mungkin sudah tidak ada, lanjutkan
             }
-
-            // Ubah student_id menjadi nullable tanpa FK constraint
-            // (data tetap ada, hanya FK-nya yang dihapus)
-            $table->unsignedBigInteger('student_id')->nullable()->change();
         });
+
+        // Sync student_id dengan siswa_id untuk data yang sudah ada
+        // (agar tidak ada NULL atau mismatch)
+        DB::statement("
+            UPDATE assignment_submissions
+            SET student_id = siswa_id
+            WHERE siswa_id IS NOT NULL AND (student_id IS NULL OR student_id != siswa_id)
+        ");
     }
 
     public function down(): void
     {
-        // Tidak perlu rollback karena tabel `users` sudah tidak relevan
+        // Tidak perlu rollback FK lama
     }
 };
