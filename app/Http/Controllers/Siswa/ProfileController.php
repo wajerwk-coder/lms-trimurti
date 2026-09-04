@@ -83,6 +83,10 @@ class ProfileController extends Controller
         // Refresh session user dari DB
         $freshUser = \App\Models\UserCentral::find($user->id);
         \Illuminate\Support\Facades\Auth::setUser($freshUser);
+        request()->session()->put(
+            \Illuminate\Support\Facades\Auth::guard()->getName(),
+            $freshUser->getAuthIdentifier()
+        );
         \Illuminate\Support\Facades\Log::info('Siswa photo_url updated', ['user_id' => $user->id, 'photo' => $photoUrl]);
         return response()->json(['success' => true, 'photo' => $photoUrl]);
     }

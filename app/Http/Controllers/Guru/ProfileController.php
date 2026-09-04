@@ -135,9 +135,15 @@ class ProfileController extends Controller
             ->where('id', $user->id)
             ->update(['photo' => $photoUrl, 'updated_at' => now()]);
 
-        // Paksa session user refresh dari DB
+        // Paksa session user refresh dari DB — hapus cached user di session
+        // Cara paling reliable: re-login user dengan data fresh dari DB
         $freshUser = \App\Models\UserCentral::find($user->id);
         \Illuminate\Support\Facades\Auth::setUser($freshUser);
+        // Juga update session guard agar request berikutnya baca dari DB
+        request()->session()->put(
+            \Illuminate\Support\Facades\Auth::guard()->getName(),
+            $freshUser->getAuthIdentifier()
+        );
 
         Log::info('Guru photo_url updated', ['user_id' => $user->id, 'photo' => $photoUrl]);
 
