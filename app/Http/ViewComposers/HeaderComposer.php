@@ -20,7 +20,14 @@ class HeaderComposer
 
         try {
             $userId = Auth::id();
-            $role   = Auth::user()->role ?? 'guest';
+
+            // Paksa reload user dari DB agar photo_url selalu fresh (tidak pakai cached object)
+            $freshUser = \App\Models\UserCentral::find($userId);
+            if ($freshUser) {
+                Auth::setUser($freshUser);
+            }
+
+            $role = Auth::user()->role ?? 'guest';
 
             // ── Notifikasi ─────────────────────────────────────────
             $notifications = collect();

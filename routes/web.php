@@ -55,22 +55,6 @@ use App\Http\Controllers\Siswa\ProfileController as SiswaProfileController;
 */
 Route::get('/', [HomeController::class, 'welcome'])->name('welcome');
 
-// TEMPORARY DEBUG
-Route::get('/debug-photo', function () {
-    if (!\Illuminate\Support\Facades\Auth::check()) return response()->json(['error' => 'Login dulu']);
-    $row = \Illuminate\Support\Facades\DB::table('users_central')->where('id', \Illuminate\Support\Facades\Auth::id())->first(['id','name','role','photo']);
-    $photoRaw = $row->photo ?? null;
-    // Cek karakter tersembunyi
-    $photoHex = $photoRaw ? bin2hex(substr($photoRaw, 0, 20)) : null;
-    $photoLen  = $photoRaw ? strlen($photoRaw) : 0;
-    return response()->json([
-        'photo_raw'       => $photoRaw,
-        'photo_hex_start' => $photoHex,
-        'photo_length'    => $photoLen,
-        'starts_with_https' => $photoRaw ? str_starts_with($photoRaw, 'https://') : false,
-        'after_stripslash'  => $photoRaw ? stripslashes($photoRaw) : null,
-    ]);
-})->middleware('auth');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::post('/contact', [HomeController::class, 'sendContact'])->name('contact.send');
