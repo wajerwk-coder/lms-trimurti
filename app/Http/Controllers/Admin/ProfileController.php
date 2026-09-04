@@ -32,6 +32,9 @@ class ProfileController extends Controller
         \Illuminate\Support\Facades\DB::table('users_central')
             ->where('id', $user->id)
             ->update(['photo' => $photoUrl, 'updated_at' => now()]);
+        // Refresh session user dari DB
+        $freshUser = \App\Models\UserCentral::find($user->id);
+        \Illuminate\Support\Facades\Auth::setUser($freshUser);
         \Illuminate\Support\Facades\Log::info('Admin photo_url updated', ['user_id' => $user->id, 'photo' => $photoUrl]);
         return response()->json(['success' => true, 'photo' => $photoUrl]);
     }

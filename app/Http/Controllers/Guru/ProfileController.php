@@ -135,6 +135,10 @@ class ProfileController extends Controller
             ->where('id', $user->id)
             ->update(['photo' => $photoUrl, 'updated_at' => now()]);
 
+        // Paksa session user refresh dari DB
+        $freshUser = \App\Models\UserCentral::find($user->id);
+        \Illuminate\Support\Facades\Auth::setUser($freshUser);
+
         Log::info('Guru photo_url updated', ['user_id' => $user->id, 'photo' => $photoUrl]);
 
         return response()->json(['success' => true, 'photo' => $photoUrl]);
