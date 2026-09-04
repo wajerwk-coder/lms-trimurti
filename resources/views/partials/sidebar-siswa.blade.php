@@ -1,5 +1,7 @@
 @php
-    $user         = Auth::user();
+@php
+    // Baca fresh dari DB agar selalu dapat foto terbaru
+    $user         = \App\Models\UserCentral::find(Auth::id());
     $siswaProfile = \App\Models\Siswa::where('user_id', auth()->id())
                         ->with('kelas')
                         ->first();

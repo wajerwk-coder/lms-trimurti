@@ -1,5 +1,6 @@
 @php
-    $user               = Auth::user();
+    // Baca fresh dari DB agar selalu dapat foto terbaru
+    $user               = \App\Models\UserCentral::find(Auth::id());
     $adminPhotoSrc      = $user->photo_url ?? 'https://ui-avatars.com/api/?name='.urlencode($user->name ?? 'A').'&background=3b82f6&color=fff&size=64';
     $adminPhotoFallback = 'https://ui-avatars.com/api/?name='.urlencode($user->name ?? 'A').'&background=3b82f6&color=fff&size=64';
 @endphp

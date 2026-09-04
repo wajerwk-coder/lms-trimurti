@@ -1,5 +1,6 @@
 @php
-    $user         = Auth::user();
+    // Baca fresh dari DB agar selalu dapat foto terbaru
+    $user         = \App\Models\UserCentral::find(Auth::id());
     $pendingGrade = isset($stats['pending_grading']) ? (int)$stats['pending_grading'] : 0;
     $guruProfile  = $user->guruProfile;
     // Foto disimpan di users_central.photo — pakai photo_url accessor yang sudah handle http URL
