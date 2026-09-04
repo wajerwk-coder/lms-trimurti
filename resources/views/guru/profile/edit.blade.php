@@ -27,16 +27,27 @@
         <div class="card border-0 shadow-sm text-center">
             <div class="card-body py-4">
                 {{-- Avatar --}}
-                @php $avatarSrc = $user->photo_url; @endphp
+                @php
+                    // Query langsung dari DB untuk pastikan nilai terbaru
+                    $freshPhoto = \App\Models\UserCentral::find(Auth::id())?->photo;
+                    $avatarSrc  = $freshPhoto && str_starts_with($freshPhoto, 'http')
+                        ? $freshPhoto
+                        : ($freshPhoto ? asset('storage/' . $freshPhoto)
+                        : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=0f766e&color=fff&size=128&bold=true');
+                @endphp
                 <img src="{{ $avatarSrc }}"
                      alt="{{ $user->name }}"
                      class="rounded-circle border mb-3"
                      id="avatarPreview"
                      style="width:90px;height:90px;object-fit:cover;"
                      onerror="console.error('Avatar load failed:', this.src); this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=0f766e&color=fff&size=128&bold=true'">
-                @if($user->photo)
-                <div class="small text-muted mb-1" style="font-size:.65rem;">
-                    <i class="fas fa-check-circle text-success me-1"></i>Foto tersimpan
+                @if($freshPhoto && str_starts_with($freshPhoto, 'http'))
+                <div class="small text-success mb-1" style="font-size:.65rem;">
+                    <i class="fas fa-check-circle me-1"></i>Foto Cloudinary aktif
+                </div>
+                @elseif($freshPhoto)
+                <div class="small text-warning mb-1" style="font-size:.65rem;">
+                    <i class="fas fa-exclamation-circle me-1"></i>Foto lokal (tidak tersedia di Railway)
                 </div>
                 @endif
 
