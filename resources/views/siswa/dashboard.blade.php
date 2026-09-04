@@ -87,21 +87,16 @@
     <div class="row align-items-center g-3">
         <div class="col-md-7">
             <div class="d-flex align-items-center gap-3 mb-2">
-                @if(auth()->user()->photo)
-                    <img src="{{ asset('storage/'.auth()->user()->photo) }}"
-                         class="rounded-circle border border-3 border-white border-opacity-50 flex-shrink-0"
-                         style="width:52px;height:52px;object-fit:cover;" alt="">
-                @elseif($siswaProfile?->foto)
-                    <img src="{{ asset('storage/'.$siswaProfile->foto) }}"
-                         class="rounded-circle border border-3 border-white border-opacity-50 flex-shrink-0"
-                         style="width:52px;height:52px;object-fit:cover;" alt="">
-                @else
-                    <div class="rounded-circle bg-white bg-opacity-20 d-flex align-items-center
-                                justify-content-center fw-bold text-white flex-shrink-0"
-                         style="width:52px;height:52px;font-size:1.4rem;">
-                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                    </div>
-                @endif
+                @php $heroPhoto = auth()->user()->photo_url; @endphp
+                <img src="{{ $heroPhoto }}"
+                     class="rounded-circle border border-3 border-white border-opacity-50 flex-shrink-0"
+                     style="width:52px;height:52px;object-fit:cover;" alt="{{ auth()->user()->name }}"
+                     onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="rounded-circle bg-white bg-opacity-20 d-none align-items-center
+                            justify-content-center fw-bold text-white flex-shrink-0"
+                     style="width:52px;height:52px;font-size:1.4rem;">
+                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                </div>
                 <div class="text-white">
                     <h4 class="fw-bold mb-0 lh-1">Halo, {{ auth()->user()->name }}! 👋</h4>
                     <small class="opacity-75">{{ now()->translatedFormat('l, d F Y') }}

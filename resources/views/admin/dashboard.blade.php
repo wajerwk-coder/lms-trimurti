@@ -120,7 +120,13 @@
     <div class="row align-items-center g-3">
         <div class="col-md-7">
             <div class="d-flex align-items-center gap-3 mb-2">
-                <div class="rounded-circle bg-white bg-opacity-20 d-flex align-items-center justify-content-center flex-shrink-0"
+                @php $heroPhoto = auth()->user()->photo_url; @endphp
+                <img src="{{ $heroPhoto }}"
+                     class="rounded-circle border border-3 border-white border-opacity-40 flex-shrink-0"
+                     style="width:50px;height:50px;object-fit:cover;"
+                     alt="{{ auth()->user()->name }}"
+                     onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="rounded-circle bg-white bg-opacity-20 d-none align-items-center justify-content-center flex-shrink-0"
                      style="width:50px;height:50px;">
                     <i class="fas fa-user-shield text-white fa-lg"></i>
                 </div>

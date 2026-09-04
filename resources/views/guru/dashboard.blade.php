@@ -168,17 +168,16 @@
         {{-- Kiri: sapaan + tombol aksi --}}
         <div class="col-md-7">
             <div class="d-flex align-items-center gap-3 mb-3">
-                @if(auth()->user()->photo)
-                    <img src="{{ asset('storage/'.auth()->user()->photo) }}"
-                         class="rounded-circle border border-3 border-white border-opacity-40 flex-shrink-0"
-                         style="width:54px;height:54px;object-fit:cover;" alt="">
-                @else
-                    <div class="rounded-circle bg-white bg-opacity-20 d-flex align-items-center
-                                justify-content-center fw-bold text-white flex-shrink-0"
-                         style="width:54px;height:54px;font-size:1.4rem;">
-                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                    </div>
-                @endif
+                @php $heroPhoto = auth()->user()->photo_url; @endphp
+                <img src="{{ $heroPhoto }}"
+                     class="rounded-circle border border-3 border-white border-opacity-40 flex-shrink-0"
+                     style="width:54px;height:54px;object-fit:cover;" alt=""
+                     onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="rounded-circle bg-white bg-opacity-20 d-none align-items-center
+                            justify-content-center fw-bold text-white flex-shrink-0"
+                     style="width:54px;height:54px;font-size:1.4rem;">
+                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                </div>
                 <div class="text-white">
                     <div style="font-size:.78rem;opacity:.7;margin-bottom:.15rem;">
                         {{ now()->translatedFormat('l, d F Y') }}
