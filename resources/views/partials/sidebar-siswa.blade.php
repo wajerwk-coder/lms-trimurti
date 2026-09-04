@@ -1,12 +1,13 @@
 @php
-@php
     // Baca fresh dari DB agar selalu dapat foto terbaru
-    $user         = \App\Models\UserCentral::find(Auth::id());
-    $siswaProfile = \App\Models\Siswa::where('user_id', auth()->id())
+    $sidebarUser         = \App\Models\UserCentral::find(Auth::id());
+    $sidebarSiswaProfile = \App\Models\Siswa::where('user_id', auth()->id())
                         ->with('kelas')
                         ->first();
-    $photoSrc = $user->photo_url;
-    $photoFallback = 'https://ui-avatars.com/api/?name='.urlencode($user->name ?? 'S').'&background=7c3aed&color=fff&size=64';
+    // Ambil foto dari users_central.photo (Cloudinary URL)
+    $photoSrc = $sidebarUser?->photo_url
+                ?? 'https://ui-avatars.com/api/?name='.urlencode($sidebarUser?->name ?? 'S').'&background=7c3aed&color=fff&size=64';
+    $photoFallback = 'https://ui-avatars.com/api/?name='.urlencode($sidebarUser?->name ?? 'S').'&background=7c3aed&color=fff&size=64';
 @endphp
 
 <aside class="sidebar" id="sidebar" data-role="siswa">
@@ -31,9 +32,9 @@
              alt="Avatar"
              onerror="this.onerror=null;this.src='{{ $photoFallback }}'">
         <div class="sidebar-user-info">
-            <span class="sidebar-user-name">{{ Str::limit($user->name ?? 'Siswa', 18) }}</span>
+            <span class="sidebar-user-name">{{ Str::limit($sidebarUser?->name ?? 'Siswa', 18) }}</span>
             <span class="sidebar-user-role">
-                {{ $siswaProfile?->kelas?->name ?? ($siswaProfile?->nis ? 'NIS: '.$siswaProfile->nis : 'Siswa') }}
+                {{ $sidebarSiswaProfile?->kelas?->name ?? ($sidebarSiswaProfile?->nis ? 'NIS: '.$sidebarSiswaProfile->nis : 'Siswa') }}
             </span>
         </div>
     </div>
