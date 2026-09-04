@@ -49,8 +49,10 @@ class DashboardController extends Controller
                     $q->where('kelas_id', $kelasId)->orWhereNull('kelas_id');
                 })
                 ->count(),
+            // completed_assignments = semua tugas yang sudah DIKUMPULKAN (ada submission)
+            // bukan hanya yang sudah dinilai
             'completed_assignments' => AssignmentSubmission::where('siswa_id', $siswaId)
-                ->whereNotNull('score')
+                ->whereNotNull('submitted_at')
                 ->count(),
             'completed_practicals' => \App\Models\NilaiPraktik::where('siswa_id', $siswaId)
                 ->whereNull('criteria_id')
