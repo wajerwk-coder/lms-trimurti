@@ -146,7 +146,7 @@ class ReportController extends Controller
         $guruId = Auth::id();
 
         $filters = [
-            'start_date' => $request->start_date ?? Carbon::now()->subMonth()->format('Y-m-d'),
+            'start_date' => $request->start_date ?? Carbon::now()->subMonths(6)->format('Y-m-d'),
             'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
             'kelas'      => $request->kelas,
         ];
@@ -183,7 +183,7 @@ class ReportController extends Controller
         $guruId = Auth::id();
 
         $filters = [
-            'start_date' => $request->start_date ?? Carbon::now()->subMonth()->format('Y-m-d'),
+            'start_date' => $request->start_date ?? Carbon::now()->subMonths(6)->format('Y-m-d'),
             'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
             'kelas'      => $request->kelas,
             'status'     => $request->status,
@@ -250,7 +250,7 @@ class ReportController extends Controller
         $guruId = Auth::id();
 
         $filters = [
-            'start_date' => $request->start_date ?? Carbon::now()->subMonth()->format('Y-m-d'),
+            'start_date' => $request->start_date ?? Carbon::now()->subMonths(6)->format('Y-m-d'),
             'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
             'status'     => $request->status,
         ];
@@ -261,13 +261,19 @@ class ReportController extends Controller
             'submissions as pending_count' => fn($q) => $q->whereNull('score'),
         ])
         ->where('guru_id', $guruId)
-        ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']]);
+        ->whereBetween('created_at', [
+            $filters['start_date'] . ' 00:00:00',
+            $filters['end_date']   . ' 23:59:59',
+        ]);
 
         $assignments = $query->latest()->paginate(15);
 
         $subBase = AssignmentSubmission::whereHas('assignment', fn($q) => $q
             ->where('guru_id', $guruId)
-            ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']])
+            ->whereBetween('created_at', [
+                $filters['start_date'] . ' 00:00:00',
+                $filters['end_date']   . ' 23:59:59',
+            ])
         );
 
         $assignmentStats = [
@@ -287,27 +293,29 @@ class ReportController extends Controller
         $guruId = Auth::id();
 
         $filters = [
-            'start_date' => $request->start_date ?? Carbon::now()->subMonth()->format('Y-m-d'),
+            'start_date' => $request->start_date ?? Carbon::now()->subMonths(6)->format('Y-m-d'),
             'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
         ];
 
+        $start = $filters['start_date'] . ' 00:00:00';
+        $end   = $filters['end_date']   . ' 23:59:59';
+
         $materials = Material::withCount('downloads')
             ->where('guru_id', $guruId)
-            ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']])
+            ->whereBetween('created_at', [$start, $end])
             ->latest()->paginate(15);
 
         $dlBase = MaterialDownload::whereHas('material', fn($q) => $q
             ->where('guru_id', $guruId)
-            ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']])
-        )->whereBetween('downloaded_at', [$filters['start_date'], $filters['end_date']]);
+            ->whereBetween('created_at', [$start, $end])
+        )->whereBetween('downloaded_at', [$start, $end]);
 
         $materialStats = [
             'total_downloads'  => (clone $dlBase)->count(),
             'total_views'      => Material::where('guru_id', $guruId)
-                ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']])
+                ->whereBetween('created_at', [$start, $end])
                 ->sum('views_count') ?? 0,
             'most_downloaded'  => Material::where('guru_id', $guruId)
-                ->whereBetween('created_at', [$filters['start_date'], $filters['end_date']])
                 ->orderByDesc('downloads_count')->first(),
         ];
 
@@ -338,7 +346,7 @@ class ReportController extends Controller
         $guruId = Auth::id();
 
         $filters = [
-            'start_date' => $request->start_date ?? Carbon::now()->subMonth()->format('Y-m-d'),
+            'start_date' => $request->start_date ?? Carbon::now()->subMonths(6)->format('Y-m-d'),
             'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
             'kelas_id'   => $request->kelas_id,
         ];
@@ -435,7 +443,7 @@ class ReportController extends Controller
         $guruId = Auth::id();
 
         $filters = [
-            'start_date' => $request->start_date ?? Carbon::now()->subMonth()->format('Y-m-d'),
+            'start_date' => $request->start_date ?? Carbon::now()->subMonths(6)->format('Y-m-d'),
             'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
             'kelas_id'   => $request->kelas_id,
         ];
