@@ -139,9 +139,19 @@ class MaterialController extends Controller
             ->findOrFail($id);
 
         if (!$material->file_url) {
-            return back()->with('error', 'File materi tidak tersedia.');
+            return back()->with('error', 'File materi tidak tersedia untuk diunduh.');
         }
 
+        // Catat download
+        $this->logDownload($material->id);
+        DB::table('materials')->where('id', $material->id)->increment('downloads_count');
+
+        // Jika file_url adalah URL Cloudinary / http → redirect langsung
+        if (str_starts_with($material->file_url, 'http')) {
+            return redirect($material->file_url);
+        }
+
+        // File lokal — cari di storage
         $resolvedPath = $this->resolveFilePath($material->file_url);
 
         if (!$resolvedPath) {
@@ -150,13 +160,8 @@ class MaterialController extends Controller
                 'file_url'    => $material->file_url,
                 'siswa_id'    => Auth::id(),
             ]);
-            return back()->with('error', 'File tidak ditemukan di server.');
+            return back()->with('error', 'File tidak ditemukan di server. Mungkin file sudah terhapus karena redeploy. Hubungi guru untuk upload ulang.');
         }
-
-        // Catat download
-        $this->logDownload($material->id);
-
-        DB::table('materials')->where('id', $material->id)->increment('downloads_count');
 
         $ext      = pathinfo($material->file_url, PATHINFO_EXTENSION);
         $filename = preg_replace('/[^a-zA-Z0-9\-_.]/', '_', $material->title) . '.' . $ext;

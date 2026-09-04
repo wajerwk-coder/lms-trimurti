@@ -100,8 +100,40 @@ class MaterialController extends Controller
             if ($request->hasFile('file')) {
                 $file     = $request->file('file');
                 $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9.]/', '_', $file->getClientOriginalName());
-                $file->storeAs('materials', $filename, 'public');
-                $material->file_url = $filename;
+
+                // Coba upload ke Cloudinary jika dikonfigurasi
+                $cloudName = config('cloudinary.cloud_name');
+                $apiKey    = config('cloudinary.api_key');
+                $apiSecret = config('cloudinary.api_secret');
+
+                if ($cloudName && $apiKey && $apiSecret && $cloudName !== 'aw9h9icb_placeholder') {
+                    try {
+                        $cloudinary = new \Cloudinary\Cloudinary([
+                            'cloud' => [
+                                'cloud_name' => $cloudName,
+                                'api_key'    => $apiKey,
+                                'api_secret' => $apiSecret,
+                            ],
+                            'url' => ['secure' => true],
+                        ]);
+                        $result = $cloudinary->uploadApi()->upload(
+                            $file->getRealPath(),
+                            [
+                                'folder'        => 'materials',
+                                'resource_type' => 'raw',
+                                'public_id'     => $filename,
+                            ]
+                        );
+                        $material->file_url = $result['secure_url'];
+                    } catch (\Exception $ce) {
+                        Log::warning('Cloudinary upload failed, fallback local: ' . $ce->getMessage());
+                        $file->storeAs('materials', $filename, 'public');
+                        $material->file_url = $filename;
+                    }
+                } else {
+                    $file->storeAs('materials', $filename, 'public');
+                    $material->file_url = $filename;
+                }
             }
 
             $material->save();
@@ -196,13 +228,47 @@ class MaterialController extends Controller
                 : null;
 
             if ($request->hasFile('file')) {
-                if ($material->file_url) {
-                    Storage::disk('public')->delete('materials/' . $material->file_url);
-                }
                 $file     = $request->file('file');
                 $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9.]/', '_', $file->getClientOriginalName());
-                $file->storeAs('materials', $filename, 'public');
-                $material->file_url = $filename;
+
+                $cloudName = config('cloudinary.cloud_name');
+                $apiKey    = config('cloudinary.api_key');
+                $apiSecret = config('cloudinary.api_secret');
+
+                if ($cloudName && $apiKey && $apiSecret && $cloudName !== 'aw9h9icb_placeholder') {
+                    try {
+                        $cloudinary = new \Cloudinary\Cloudinary([
+                            'cloud' => [
+                                'cloud_name' => $cloudName,
+                                'api_key'    => $apiKey,
+                                'api_secret' => $apiSecret,
+                            ],
+                            'url' => ['secure' => true],
+                        ]);
+                        $result = $cloudinary->uploadApi()->upload(
+                            $file->getRealPath(),
+                            [
+                                'folder'        => 'materials',
+                                'resource_type' => 'raw',
+                                'public_id'     => $filename,
+                            ]
+                        );
+                        $material->file_url = $result['secure_url'];
+                    } catch (\Exception $ce) {
+                        Log::warning('Cloudinary update upload failed: ' . $ce->getMessage());
+                        if ($material->file_url && !str_starts_with($material->file_url, 'http')) {
+                            Storage::disk('public')->delete('materials/' . $material->file_url);
+                        }
+                        $file->storeAs('materials', $filename, 'public');
+                        $material->file_url = $filename;
+                    }
+                } else {
+                    if ($material->file_url && !str_starts_with($material->file_url, 'http')) {
+                        Storage::disk('public')->delete('materials/' . $material->file_url);
+                    }
+                    $file->storeAs('materials', $filename, 'public');
+                    $material->file_url = $filename;
+                }
             }
 
             $material->save();
