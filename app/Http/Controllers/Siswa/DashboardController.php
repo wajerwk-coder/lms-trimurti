@@ -164,15 +164,17 @@ class DashboardController extends Controller
     {
         $assignmentScores = AssignmentSubmission::where('siswa_id', $siswaId)
             ->whereNotNull('score')
+            ->where('score', '<=', 100) // abaikan nilai tidak valid
             ->pluck('score');
-            
+
         $practicalScores = NilaiPraktik::where('siswa_id', $siswaId)
             ->whereNull('criteria_id')
             ->whereNotNull('score')
+            ->where('score', '<=', 100) // abaikan nilai overflow (> 100)
             ->pluck('score');
-            
+
         $allScores = $assignmentScores->merge($practicalScores);
-        
+
         return $allScores->isNotEmpty() ? round($allScores->avg(), 2) : 0;
     }
     
@@ -191,6 +193,7 @@ class DashboardController extends Controller
         $avgTugas = AssignmentSubmission::selectRaw('siswa_id, AVG(score) as avg')
             ->whereIn('siswa_id', $classUcIds)
             ->whereNotNull('score')
+            ->where('score', '<=', 100)
             ->groupBy('siswa_id')
             ->pluck('avg', 'siswa_id');
 
@@ -199,6 +202,7 @@ class DashboardController extends Controller
             ->whereIn('siswa_id', $classUcIds)
             ->whereNull('criteria_id')
             ->whereNotNull('score')
+            ->where('score', '<=', 100)
             ->groupBy('siswa_id')
             ->pluck('avg', 'siswa_id');
 
