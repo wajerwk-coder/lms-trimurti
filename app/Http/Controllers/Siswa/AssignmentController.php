@@ -140,8 +140,16 @@ class AssignmentController extends Controller
             if (!$submission) {
                 $submission = new AssignmentSubmission();
                 $submission->assignment_id = $id;
-                $submission->siswa_id      = $ucId;
-                $submission->student_id    = $ucId; // legacy FK, isi sama
+                $submission->student_id    = $ucId; // legacy FK (NOT NULL di migration awal)
+                // siswa_id hanya set jika kolom ada
+                if (\Illuminate\Support\Facades\Schema::hasColumn('assignment_submissions', 'siswa_id')) {
+                    $submission->siswa_id = $ucId;
+                }
+            } else {
+                // Update siswa_id jika kolom ada
+                if (\Illuminate\Support\Facades\Schema::hasColumn('assignment_submissions', 'siswa_id')) {
+                    $submission->siswa_id = $ucId;
+                }
             }
 
             $submission->submission_text = $request->submission_text;
@@ -164,8 +172,14 @@ class AssignmentController extends Controller
                 $file->storeAs('assignment_submissions', $filename, 'public');
 
                 $submission->file_path = $filename;
-                $submission->file_size = $file->getSize(); // simpan ukuran file
-                $submission->file_url  = 'assignment_submissions/' . $filename; // simpan relative path
+                // file_size hanya simpan jika kolom ada di DB
+                if (\Illuminate\Support\Facades\Schema::hasColumn('assignment_submissions', 'file_size')) {
+                    $submission->file_size = $file->getSize();
+                }
+                // file_url hanya simpan jika kolom ada di DB
+                if (\Illuminate\Support\Facades\Schema::hasColumn('assignment_submissions', 'file_url')) {
+                    $submission->file_url = 'assignment_submissions/' . $filename;
+                }
             }
 
             $submission->save();
