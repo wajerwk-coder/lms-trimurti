@@ -140,7 +140,9 @@ class AssignmentController extends Controller
             if (!$submission) {
                 $submission = new AssignmentSubmission();
                 $submission->assignment_id = $id;
-                $submission->student_id    = $ucId; // legacy FK (NOT NULL di migration awal)
+                // student_id FK merujuk ke tabel `users` lama — set NULL karena
+                // ucId adalah ID dari users_central, bukan users
+                $submission->student_id    = null;
                 // siswa_id hanya set jika kolom ada
                 if (\Illuminate\Support\Facades\Schema::hasColumn('assignment_submissions', 'siswa_id')) {
                     $submission->siswa_id = $ucId;
