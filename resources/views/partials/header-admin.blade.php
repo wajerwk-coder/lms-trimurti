@@ -91,18 +91,24 @@
 
         {{-- User Menu --}}
         <div class="dropdown">
-            @php $adminName = Auth::user()->name; $adminEmail = Auth::user()->email; @endphp
+            @php
+                $freshUser = Auth::user()->fresh() ?? Auth::user();
+                $adminName  = $freshUser->name;
+                $adminEmail = $freshUser->email;
+                $adminPhoto = $freshUser->photo_url;
+                $adminPhotoFallback = 'https://ui-avatars.com/api/?name='.urlencode($adminName).'&background=3b82f6&color=fff&size=64';
+            @endphp
             <button class="btn p-0 d-flex align-items-center gap-2 border-0 bg-transparent"
                     style="min-width:0;"
                     type="button" data-bs-toggle="dropdown" aria-expanded="false" id="adminUserMenu">
 
                 {{-- Avatar + online dot --}}
                 <div class="flex-shrink-0 position-relative">
-                    <img src="{{ Auth::user()->photo_url ?? 'https://ui-avatars.com/api/?name='.urlencode($adminName).'&background=3b82f6&color=fff&size=64' }}"
+                    <img src="{{ $adminPhoto }}"
                          alt="Avatar"
                          class="rounded-circle border border-2 shadow-sm"
                          style="width:38px;height:38px;object-fit:cover;border-color:rgba(59,130,246,.3)!important;"
-                         onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($adminName) }}&background=3b82f6&color=fff'">
+                         onerror="this.src='{{ $adminPhotoFallback }}'">
                     <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white"
                           style="width:10px;height:10px;"></span>
                 </div>
@@ -128,9 +134,10 @@
                 {{-- Header profil --}}
                 <li>
                     <div class="px-3 pb-2 pt-1 mb-1 border-bottom d-flex align-items-center gap-2">
-                        <img src="{{ Auth::user()->photo_url ?? 'https://ui-avatars.com/api/?name='.urlencode($adminName).'&background=3b82f6&color=fff&size=64' }}"
+                        <img src="{{ $adminPhoto }}"
                              class="rounded-circle flex-shrink-0"
                              style="width:42px;height:42px;object-fit:cover;"
+                             onerror="this.src='{{ $adminPhotoFallback }}'">
                              onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($adminName) }}&background=3b82f6&color=fff'">
                         <div style="min-width:0;">
                             <div class="fw-bold text-dark text-truncate" style="font-size:.85rem;">

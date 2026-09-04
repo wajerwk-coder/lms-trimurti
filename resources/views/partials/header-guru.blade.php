@@ -99,9 +99,10 @@
         {{-- User Menu --}}
         <div class="dropdown">
             @php
-                $guruProfile = Auth::user()->guruProfile;
-                // Gunakan photo_url accessor yang sudah handle http URL (Cloudinary) vs path lokal
-                $guruPhotoSrc = Auth::user()->photo_url;
+                $guruProfile = Auth::user()->fresh()->guruProfile ?? Auth::user()->guruProfile;
+                // Ambil fresh dari DB agar foto terbaru terbaca
+                $freshUser = Auth::user()->fresh() ?? Auth::user();
+                $guruPhotoSrc = $freshUser->photo_url;
                 $guruPhotoFallback = 'https://ui-avatars.com/api/?name='.urlencode(Auth::user()->name).'&background=0f766e&color=fff&size=64';
             @endphp
             <button class="btn p-0 d-flex align-items-center gap-2 border-0 bg-transparent"

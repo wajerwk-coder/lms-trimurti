@@ -104,8 +104,8 @@
                 {{-- Avatar --}}
                 <div class="flex-shrink-0 position-relative">
                     @php
-                        // Prioritas: users_central.photo (Cloudinary URL), lalu siswa.foto (lokal), lalu ui-avatars
-                        $siswaAvatarSrc = Auth::user()->photo_url;
+                        // Ambil fresh dari DB untuk dapat foto terbaru (Cloudinary URL)
+                        $siswaAvatarSrc = (Auth::user()->fresh() ?? Auth::user())->photo_url;
                     @endphp
                     <img src="{{ $siswaAvatarSrc }}"
                          alt="Avatar"
@@ -137,9 +137,10 @@
                 {{-- Header profil --}}
                 <li>
                     <div class="px-3 pb-2 pt-1 mb-1 border-bottom d-flex align-items-center gap-2">
-                        <img src="{{ $siswaProfile?->foto ? asset('storage/'.$siswaProfile->foto) : 'https://ui-avatars.com/api/?name='.urlencode(Auth::user()->name).'&background=7c3aed&color=fff&size=64' }}"
+                        <img src="{{ $siswaAvatarSrc }}"
                              class="rounded-circle flex-shrink-0"
                              style="width:42px;height:42px;object-fit:cover;"
+                             onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=7c3aed&color=fff'">
                              onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=7c3aed&color=fff'">
                         <div style="min-width:0;">
                             <div class="fw-bold text-dark text-truncate" style="font-size:.85rem;">
