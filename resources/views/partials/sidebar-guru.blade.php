@@ -31,7 +31,7 @@
     <div class="sidebar-user">
         <img src="{{ $guruPhotoSrc }}"
              alt="Avatar"
-             onerror="this.onerror=null;this.src='{{ $guruPhotoFallback }}'">
+             onerror="console.error('Foto gagal dimuat:',this.src);this.onerror=null;this.src='{{ $guruPhotoFallback }}'">
         <div class="sidebar-user-info">
             <span class="sidebar-user-name">{{ Str::limit($user->name ?? 'Guru', 18) }}</span>
             <span class="sidebar-user-role">
