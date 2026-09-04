@@ -155,17 +155,15 @@
                             <td class="ps-4">
                                 <div class="d-flex align-items-center gap-3">
                                     {{-- Avatar dengan inisial --}}
-                                    @if($user->photo)
-                                        <img src="{{ asset('storage/'.$user->photo) }}"
-                                             class="rounded-circle flex-shrink-0"
-                                             style="width:40px;height:40px;object-fit:cover;"
-                                             alt="{{ $user->name }}">
-                                    @else
-                                        <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center fw-bold text-white"
-                                             style="width:40px;height:40px;font-size:1rem;background:linear-gradient(135deg,#ef4444,#dc2626);">
-                                            {{ strtoupper(substr($user->name, 0, 1)) }}
-                                        </div>
-                                    @endif
+                                    <img src="{{ $user->photo_url }}"
+                                         class="rounded-circle flex-shrink-0"
+                                         style="width:40px;height:40px;object-fit:cover;"
+                                         alt="{{ $user->name }}"
+                                         onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='flex'">
+                                    <div class="rounded-circle flex-shrink-0 d-none align-items-center justify-content-center fw-bold text-white"
+                                         style="width:40px;height:40px;font-size:1rem;background:linear-gradient(135deg,#ef4444,#dc2626);">
+                                        {{ strtoupper(substr($user->name, 0, 1)) }}
+                                    </div>
                                     <div>
                                         <div class="fw-semibold">{{ $user->name }}</div>
                                         @if($user->id === auth()->id())

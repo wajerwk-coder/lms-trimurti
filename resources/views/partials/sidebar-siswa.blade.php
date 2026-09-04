@@ -3,9 +3,7 @@
     $siswaProfile = \App\Models\Siswa::where('user_id', auth()->id())
                         ->with('kelas')
                         ->first();
-    $photoSrc = $siswaProfile?->foto
-        ? asset('storage/'.$siswaProfile->foto)
-        : ($user->photo_url ?? 'https://ui-avatars.com/api/?name='.urlencode($user->name ?? 'S').'&background=7c3aed&color=fff&size=64');
+    $photoSrc = $user->photo_url;
     $photoFallback = 'https://ui-avatars.com/api/?name='.urlencode($user->name ?? 'S').'&background=7c3aed&color=fff&size=64';
 @endphp
 

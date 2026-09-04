@@ -2,13 +2,8 @@
     $user         = Auth::user();
     $pendingGrade = isset($stats['pending_grading']) ? (int)$stats['pending_grading'] : 0;
     $guruProfile  = $user->guruProfile;
-    // Foto disimpan di users_central.photo saat upload via halaman profil
-    // Prioritas: users_central.photo → gurus.photo → ui-avatars
-    $guruPhotoSrc = $user->photo
-        ? asset('storage/'.$user->photo)
-        : ($guruProfile?->photo
-            ? asset('storage/'.$guruProfile->photo)
-            : 'https://ui-avatars.com/api/?name='.urlencode($user->name ?? 'G').'&background=0f766e&color=fff&size=64');
+    // Foto disimpan di users_central.photo — pakai photo_url accessor yang sudah handle http URL
+    $guruPhotoSrc      = $user->photo_url;
     $guruPhotoFallback = 'https://ui-avatars.com/api/?name='.urlencode($user->name ?? 'G').'&background=0f766e&color=fff&size=64';
 
     // Cek active state untuk grup laporan

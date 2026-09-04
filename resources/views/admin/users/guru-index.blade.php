@@ -176,9 +176,10 @@
                             <td>
                                 <div class="d-flex align-items-center gap-2">
                                     @if($guru->photo)
-                                        <img src="{{ asset('storage/'.$guru->photo) }}"
+                                        <img src="{{ $guru->photo_url }}"
                                              class="rounded-circle flex-shrink-0"
-                                             style="width:38px;height:38px;object-fit:cover;" alt="">
+                                             style="width:38px;height:38px;object-fit:cover;" alt=""
+                                             onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($guru->name) }}&background=16a34a&color=fff&size=64'">
                                     @else
                                         <div class="rounded-circle flex-shrink-0 d-flex align-items-center justify-content-center fw-bold text-white"
                                              style="width:38px;height:38px;font-size:.9rem;background:linear-gradient(135deg,#16a34a,#059669);">
