@@ -140,8 +140,7 @@
                         <img src="{{ $siswaAvatarSrc }}"
                              class="rounded-circle flex-shrink-0"
                              style="width:42px;height:42px;object-fit:cover;"
-                             onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=7c3aed&color=fff'">
-                             onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=7c3aed&color=fff'">
+                             onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=7c3aed&color=fff'">
                         <div style="min-width:0;">
                             <div class="fw-bold text-dark text-truncate" style="font-size:.85rem;">
                                 {{ Auth::user()->name }}
