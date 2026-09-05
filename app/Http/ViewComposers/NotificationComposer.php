@@ -13,36 +13,40 @@ class NotificationComposer
      */
     public function compose(View $view): void
     {
-        if (Auth::check()) {
-            $user = Auth::user();
-            
-            // Get notifications for the current user
-            $notifications = Notification::with(['sender'])
-                ->where(function($query) use ($user) {
-                    $query->where('penerima_id', $user->id)
-                          ->orWhere('tipe_penerima', 'semua');
+        if (!Auth::check()) {
+            $view->with(['notifications' => collect(), 'unreadCount' => 0]);
+            return;
+        }
+
+        $user = Auth::user();
+
+        try {
+            // Ambil notifikasi untuk user ini
+            $notifications = \Illuminate\Support\Facades\DB::table('notifications')
+                ->where(function($q) use ($user) {
+                    $q->where('penerima_id', $user->id)
+                      ->orWhere('tipe_penerima', 'semua');
                 })
                 ->orderBy('created_at', 'desc')
                 ->limit(10)
                 ->get();
 
-            // Count unread notifications
-            $unreadCount = Notification::where(function($query) use ($user) {
-                $query->where('penerima_id', $user->id)
+            // Hitung yang belum dibaca: is_read = 0 ATAU read_at IS NULL
+            $unreadCount = \Illuminate\Support\Facades\DB::table('notifications')
+                ->where(function($q) use ($user) {
+                    $q->where('penerima_id', $user->id)
                       ->orWhere('tipe_penerima', 'semua');
-            })
-            ->whereNull('read_at')
-            ->count();
+                })
+                ->where(function($q) {
+                    $q->whereNull('read_at')
+                      ->orWhere('is_read', false);
+                })
+                ->count();
 
-            $view->with([
-                'notifications' => $notifications,
-                'unreadCount' => $unreadCount
-            ]);
-        } else {
-            $view->with([
-                'notifications' => collect(),
-                'unreadCount' => 0
-            ]);
+            $view->with(compact('notifications', 'unreadCount'));
+
+        } catch (\Throwable $e) {
+            $view->with(['notifications' => collect(), 'unreadCount' => 0]);
         }
     }
 }
