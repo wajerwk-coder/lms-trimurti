@@ -99,10 +99,9 @@
         {{-- User Menu --}}
         <div class="dropdown">
             @php
-                $guruProfile = Auth::user()->fresh()->guruProfile ?? Auth::user()->guruProfile;
-                // Ambil fresh dari DB agar foto terbaru terbaca
-                $freshUser     = \App\Models\UserCentral::find(Auth::id());
-                $freshPhotoVal = $freshUser?->photo;
+                $guruProfile = Auth::user()->guruProfile;
+                // Gunakan $freshUserPhoto dari HeaderComposer (query DB langsung, tidak cache)
+                $freshPhotoVal = $freshUserPhoto ?? Auth::user()->photo;
                 $guruPhotoSrc  = $freshPhotoVal && str_starts_with($freshPhotoVal, 'http')
                     ? $freshPhotoVal
                     : ($freshPhotoVal ? asset('storage/'.$freshPhotoVal) : null);
