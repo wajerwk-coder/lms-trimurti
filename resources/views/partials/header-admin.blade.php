@@ -92,11 +92,15 @@
         {{-- User Menu --}}
         <div class="dropdown">
             @php
-                $freshUser = Auth::user()->fresh() ?? Auth::user();
-                $adminName  = $freshUser->name;
-                $adminEmail = $freshUser->email;
-                $adminPhoto = $freshUser->photo_url;
+                $freshUser  = \App\Models\UserCentral::find(Auth::id());
+                $adminName  = $freshUser?->name ?? Auth::user()->name;
+                $adminEmail = $freshUser?->email ?? Auth::user()->email;
+                $rawPhoto   = $freshUser?->photo;
+                $adminPhoto = $rawPhoto && str_starts_with($rawPhoto, 'http')
+                    ? $rawPhoto
+                    : ($rawPhoto ? asset('storage/'.$rawPhoto) : null);
                 $adminPhotoFallback = 'https://ui-avatars.com/api/?name='.urlencode($adminName).'&background=3b82f6&color=fff&size=64';
+                if (!$adminPhoto) $adminPhoto = $adminPhotoFallback;
             @endphp
             <button class="btn p-0 d-flex align-items-center gap-2 border-0 bg-transparent"
                     style="min-width:0;"

@@ -70,13 +70,23 @@
             <div class="card-body text-center py-4">
 
                 @php
-                    $avatarSrc = $user->photo_url;
+                    // Query langsung dari DB — hindari cache session
+                    $freshPhoto  = \App\Models\UserCentral::find(Auth::id())?->photo;
+                    $avatarSrc   = $freshPhoto && str_starts_with($freshPhoto, 'http')
+                        ? $freshPhoto
+                        : ($freshPhoto ? asset('storage/' . $freshPhoto) : null);
                     $avatarFallback = 'https://ui-avatars.com/api/?name='.urlencode($user->name ?? 'A').'&background=3b82f6&color=fff&size=128&bold=true';
+                    if (!$avatarSrc) $avatarSrc = $avatarFallback;
                 @endphp
                 <img src="{{ $avatarSrc }}"
                      alt="Avatar" class="profile-avatar d-block mx-auto mb-3"
                      id="avatarPreview"
                      onerror="this.onerror=null;this.src='{{ $avatarFallback }}'">
+                @if($freshPhoto && str_starts_with($freshPhoto, 'http'))
+                <div class="small text-success mb-1 text-center" style="font-size:.65rem;">
+                    <i class="fas fa-check-circle me-1"></i>Foto Cloudinary aktif
+                </div>
+                @endif
 
                 <div class="fw-bold text-dark mb-1">{{ $user->name }}</div>
                 <div class="text-muted small mb-2">{{ $user->email }}</div>

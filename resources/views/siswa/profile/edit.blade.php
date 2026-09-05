@@ -81,12 +81,24 @@
                 </h6>
             </div>
             <div class="card-body text-center py-4">
-                @php $avatarSrc = $user->photo_url; @endphp
+                @php
+                    $freshPhoto   = \App\Models\UserCentral::find(Auth::id())?->photo;
+                    $avatarSrc    = $freshPhoto && str_starts_with($freshPhoto, 'http')
+                        ? $freshPhoto
+                        : ($freshPhoto ? asset('storage/'.$freshPhoto) : null);
+                    $avatarFallback = 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=7c3aed&color=fff&size=128&bold=true';
+                    if (!$avatarSrc) $avatarSrc = $avatarFallback;
+                @endphp
                 <img src="{{ $avatarSrc }}"
                      alt="Foto Profil"
                      class="profile-avatar mb-3 d-block mx-auto"
                      id="avatarPreview"
-                     onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=7c3aed&color=fff&size=128&bold=true'">
+                     onerror="this.onerror=null;this.src='{{ $avatarFallback }}'">
+                @if($freshPhoto && str_starts_with($freshPhoto, 'http'))
+                <div class="small text-success mb-1 text-center" style="font-size:.65rem;">
+                    <i class="fas fa-check-circle me-1"></i>Foto Cloudinary aktif
+                </div>
+                @endif
 
                 <div class="fw-bold text-dark mb-1">{{ $user->name }}</div>
                 <div class="text-muted small mb-2">{{ $user->email }}</div>

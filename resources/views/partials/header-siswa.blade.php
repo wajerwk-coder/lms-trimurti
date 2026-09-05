@@ -105,7 +105,11 @@
                 <div class="flex-shrink-0 position-relative">
                     @php
                         // Ambil fresh dari DB untuk dapat foto terbaru (Cloudinary URL)
-                        $siswaAvatarSrc = (Auth::user()->fresh() ?? Auth::user())->photo_url;
+                        $rawSiswaPhoto  = \App\Models\UserCentral::find(Auth::id())?->photo;
+                        $siswaAvatarSrc = $rawSiswaPhoto && str_starts_with($rawSiswaPhoto, 'http')
+                            ? $rawSiswaPhoto
+                            : ($rawSiswaPhoto ? asset('storage/'.$rawSiswaPhoto)
+                            : 'https://ui-avatars.com/api/?name='.urlencode(Auth::user()->name).'&background=7c3aed&color=fff&size=64');
                     @endphp
                     <img src="{{ $siswaAvatarSrc }}"
                          alt="Avatar"

@@ -101,9 +101,13 @@
             @php
                 $guruProfile = Auth::user()->fresh()->guruProfile ?? Auth::user()->guruProfile;
                 // Ambil fresh dari DB agar foto terbaru terbaca
-                $freshUser = Auth::user()->fresh() ?? Auth::user();
-                $guruPhotoSrc = $freshUser->photo_url;
+                $freshUser     = \App\Models\UserCentral::find(Auth::id());
+                $freshPhotoVal = $freshUser?->photo;
+                $guruPhotoSrc  = $freshPhotoVal && str_starts_with($freshPhotoVal, 'http')
+                    ? $freshPhotoVal
+                    : ($freshPhotoVal ? asset('storage/'.$freshPhotoVal) : null);
                 $guruPhotoFallback = 'https://ui-avatars.com/api/?name='.urlencode(Auth::user()->name).'&background=0f766e&color=fff&size=64';
+                if (!$guruPhotoSrc) $guruPhotoSrc = $guruPhotoFallback;
             @endphp
             <button class="btn p-0 d-flex align-items-center gap-2 border-0 bg-transparent"
                     style="min-width:0;"
