@@ -90,10 +90,14 @@ class MaterialController extends Controller
             $material->guru_id         = Auth::id();
             $material->title           = $request->title;
             $material->subject_id      = $request->subject_id;
-            $material->kelas_id        = $request->kelas_id ?? null;
+            // Form pakai class_id atau kelas_id — handle keduanya
+            $material->kelas_id        = $request->kelas_id ?? $request->class_id ?? null;
             $material->content         = $request->content;
             $material->video_url       = $request->video_url;
-            $material->published_at    = $request->boolean('is_published') ? now() : null;
+            // Default: auto publish kecuali guru uncheck
+            $material->published_at    = $request->has('is_published') && !$request->boolean('is_published')
+                ? null
+                : now();
             $material->views_count     = 0;
             $material->downloads_count = 0;
 
@@ -220,12 +224,12 @@ class MaterialController extends Controller
         try {
             $material->title        = $request->title;
             $material->subject_id   = $request->subject_id;
-            $material->kelas_id     = $request->kelas_id ?? $material->kelas_id;
+            $material->kelas_id     = $request->kelas_id ?? $request->class_id ?? $material->kelas_id;
             $material->content      = $request->content;
             $material->video_url    = $request->video_url;
-            $material->published_at = $request->boolean('is_published')
-                ? ($material->published_at ?? now())
-                : null;
+            $material->published_at = $request->has('is_published') && !$request->boolean('is_published')
+                ? null
+                : ($material->published_at ?? now());
 
             if ($request->hasFile('file')) {
                 $file     = $request->file('file');
@@ -383,18 +387,29 @@ class MaterialController extends Controller
             return back()->with('error', 'File materi tidak ditemukan.');
         }
 
-        $filePath = storage_path('app/public/materials/' . $material->file_url);
-
-        if (!file_exists($filePath)) {
-            return back()->with('error', 'File materi tidak ditemukan di server.');
+        // Jika Cloudinary URL → redirect langsung
+        if (str_starts_with($material->file_url, 'http')) {
+            DB::table('materials')->where('id', $material->id)->increment('downloads_count');
+            return redirect($material->file_url);
         }
 
-        DB::table('materials')->where('id', $material->id)->increment('downloads_count');
+        // File lokal — coba berbagai format path
+        $paths = [
+            storage_path('app/public/' . $material->file_url),
+            storage_path('app/public/materials/' . $material->file_url),
+            storage_path('app/public/materials/' . ltrim($material->file_url, '/')),
+        ];
 
-        $ext          = pathinfo($material->file_url, PATHINFO_EXTENSION);
-        $downloadName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $material->title) . '.' . $ext;
+        foreach ($paths as $filePath) {
+            if (file_exists($filePath)) {
+                DB::table('materials')->where('id', $material->id)->increment('downloads_count');
+                $ext          = pathinfo($material->file_url, PATHINFO_EXTENSION);
+                $downloadName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $material->title) . '.' . $ext;
+                return response()->download($filePath, $downloadName);
+            }
+        }
 
-        return response()->download($filePath, $downloadName);
+        return back()->with('error', 'File tidak ditemukan di server. File lokal hilang setelah redeploy. Silakan upload ulang materi.');
     }
 
     // ── Bulk actions ──────────────────────────────────────────────────────

@@ -122,15 +122,16 @@
 
                     @if(isset($classes) && $classes->count())
                     <div class="mb-3">
-                        <label for="class_id" class="form-label fw-semibold">Kelas</label>
-                        <select class="form-select" id="class_id" name="class_id">
+                        <label for="kelas_id" class="form-label fw-semibold">Kelas</label>
+                        <select class="form-select" id="kelas_id" name="kelas_id">
                             <option value="">— Semua Kelas —</option>
                             @foreach($classes as $class)
-                                <option value="{{ $class->id }}" {{ old('class_id') == $class->id ? 'selected' : '' }}>
+                                <option value="{{ $class->id }}" {{ old('kelas_id') == $class->id ? 'selected' : '' }}>
                                     {{ $class->name }}
                                 </option>
                             @endforeach
                         </select>
+                        <div class="form-text">Kosongkan jika materi untuk semua kelas.</div>
                     </div>
                     @endif
 
@@ -138,12 +139,12 @@
 
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" name="is_published" value="1"
-                               id="is_published" {{ old('is_published') ? 'checked' : '' }}>
+                               id="is_published" {{ old('is_published', '1') ? 'checked' : '' }}>
                         <label class="form-check-label fw-semibold" for="is_published">
                             Publikasikan Sekarang
                         </label>
                     </div>
-                    <small class="text-muted">Centang agar materi langsung terlihat oleh siswa.</small>
+                    <small class="text-muted">Default aktif — materi langsung terlihat oleh siswa. Uncheck untuk simpan sebagai draft.</small>
                 </div>
             </div>
 
