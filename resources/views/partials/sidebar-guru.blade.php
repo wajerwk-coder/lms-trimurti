@@ -5,8 +5,9 @@
     if ($user) { Auth::setUser($user); }
     $pendingGrade = isset($stats['pending_grading']) ? (int)$stats['pending_grading'] : 0;
     $guruProfile  = $user->guruProfile;
-    // Foto disimpan di users_central.photo — pakai photo_url accessor yang sudah handle http URL
-    $guruPhotoSrc      = $user->photo_url;
+    // Foto: fresh() dari DB agar selalu terbaca yang terbaru
+    $freshUser         = $user->fresh() ?? $user;
+    $guruPhotoSrc      = $freshUser->photo_url;
     $guruPhotoFallback = 'https://ui-avatars.com/api/?name='.urlencode($user->name ?? 'G').'&background=0f766e&color=fff&size=64';
 
     // Cek active state untuk grup laporan

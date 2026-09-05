@@ -270,21 +270,17 @@ document.getElementById('uploadPhotoBtn')?.addEventListener('click', function ()
                     body: JSON.stringify({ photo_url: url }),
                 })
                 .then(function(res) {
-                    console.log('Server response status:', res.status);
-                    return res.text();
+                    return res.json();
                 })
-                .then(function(text) {
-                    console.log('Server response:', text);
-                    try {
-                        var data = JSON.parse(text);
-                        if (data.success) {
-                            window.location.href = '{{ route("guru.profile.edit") }}';
-                        } else {
-                            alert('Server error: ' + JSON.stringify(data));
-                        }
-                    } catch(e) {
-                        // Server mungkin return HTML (error page)
-                        alert('Server response tidak valid. Cek console untuk detail.\n' + text.substring(0, 200));
+                .then(function(data) {
+                    if (data.success) {
+                        // Tunggu 1 detik agar DB commit sempurna sebelum redirect
+                        setTimeout(function() {
+                            // Tambahkan timestamp agar browser tidak pakai cache halaman lama
+                            window.location.href = '{{ route("guru.profile.edit") }}?t=' + Date.now();
+                        }, 1000);
+                    } else {
+                        alert('Gagal menyimpan foto: ' + JSON.stringify(data));
                     }
                 })
                 .catch(function(err) {

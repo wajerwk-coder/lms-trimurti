@@ -147,7 +147,11 @@ class ProfileController extends Controller
 
         Log::info('Guru photo_url updated', ['user_id' => $user->id, 'photo' => $photoUrl]);
 
-        return response()->json(['success' => true, 'photo' => $photoUrl]);
+        return response()->json([
+            'success'     => true,
+            'photo'       => $photoUrl,
+            'saved_in_db' => \Illuminate\Support\Facades\DB::table('users_central')->where('id', $user->id)->value('photo'),
+        ]);
     }
 
     /**

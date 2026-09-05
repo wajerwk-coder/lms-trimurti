@@ -349,7 +349,9 @@ document.getElementById('uploadPhotoBtn')?.addEventListener('click', function() 
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     if (data.success) {
-                        window.location.href = '{{ route("admin.profile.edit") }}';
+                        setTimeout(function() {
+                            window.location.href = '{{ route("admin.profile.edit") }}?t=' + Date.now();
+                        }, 1000);
                     } else {
                         alert('Gagal menyimpan: ' + JSON.stringify(data));
                     }
