@@ -55,6 +55,29 @@ use App\Http\Controllers\Siswa\ProfileController as SiswaProfileController;
 */
 Route::get('/', [HomeController::class, 'welcome'])->name('welcome');
 
+// Debug + cache clear sementara — hapus setelah production
+Route::get('/debug-photo', function () {
+    if (!\Illuminate\Support\Facades\Auth::check()) {
+        return response()->json(['error' => 'Login dulu']);
+    }
+    $user = \Illuminate\Support\Facades\DB::table('users_central')
+        ->where('id', \Illuminate\Support\Facades\Auth::id())
+        ->first(['id','name','role','photo']);
+    return response()->json([
+        'user_id' => $user->id, 'name' => $user->name,
+        'role' => $user->role, 'photo' => $user->photo,
+        'status' => $user->photo ? 'FOTO ADA' : 'KOSONG',
+    ]);
+})->middleware('auth');
+
+Route::get('/clear-cache', function () {
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    \Illuminate\Support\Facades\Artisan::call('route:clear');
+    return response()->json(['status' => 'All cache cleared successfully']);
+});
+
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::post('/contact', [HomeController::class, 'sendContact'])->name('contact.send');

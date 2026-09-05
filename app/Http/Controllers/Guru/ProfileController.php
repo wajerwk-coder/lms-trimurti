@@ -117,6 +117,7 @@ class ProfileController extends Controller
     }
 
     /**
+    /**
      * Update foto profil via Cloudinary URL — endpoint dedicated POST.
      * Lebih sederhana dan reliable daripada PUT dengan semua field.
      */
@@ -124,33 +125,35 @@ class ProfileController extends Controller
     {
         $request->validate(['photo_url' => 'required|url|max:500']);
 
-        $user = Auth::user();
+        $userId   = Auth::id();
+        $photoUrl = $request->photo_url;
 
-        // Pastikan URL bersih dari escape characters yang mungkin masuk
-        $photoUrl = stripslashes($request->photo_url);
-        $photoUrl = trim($photoUrl, '"\'');
-
-        // Simpan langsung via query builder untuk menghindari transformasi model
+        // Update langsung via DB — bypass model events/caching
         \Illuminate\Support\Facades\DB::table('users_central')
-            ->where('id', $user->id)
+            ->where('id', $userId)
             ->update(['photo' => $photoUrl, 'updated_at' => now()]);
 
-        // Paksa session user refresh dari DB — hapus cached user di session
-        // Cara paling reliable: re-login user dengan data fresh dari DB
-        $freshUser = \App\Models\UserCentral::find($user->id);
-        \Illuminate\Support\Facades\Auth::setUser($freshUser);
-        // Juga update session guard agar request berikutnya baca dari DB
-        request()->session()->put(
-            \Illuminate\Support\Facades\Auth::guard()->getName(),
-            $freshUser->getAuthIdentifier()
-        );
+        Log::info('Guru photo_url updated', ['user_id' => $userId, 'photo' => $photoUrl]);
 
-        Log::info('Guru photo_url updated', ['user_id' => $user->id, 'photo' => $photoUrl]);
+        // Verifikasi simpan berhasil
+        $saved = \Illuminate\Support\Facades\DB::table('users_central')
+            ->where('id', $userId)
+            ->value('photo');
+
+        // Refresh session auth agar halaman berikutnya ambil dari DB bukan cache
+        $freshUser = \App\Models\UserCentral::find($userId);
+        if ($freshUser) {
+            Auth::setUser($freshUser);
+            request()->session()->put(
+                Auth::guard()->getName(),
+                $freshUser->getAuthIdentifier()
+            );
+        }
 
         return response()->json([
-            'success'     => true,
-            'photo'       => $photoUrl,
-            'saved_in_db' => \Illuminate\Support\Facades\DB::table('users_central')->where('id', $user->id)->value('photo'),
+            'success'  => true,
+            'photo'    => $photoUrl,
+            'verified' => $saved === $photoUrl,
         ]);
     }
 
