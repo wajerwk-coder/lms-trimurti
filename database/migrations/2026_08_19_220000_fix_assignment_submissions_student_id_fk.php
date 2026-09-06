@@ -14,40 +14,72 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('assignment_submissions', function (Blueprint $table) {
-            // Drop FK lama ke tabel users jika ada
-            try {
-                $table->dropForeign(['student_id']);
-            } catch (\Throwable $e) {
-                // Mungkin sudah tidak ada, lanjut
-            }
+        // ── 1. Drop FK student_id hanya jika benar-benar ada ────────────────
+        $fkExists = DB::select("
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.TABLE_CONSTRAINTS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME   = 'assignment_submissions'
+              AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+              AND CONSTRAINT_NAME IN (
+                  'assignment_submissions_student_id_foreign',
+                  'assignment_submissions_student_id_fk'
+              )
+        ");
 
-            // Hapus unique constraint lama [assignment_id, student_id] jika ada
-            try {
+        if (!empty($fkExists)) {
+            Schema::table('assignment_submissions', function (Blueprint $table) use ($fkExists) {
+                foreach ($fkExists as $fk) {
+                    $table->dropForeign($fk->CONSTRAINT_NAME);
+                }
+            });
+        }
+
+        // ── 2. Drop unique constraint lama jika ada ──────────────────────────
+        $uniqueExists = DB::select("
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.TABLE_CONSTRAINTS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME   = 'assignment_submissions'
+              AND CONSTRAINT_TYPE = 'UNIQUE'
+              AND CONSTRAINT_NAME = 'as_unique_submission'
+        ");
+
+        if (!empty($uniqueExists)) {
+            Schema::table('assignment_submissions', function (Blueprint $table) {
                 $table->dropUnique('as_unique_submission');
-            } catch (\Throwable $e) {
-                // Mungkin sudah tidak ada
-            }
+            });
+        }
 
-            // Buat FK student_id ke users_central
-            // student_id sekarang nullable karena kita pakai siswa_id sebagai primary
-            if (Schema::hasColumn('assignment_submissions', 'student_id')) {
-                // Ubah jadi nullable dulu agar tidak error
+        // ── 3. Ubah student_id jadi nullable ────────────────────────────────
+        if (Schema::hasColumn('assignment_submissions', 'student_id')) {
+            Schema::table('assignment_submissions', function (Blueprint $table) {
                 $table->unsignedBigInteger('student_id')->nullable()->change();
-            }
+            });
+        }
 
-            // Pastikan siswa_id ada
-            if (!Schema::hasColumn('assignment_submissions', 'siswa_id')) {
+        // ── 4. Tambah siswa_id jika belum ada ───────────────────────────────
+        if (!Schema::hasColumn('assignment_submissions', 'siswa_id')) {
+            Schema::table('assignment_submissions', function (Blueprint $table) {
                 $table->unsignedBigInteger('siswa_id')->nullable()->after('student_id');
-            }
+            });
+        }
 
-            // Unique constraint baru berdasarkan assignment_id + siswa_id
-            try {
+        // ── 5. Tambah unique constraint baru jika belum ada ─────────────────
+        $newUniqueExists = DB::select("
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.TABLE_CONSTRAINTS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME   = 'assignment_submissions'
+              AND CONSTRAINT_TYPE = 'UNIQUE'
+              AND CONSTRAINT_NAME = 'as_unique_siswa_submission'
+        ");
+
+        if (empty($newUniqueExists)) {
+            Schema::table('assignment_submissions', function (Blueprint $table) {
                 $table->unique(['assignment_id', 'siswa_id'], 'as_unique_siswa_submission');
-            } catch (\Throwable $e) {
-                // Mungkin sudah ada
-            }
-        });
+            });
+        }
     }
 
     public function down(): void

@@ -15,15 +15,22 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Drop FK constraint student_id yang references tabel users lama
-        Schema::table('assignment_submissions', function (Blueprint $table) {
-            // Cek apakah FK ada sebelum drop
-            try {
+        // Cek apakah FK assignment_submissions_student_id_foreign ada
+        // sebelum mencoba drop (Railway DB mungkin sudah tidak punya FK ini)
+        $fkExists = DB::select("
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.TABLE_CONSTRAINTS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'assignment_submissions'
+              AND CONSTRAINT_NAME = 'assignment_submissions_student_id_foreign'
+              AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+        ");
+
+        if (!empty($fkExists)) {
+            Schema::table('assignment_submissions', function (Blueprint $table) {
                 $table->dropForeign('assignment_submissions_student_id_foreign');
-            } catch (\Throwable $e) {
-                // FK mungkin sudah tidak ada, lanjutkan
-            }
-        });
+            });
+        }
 
         // Sync student_id dengan siswa_id untuk data yang sudah ada
         // (agar tidak ada NULL atau mismatch)
