@@ -21,20 +21,6 @@
             </ul>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-@if(session('success'))
-<div class="alert alert-success alert-dismissible fade show mb-4">
-    <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-@endif
-@if(session('error'))
-<div class="alert alert-danger alert-dismissible fade show mb-4">
-    <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-@endif
 
 <form action="{{ route('admin.users.update', $user->id) }}" method="POST" id="editAdminForm">
     @csrf @method('PUT')

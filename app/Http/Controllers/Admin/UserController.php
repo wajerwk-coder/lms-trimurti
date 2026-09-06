@@ -32,7 +32,16 @@ class UserController extends Controller
         $users = UserCentral::where('role', 'admin')
             ->latest()
             ->paginate(20);
-        return view('admin.users.index', compact('users'));
+
+        // Hitung untuk tab badge dan stats cards (hindari query inline di view)
+        $countGuru      = UserCentral::where('role', 'guru')->count();
+        $countSiswa     = UserCentral::where('role', 'siswa')->count();
+        $countAdminAktif = UserCentral::where('role', 'admin')->where('is_active', true)->count();
+        $countTotal     = UserCentral::count();
+
+        return view('admin.users.index', compact(
+            'users', 'countGuru', 'countSiswa', 'countAdminAktif', 'countTotal'
+        ));
     }
 
     /**

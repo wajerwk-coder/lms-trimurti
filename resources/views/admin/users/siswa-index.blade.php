@@ -26,19 +26,6 @@
 
 @section('content')
 
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-@if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-
 {{-- Tab Navigasi Role --}}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body py-2 px-3">
@@ -46,13 +33,13 @@
             <li class="nav-item">
                 <a class="nav-link text-muted" href="{{ route('admin.users.index') }}">
                     <i class="fas fa-user-shield me-1"></i>Admin
-                    <span class="badge bg-secondary ms-1">{{ \App\Models\UserCentral::where('role','admin')->count() }}</span>
+                    <span class="badge bg-secondary ms-1">{{ $countAdmin }}</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link text-muted" href="{{ route('admin.users.guru') }}">
                     <i class="fas fa-chalkboard-teacher me-1"></i>Guru
-                    <span class="badge bg-secondary ms-1">{{ \App\Models\UserCentral::where('role','guru')->count() }}</span>
+                    <span class="badge bg-secondary ms-1">{{ $countGuru }}</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -67,17 +54,11 @@
 
 {{-- Stats --}}
 <div class="row g-3 mb-4">
-    @php
-        $totalSiswa  = $siswas->total();
-        $aktifSiswa  = \App\Models\UserCentral::where('role','siswa')->where('is_active',true)->count();
-        $kelasAktif  = \App\Models\Kelas::count() ?? 0;
-        $jurusanCount = \App\Models\Jurusan::count() ?? 0;
-    @endphp
     @foreach([
-        ['warning', 'fa-user-graduate',  $totalSiswa,   'Total Siswa'],
-        ['success', 'fa-user-check',     $aktifSiswa,   'Siswa Aktif'],
-        ['info',    'fa-school',         $kelasAktif,   'Total Kelas'],
-        ['primary', 'fa-graduation-cap', $jurusanCount, 'Jurusan'],
+        ['warning', 'fa-user-graduate',  $siswas->total(), 'Total Siswa'],
+        ['success', 'fa-user-check',     $countSiswaAktif, 'Siswa Aktif'],
+        ['info',    'fa-school',         $countKelas,      'Total Kelas'],
+        ['primary', 'fa-graduation-cap', $countJurusan,    'Jurusan'],
     ] as [$color, $icon, $val, $label])
     <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm h-100">
@@ -110,7 +91,6 @@
                 <label class="form-label small fw-semibold">Filter Kelas</label>
                 <select id="kelasFilter" class="form-select">
                     <option value="">Semua Kelas</option>
-                    @php try { $allKelas = \App\Models\Kelas::orderBy('name')->pluck('name'); } catch(\Throwable $e) { $allKelas = collect(); } @endphp
                     @foreach($allKelas as $k)
                         <option value="{{ $k }}">{{ $k }}</option>
                     @endforeach
@@ -120,7 +100,6 @@
                 <label class="form-label small fw-semibold">Jurusan</label>
                 <select id="jurusanFilter" class="form-select">
                     <option value="">Semua Jurusan</option>
-                    @php try { $allJurusan = \App\Models\Jurusan::orderBy('name')->pluck('name'); } catch(\Throwable $e) { $allJurusan = collect(); } @endphp
                     @foreach($allJurusan as $j)
                         <option value="{{ strtolower($j) }}">{{ $j }}</option>
                     @endforeach
