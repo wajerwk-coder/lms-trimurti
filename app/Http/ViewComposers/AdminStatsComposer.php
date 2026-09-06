@@ -20,8 +20,8 @@ class AdminStatsComposer
 {
     public function compose(View $view): void
     {
-        // Optional: fast-disable via env
-        if (env('ADMIN_STATS_DISABLE', false)) {
+        // Optional: fast-disable via config
+        if (config('app.admin_stats_disable', false) || env('ADMIN_STATS_DISABLE', false)) {
             $view->with('stats', []);
             return;
         }
@@ -34,7 +34,7 @@ class AdminStatsComposer
             return;
         }
 
-        $ttl = (int) env('ADMIN_STATS_CACHE_SECONDS', 300);
+        $ttl = (int) config('cache.stats_ttl', env('ADMIN_STATS_CACHE_SECONDS', 300));
 
         $buildStats = function () {
             return [

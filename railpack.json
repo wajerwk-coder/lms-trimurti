@@ -1,11 +1,14 @@
 {
   "build": {
     "cmds": [
-      "npm run build",
-      "mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs bootstrap/cache && chmod -R a+rw storage"
+      "composer install --no-dev --optimize-autoloader --no-interaction",
+      "npm ci && npm run build",
+      "mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/framework/testing storage/logs bootstrap/cache",
+      "chmod -R a+rw storage bootstrap/cache",
+      "php artisan storage:link || true"
     ]
   },
   "deploy": {
-    "cmd": "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=$PORT"
+    "cmd": "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan serve --host=0.0.0.0 --port=$PORT"
   }
 }
