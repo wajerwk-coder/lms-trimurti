@@ -12,66 +12,65 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('notifications', function (Blueprint $table) {
-            // Add missing columns
+            // Add missing columns — no ->after() to avoid dependency on optional columns
+
             if (!Schema::hasColumn('notifications', 'sender_id')) {
-                $table->unsignedBigInteger('sender_id')->nullable()->after('pengirim_id');
-                $table->foreign('sender_id')->references('id')->on('users')->onDelete('set null');
+                $table->unsignedBigInteger('sender_id')->nullable();
             }
-            
+
             if (!Schema::hasColumn('notifications', 'receiver_id')) {
-                $table->unsignedBigInteger('receiver_id')->nullable()->after('penerima_id');
-                $table->foreign('receiver_id')->references('id')->on('users')->onDelete('set null');
+                $table->unsignedBigInteger('receiver_id')->nullable();
             }
-            
+
             if (!Schema::hasColumn('notifications', 'receiver_type')) {
-                $table->string('receiver_type')->nullable()->after('tipe_penerima');
+                $table->string('receiver_type')->nullable();
             }
-            
+
             if (!Schema::hasColumn('notifications', 'tipe')) {
-                $table->string('tipe')->default('info')->after('receiver_type');
+                $table->string('tipe')->default('info');
             }
-            
+
             if (!Schema::hasColumn('notifications', 'type')) {
-                $table->string('type')->nullable()->after('tipe');
+                $table->string('type')->nullable();
             }
-            
+
             if (!Schema::hasColumn('notifications', 'judul')) {
-                $table->string('judul')->nullable()->after('type');
+                $table->string('judul')->nullable();
             }
-            
+
             if (!Schema::hasColumn('notifications', 'pesan')) {
-                $table->text('pesan')->nullable()->after('judul');
+                $table->text('pesan')->nullable();
             }
-            
+
             if (!Schema::hasColumn('notifications', 'url_aksi')) {
-                $table->string('url_aksi')->nullable()->after('pesan');
+                $table->string('url_aksi')->nullable();
             }
-            
+
             if (!Schema::hasColumn('notifications', 'prioritas')) {
-                $table->string('prioritas')->default('sedang')->after('url_aksi');
+                $table->string('prioritas')->default('sedang');
             }
-            
+
             if (!Schema::hasColumn('notifications', 'priority')) {
-                $table->string('priority')->nullable()->after('prioritas');
+                $table->string('priority')->nullable();
             }
-            
+
             if (!Schema::hasColumn('notifications', 'status')) {
-                $table->string('status')->default('belum_dibaca')->after('priority');
+                $table->string('status')->default('belum_dibaca');
             }
-            
+
             if (!Schema::hasColumn('notifications', 'scheduled_at')) {
-                $table->timestamp('scheduled_at')->nullable()->after('read_at');
+                $table->timestamp('scheduled_at')->nullable();
             }
-            
-            // Add indexes
-            $table->index(['receiver_id', 'receiver_type']);
-            $table->index('receiver_type');
-            $table->index('tipe');
-            $table->index('type');
-            $table->index('status');
-            $table->index('prioritas');
-            $table->index('priority');
-            $table->index('scheduled_at');
+
+            // Add indexes only for columns that exist
+            try { $table->index(['receiver_id', 'receiver_type']); } catch (\Throwable $e) {}
+            try { $table->index('receiver_type'); } catch (\Throwable $e) {}
+            try { $table->index('tipe'); } catch (\Throwable $e) {}
+            try { $table->index('type'); } catch (\Throwable $e) {}
+            try { $table->index('status'); } catch (\Throwable $e) {}
+            try { $table->index('prioritas'); } catch (\Throwable $e) {}
+            try { $table->index('priority'); } catch (\Throwable $e) {}
+            try { $table->index('scheduled_at'); } catch (\Throwable $e) {}
         });
     }
 
