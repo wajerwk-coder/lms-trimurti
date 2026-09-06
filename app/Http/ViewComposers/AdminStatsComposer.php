@@ -36,20 +36,27 @@ class AdminStatsComposer
 
         $ttl = (int) env('ADMIN_STATS_CACHE_SECONDS', 300);
 
-        $stats = Cache::remember('admin_stats_counts', $ttl, function () {
+        $buildStats = function () {
             return [
-                'total_users'      => $this->safeCount(UserCentral::class),
-                'total_siswa'      => $this->safeCount(Siswa::class),
-                'total_guru'       => $this->safeCount(Guru::class),
-                'total_classes'    => $this->safeCount(Kelas::class),
-                'total_majors'     => $this->safeCount(Jurusan::class),
-                'total_criteria'   => $this->safeCount(KriteriaPenilaian::class),
-                'total_materials'  => $this->safeCount(Material::class),
-                'total_assignments'=> $this->safeCount(Assignment::class),
-                'total_practicals' => $this->safeCount(Practical::class),
-                'total_exams'      => $this->safeCount(ExamSchedule::class),
+                'total_users'       => $this->safeCount(UserCentral::class),
+                'total_siswa'       => $this->safeCount(Siswa::class),
+                'total_guru'        => $this->safeCount(Guru::class),
+                'total_classes'     => $this->safeCount(Kelas::class),
+                'total_majors'      => $this->safeCount(Jurusan::class),
+                'total_criteria'    => $this->safeCount(KriteriaPenilaian::class),
+                'total_materials'   => $this->safeCount(Material::class),
+                'total_assignments' => $this->safeCount(Assignment::class),
+                'total_practicals'  => $this->safeCount(Practical::class),
+                'total_exams'       => $this->safeCount(ExamSchedule::class),
             ];
-        });
+        };
+
+        try {
+            $stats = Cache::remember('admin_stats_counts', $ttl, $buildStats);
+        } catch (\Throwable $e) {
+            // Cache table might not exist yet — query directly without cache
+            $stats = $buildStats();
+        }
 
         $view->with('stats', $stats);
     }
