@@ -78,6 +78,81 @@ Route::get('/clear-cache', function () {
     return response()->json(['status' => 'All cache cleared successfully']);
 });
 
+// Temporary debug route — HAPUS SETELAH SELESAI DEBUG
+Route::get('/debug-error', function () {
+    try {
+        // Test DB connection
+        $dbOk = false;
+        $dbError = null;
+        try {
+            \Illuminate\Support\Facades\DB::connection()->getPdo();
+            $dbOk = true;
+        } catch (\Throwable $e) {
+            $dbError = $e->getMessage();
+        }
+
+        // Test sessions table
+        $sessionsOk = false;
+        $sessionsError = null;
+        try {
+            $sessionsOk = \Illuminate\Support\Facades\Schema::hasTable('sessions');
+        } catch (\Throwable $e) {
+            $sessionsError = $e->getMessage();
+        }
+
+        // Test users_central table
+        $usersOk = false;
+        $usersCount = 0;
+        $usersError = null;
+        try {
+            $usersOk = \Illuminate\Support\Facades\Schema::hasTable('users_central');
+            if ($usersOk) {
+                $usersCount = \Illuminate\Support\Facades\DB::table('users_central')->count();
+            }
+        } catch (\Throwable $e) {
+            $usersError = $e->getMessage();
+        }
+
+        // Last log error
+        $lastLog = null;
+        try {
+            $logPath = storage_path('logs/laravel.log');
+            if (file_exists($logPath)) {
+                $lines = array_slice(file($logPath), -30);
+                $lastLog = implode('', $lines);
+            } else {
+                $lastLog = 'Log file tidak ada';
+            }
+        } catch (\Throwable $e) {
+            $lastLog = 'Cannot read log: ' . $e->getMessage();
+        }
+
+        return response()->json([
+            'app_env'        => config('app.env'),
+            'app_debug'      => config('app.debug'),
+            'session_driver' => config('session.driver'),
+            'db_connection'  => [
+                'ok'     => $dbOk,
+                'error'  => $dbError,
+                'host'   => config('database.connections.mysql.host'),
+                'db'     => config('database.connections.mysql.database'),
+            ],
+            'sessions_table' => [
+                'exists' => $sessionsOk,
+                'error'  => $sessionsError,
+            ],
+            'users_central'  => [
+                'exists' => $usersOk,
+                'count'  => $usersCount,
+                'error'  => $usersError,
+            ],
+            'last_log'       => $lastLog,
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json(['fatal' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+    }
+});
+
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::post('/contact', [HomeController::class, 'sendContact'])->name('contact.send');
