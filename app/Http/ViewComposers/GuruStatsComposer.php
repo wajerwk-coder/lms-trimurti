@@ -24,20 +24,32 @@ class GuruStatsComposer
 
         $guruId = Auth::id();
 
-        $stats = [
-            'total_materials' => Material::where('guru_id', $guruId)->count(),
-            'total_assignments' => Assignment::where('guru_id', $guruId)->count(),
-            'total_practicals' => Practical::where('guru_id', $guruId)->count(),
-            'total_students' => DB::table('users_central')->where('role', 'siswa')->count(),
-            'pending_grading' => AssignmentSubmission::join('assignments', 'assignment_submissions.assignment_id', '=', 'assignments.id')
-                ->where('assignments.guru_id', $guruId)
-                ->whereNull('assignment_submissions.score')
-                ->count(),
-            'pending_submissions' => AssignmentSubmission::join('assignments', 'assignment_submissions.assignment_id', '=', 'assignments.id')
-                ->where('assignments.guru_id', $guruId)
-                ->whereNull('assignment_submissions.score')
-                ->count(),
-        ];
+        try {
+            $stats = [
+                'total_materials' => Material::where('guru_id', $guruId)->count(),
+                'total_assignments' => Assignment::where('guru_id', $guruId)->count(),
+                'total_practicals' => Practical::where('guru_id', $guruId)->count(),
+                'total_students' => DB::table('users_central')->where('role', 'siswa')->count(),
+                'pending_grading' => AssignmentSubmission::join('assignments', 'assignment_submissions.assignment_id', '=', 'assignments.id')
+                    ->where('assignments.guru_id', $guruId)
+                    ->whereNull('assignment_submissions.score')
+                    ->count(),
+                'pending_submissions' => AssignmentSubmission::join('assignments', 'assignment_submissions.assignment_id', '=', 'assignments.id')
+                    ->where('assignments.guru_id', $guruId)
+                    ->whereNull('assignment_submissions.score')
+                    ->count(),
+            ];
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('GuruStatsComposer error: ' . $e->getMessage());
+            $stats = [
+                'total_materials'    => 0,
+                'total_assignments'  => 0,
+                'total_practicals'   => 0,
+                'total_students'     => 0,
+                'pending_grading'    => 0,
+                'pending_submissions'=> 0,
+            ];
+        }
 
         $view->with('stats', $stats);
     }
