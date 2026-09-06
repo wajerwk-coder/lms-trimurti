@@ -19,8 +19,16 @@ class JurusanController extends Controller
 
     public function index(): View
     {
-        $jurusan = Jurusan::withCount('kelas')->orderBy('name')->get();
-        return view('admin.jurusan.index', compact('jurusan'));
+        $jurusan = Jurusan::withCount(['kelas', 'siswa'])->orderBy('name')->get();
+
+        $totalJurusan = $jurusan->count();
+        $totalKelas   = $jurusan->sum('kelas_count');
+        $totalSiswa   = $jurusan->sum('siswa_count');
+        $jurusanAktif = $jurusan->where('is_active', true)->count();
+
+        return view('admin.jurusan.index', compact(
+            'jurusan', 'totalJurusan', 'totalKelas', 'totalSiswa', 'jurusanAktif'
+        ));
     }
 
     public function create(): View

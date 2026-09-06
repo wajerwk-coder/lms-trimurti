@@ -35,7 +35,21 @@ class ModernUserController extends BaseController
             ->with('guruProfile')
             ->latest()
             ->paginate(20);
-        return view('admin.users.guru-index', compact('gurus'));
+
+        // Counts untuk tab badge dan stats cards
+        $countAdmin  = UserCentral::where('role', 'admin')->count();
+        $countSiswa  = UserCentral::where('role', 'siswa')->count();
+        $countGuruAktif = UserCentral::where('role', 'guru')->where('is_active', true)->count();
+        try {
+            $countMapel  = \App\Models\Subject::count();
+            $countMateri = \App\Models\Material::count();
+        } catch (\Throwable $e) {
+            $countMapel = $countMateri = 0;
+        }
+
+        return view('admin.users.guru-index', compact(
+            'gurus', 'countAdmin', 'countSiswa', 'countGuruAktif', 'countMapel', 'countMateri'
+        ));
     }
 
     public function siswaIndex(): View
@@ -44,7 +58,26 @@ class ModernUserController extends BaseController
             ->with(['siswaProfile.kelas'])
             ->latest()
             ->paginate(20);
-        return view('admin.users.siswa-index', compact('siswas'));
+
+        // Counts untuk tab badge dan stats cards
+        $countAdmin    = UserCentral::where('role', 'admin')->count();
+        $countGuru     = UserCentral::where('role', 'guru')->count();
+        $countSiswaAktif = UserCentral::where('role', 'siswa')->where('is_active', true)->count();
+        try {
+            $countKelas    = \App\Models\Kelas::count();
+            $countJurusan  = \App\Models\Jurusan::count();
+            $allKelas      = \App\Models\Kelas::orderBy('name')->pluck('name');
+            $allJurusan    = \App\Models\Jurusan::orderBy('name')->pluck('name');
+        } catch (\Throwable $e) {
+            $countKelas = $countJurusan = 0;
+            $allKelas = $allJurusan = collect();
+        }
+
+        return view('admin.users.siswa-index', compact(
+            'siswas', 'countAdmin', 'countGuru',
+            'countSiswaAktif', 'countKelas', 'countJurusan',
+            'allKelas', 'allJurusan'
+        ));
     }
 
     // ── Create forms ─────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-﻿@extends('layouts.admin')
+@extends('layouts.admin')
 
 @section('title', 'Tambah Administrator')
 @section('page-title', 'Tambah Administrator')
@@ -45,25 +45,13 @@
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 @endif
-@if(session('success'))
-<div class="alert alert-success alert-dismissible fade show mb-4">
-    <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-@endif
-@if(session('error'))
-<div class="alert alert-danger alert-dismissible fade show mb-4">
-    <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-@endif
 
 <form action="{{ route('admin.users.store.admin') }}" method="POST" id="adminForm" novalidate>
 @csrf
 
 <div class="row g-4">
 
-    {{-- ═══ KIRI: Form ═══ --}}
+    {{-- --- KIRI: Form --- --}}
     <div class="col-lg-7">
 
         {{-- Seksi 1: Informasi Akun --}}
@@ -230,17 +218,17 @@
                                 </div>
                                 <div class="col-6">
                                     <div class="pw-rule fail" id="rule-lower">
-                                        <i class="fas fa-circle"></i>Huruf kecil (a–z)
+                                        <i class="fas fa-circle"></i>Huruf kecil (a�z)
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="pw-rule fail" id="rule-upper">
-                                        <i class="fas fa-circle"></i>Huruf besar (A–Z)
+                                        <i class="fas fa-circle"></i>Huruf besar (A�Z)
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="pw-rule fail" id="rule-number">
-                                        <i class="fas fa-circle"></i>Angka (0–9)
+                                        <i class="fas fa-circle"></i>Angka (0�9)
                                     </div>
                                 </div>
                             </div>
@@ -253,7 +241,7 @@
 
     </div>{{-- /col-lg-7 --}}
 
-    {{-- ═══ KANAN: Preview & Aksi ═══ --}}
+    {{-- --- KANAN: Preview & Aksi --- --}}
     <div class="col-lg-5">
 
         {{-- Live Preview Card --}}
@@ -333,7 +321,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    /* ── Toggle visibility ───────────────────────────── */
+    /* -- Toggle visibility ----------------------------- */
     function makeToggle(btnId, inputId, iconId) {
         document.getElementById(btnId).addEventListener('click', function () {
             const inp  = document.getElementById(inputId);
@@ -346,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function () {
     makeToggle('togglePw',      'passwordInput', 'pwIcon');
     makeToggle('toggleConfirm', 'confirmInput',  'confirmIcon');
 
-    /* ── Password strength ───────────────────────────── */
+    /* -- Password strength ----------------------------- */
     const pwInput  = document.getElementById('passwordInput');
     const cfInput  = document.getElementById('confirmInput');
     const bar      = document.getElementById('pwStrengthBar');
@@ -392,11 +380,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const pw = pwInput.value, cf = cfInput.value;
         if (!cf) { matchTxt.textContent = ''; matchTxt.className = 'd-block mt-1 small'; return; }
         const ok = pw === cf;
-        matchTxt.textContent = ok ? '✓ Password cocok' : '✗ Password tidak cocok';
+        matchTxt.textContent = ok ? '? Password cocok' : '? Password tidak cocok';
         matchTxt.className   = 'd-block mt-1 small fw-semibold ' + (ok ? 'text-success' : 'text-danger');
     }
 
-    /* ── Live Preview ────────────────────────────────── */
+    /* -- Live Preview ---------------------------------- */
     const nameInput     = document.getElementById('nameInput');
     const emailInput    = document.getElementById('emailInput');
     const usernameInput = document.getElementById('usernameInput');
@@ -427,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function () {
     emailInput.addEventListener('input', updatePreview);
     usernameInput.addEventListener('input', updatePreview);
 
-    /* ── Auto-generate username dari nama ────────────── */
+    /* -- Auto-generate username dari nama -------------- */
     nameInput.addEventListener('blur', function () {
         if (!usernameInput.value && this.value.trim()) {
             usernameInput.value = 'admin_' + this.value.trim()
@@ -436,12 +424,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    /* ── Submit guard ────────────────────────────────── */
+    /* -- Submit guard ---------------------------------- */
     document.getElementById('adminForm').addEventListener('submit', function (e) {
         if (pwInput.value !== cfInput.value) {
             e.preventDefault();
             cfInput.focus();
-            matchTxt.textContent = '✗ Password tidak cocok!';
+            matchTxt.textContent = '? Password tidak cocok!';
             matchTxt.className   = 'd-block mt-1 small fw-semibold text-danger';
             return;
         }

@@ -194,9 +194,73 @@
         h4, .h4 { font-size: 1.1rem; }
         h5, .h5 { font-size: 1rem; }
     }
+
+    /* ── Nav Pills (tab role) ─────────────────────────────── */
+    .nav-pills .nav-link {
+        border-radius: 8px;
+        font-size: .82rem;
+        font-weight: 500;
+        padding: .4rem .85rem;
+        color: #64748b;
+        transition: background .15s, color .15s;
+    }
+    .nav-pills .nav-link.active {
+        background: linear-gradient(135deg, var(--brand-from), var(--brand-to)) !important;
+        color: #fff !important;
+    }
+    .nav-pills .nav-link:not(.active):hover {
+        background: #f1f5f9;
+        color: #1e40af;
+    }
+
+    /* ── Table improvements ───────────────────────────────── */
+    .table thead th {
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: #64748b;
+        border-bottom-width: 1px;
+    }
+    .table-hover tbody tr:hover {
+        background: #f8fafc !important;
+    }
+
+    /* ── Card header consistency ──────────────────────────── */
+    .card-header.bg-white {
+        background: #fff !important;
+    }
+
+    /* ── Pagination brand color ───────────────────────────── */
+    .pagination .page-link {
+        border-radius: 7px !important;
+        margin: 0 2px;
+        border-color: #e2e8f0;
+        color: #475569;
+        font-size: .82rem;
+    }
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, var(--brand-from), var(--brand-to));
+        border-color: transparent;
+    }
+    .pagination .page-link:hover {
+        background: #f1f5f9;
+        color: var(--brand-from);
+    }
+
+    /* ── Input group polished ─────────────────────────────── */
+    .input-group-text {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        color: #94a3b8;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    }
     </style>
 </head>
-<body>
+<body class="admin-layout">
 <div class="lms-wrapper">
 
     {{-- SIDEBAR --}}

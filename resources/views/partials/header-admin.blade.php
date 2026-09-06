@@ -142,7 +142,6 @@
                              class="rounded-circle flex-shrink-0"
                              style="width:42px;height:42px;object-fit:cover;"
                              onerror="this.src='{{ $adminPhotoFallback }}'">
-                             onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($adminName) }}&background=3b82f6&color=fff'">
                         <div style="min-width:0;">
                             <div class="fw-bold text-dark text-truncate" style="font-size:.85rem;">
                                 {{ $adminName }}
@@ -152,6 +151,19 @@
                             </div>
                         </div>
                     </div>
+                </li>
+
+                <li><hr class="dropdown-divider mx-2 my-1"></li>
+
+                <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3"
+                       href="{{ route('admin.profile.edit') }}">
+                        <span class="rounded-2 bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                              style="width:28px;height:28px;">
+                            <i class="fas fa-user-cog text-primary" style="font-size:.7rem;"></i>
+                        </span>
+                        <span>Profil Saya</span>
+                    </a>
                 </li>
 
                 <li><hr class="dropdown-divider mx-2 my-1"></li>

@@ -62,6 +62,20 @@
     transition: transform .2s ease, box-shadow .2s ease;
 }
 .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(0,0,0,.1) !important;
+}
+.stat-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+    border: none;
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+.stat-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 28px rgba(0,0,0,.12) !important;
 }
@@ -131,7 +145,7 @@
                     <i class="fas fa-user-shield text-white fa-lg"></i>
                 </div>
                 <div class="text-white">
-                    <h4 class="fw-bold mb-0 lh-1">Halo, {{ Auth::user()->name }}! 👋</h4>
+                    <h5 class="fw-bold mb-0 lh-1">Halo, {{ Auth::user()->name }}! 👋</h5>
                     <small class="opacity-75">{{ now()->translatedFormat('l, d F Y — H:i') }} WIB</small>
                 </div>
             </div>
@@ -190,7 +204,7 @@
                     </span>
                     @endif
                 </div>
-                <div class="h3 fw-bold mb-0 text-dark">{{ number_format($stats['total_users'] ?? 0) }}</div>
+                <div class="fw-bold mb-0 text-dark" style="font-size:1.5rem;line-height:1.2;">{{ number_format($stats['total_users'] ?? 0) }}</div>
                 <div class="small fw-semibold text-muted">Total Pengguna</div>
                 <div class="mt-2 pt-2 border-top">
                     <div class="d-flex justify-content-between" style="font-size:.7rem;color:#94a3b8;">
@@ -211,7 +225,7 @@
                         <i class="fas fa-user-graduate text-success"></i>
                     </div>
                 </div>
-                <div class="h3 fw-bold mb-0 text-dark">{{ number_format($stats['total_siswa'] ?? 0) }}</div>
+                <div class="fw-bold mb-0 text-dark" style="font-size:1.5rem;line-height:1.2;">{{ number_format($stats['total_siswa'] ?? 0) }}</div>
                 <div class="small fw-semibold text-muted">Total Siswa</div>
                 <div class="mt-2 pt-2 border-top">
                     <div class="d-flex justify-content-between" style="font-size:.7rem;color:#94a3b8;">
@@ -232,7 +246,7 @@
                         <i class="fas fa-chalkboard-teacher text-warning"></i>
                     </div>
                 </div>
-                <div class="h3 fw-bold mb-0 text-dark">{{ number_format($stats['total_guru'] ?? 0) }}</div>
+                <div class="fw-bold mb-0 text-dark" style="font-size:1.5rem;line-height:1.2;">{{ number_format($stats['total_guru'] ?? 0) }}</div>
                 <div class="small fw-semibold text-muted">Total Guru</div>
                 <div class="mt-2 pt-2 border-top">
                     <div class="d-flex justify-content-between" style="font-size:.7rem;color:#94a3b8;">
@@ -253,7 +267,7 @@
                         <i class="fas fa-book text-info"></i>
                     </div>
                 </div>
-                <div class="h3 fw-bold mb-0 text-dark">{{ number_format($stats['total_materials'] ?? 0) }}</div>
+                <div class="fw-bold mb-0 text-dark" style="font-size:1.5rem;line-height:1.2;">{{ number_format($stats['total_materials'] ?? 0) }}</div>
                 <div class="small fw-semibold text-muted">Materi</div>
                 <div class="mt-2 pt-2 border-top">
                     <div class="d-flex justify-content-between" style="font-size:.7rem;color:#94a3b8;">
@@ -274,7 +288,7 @@
                         <i class="fas fa-tasks text-danger"></i>
                     </div>
                 </div>
-                <div class="h3 fw-bold mb-0 text-dark">{{ number_format($stats['total_assignments'] ?? 0) }}</div>
+                <div class="fw-bold mb-0 text-dark" style="font-size:1.5rem;line-height:1.2;">{{ number_format($stats['total_assignments'] ?? 0) }}</div>
                 <div class="small fw-semibold text-muted">Tugas</div>
                 <div class="mt-2 pt-2 border-top">
                     <div class="d-flex justify-content-between" style="font-size:.7rem;color:#94a3b8;">
@@ -295,7 +309,7 @@
                         <i class="fas fa-flask text-secondary"></i>
                     </div>
                 </div>
-                <div class="h3 fw-bold mb-0 text-dark">{{ number_format($stats['total_practicals'] ?? 0) }}</div>
+                <div class="fw-bold mb-0 text-dark" style="font-size:1.5rem;line-height:1.2;">{{ number_format($stats['total_practicals'] ?? 0) }}</div>
                 <div class="small fw-semibold text-muted">Praktikum</div>
                 <div class="mt-2 pt-2 border-top">
                     <div class="d-flex justify-content-between" style="font-size:.7rem;color:#94a3b8;">

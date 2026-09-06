@@ -12,19 +12,6 @@
 
 @section('content')
 
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-@if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-
 {{-- Tab Navigasi Role --}}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body py-2 px-3">
@@ -32,7 +19,7 @@
             <li class="nav-item">
                 <a class="nav-link text-muted" href="{{ route('admin.users.index') }}">
                     <i class="fas fa-user-shield me-1"></i>Admin
-                    <span class="badge bg-secondary ms-1">{{ \App\Models\UserCentral::where('role','admin')->count() }}</span>
+                    <span class="badge bg-secondary ms-1">{{ $countAdmin }}</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -44,7 +31,7 @@
             <li class="nav-item">
                 <a class="nav-link text-muted" href="{{ route('admin.users.siswa') }}">
                     <i class="fas fa-user-graduate me-1"></i>Siswa
-                    <span class="badge bg-secondary ms-1">{{ \App\Models\UserCentral::where('role','siswa')->count() }}</span>
+                    <span class="badge bg-secondary ms-1">{{ $countSiswa }}</span>
                 </a>
             </li>
         </ul>
@@ -73,9 +60,7 @@
                     <i class="fas fa-user-check text-primary fa-lg"></i>
                 </div>
                 <div>
-                    <div class="h4 fw-bold mb-0">
-                        {{ \App\Models\UserCentral::where('role','guru')->where('is_active',true)->count() }}
-                    </div>
+                    <div class="h4 fw-bold mb-0">{{ $countGuruAktif }}</div>
                     <small class="text-muted">Guru Aktif</small>
                 </div>
             </div>
@@ -88,11 +73,7 @@
                     <i class="fas fa-book text-warning fa-lg"></i>
                 </div>
                 <div>
-                    <div class="h4 fw-bold mb-0">
-                        @php
-                            try { echo \App\Models\Subject::count(); } catch(\Throwable $e) { echo 0; }
-                        @endphp
-                    </div>
+                    <div class="h4 fw-bold mb-0">{{ $countMapel }}</div>
                     <small class="text-muted">Mata Pelajaran</small>
                 </div>
             </div>
@@ -105,11 +86,7 @@
                     <i class="fas fa-tasks text-info fa-lg"></i>
                 </div>
                 <div>
-                    <div class="h4 fw-bold mb-0">
-                        @php
-                            try { echo \App\Models\Material::count(); } catch(\Throwable $e) { echo 0; }
-                        @endphp
-                    </div>
+                    <div class="h4 fw-bold mb-0">{{ $countMateri }}</div>
                     <small class="text-muted">Total Materi</small>
                 </div>
             </div>

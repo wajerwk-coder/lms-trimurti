@@ -1,4 +1,4 @@
-﻿@extends('layouts.admin')
+@extends('layouts.admin')
 
 @section('title', 'Tambah Guru')
 @section('page-title', 'Tambah Guru')
@@ -56,25 +56,13 @@
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 @endif
-@if(session('success'))
-<div class="alert alert-success alert-dismissible fade show mb-4">
-    <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-@endif
-@if(session('error'))
-<div class="alert alert-danger alert-dismissible fade show mb-4">
-    <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-@endif
 
 <form action="{{ route('admin.users.store.guru') }}" method="POST" id="guruForm" novalidate>
 @csrf
 
 <div class="row g-4">
 
-    {{-- ═══ KIRI: Form ═══ --}}
+    {{-- --- KIRI: Form --- --}}
     <div class="col-lg-8">
 
         {{-- 1. Akun Login --}}
@@ -186,9 +174,9 @@
                         <div class="bg-light rounded-2 p-3">
                             <div class="row g-2">
                                 <div class="col-6"><div class="pw-rule fail" id="rule-length"><i class="fas fa-circle"></i>Min. 8 karakter</div></div>
-                                <div class="col-6"><div class="pw-rule fail" id="rule-lower"><i class="fas fa-circle"></i>Huruf kecil (a–z)</div></div>
-                                <div class="col-6"><div class="pw-rule fail" id="rule-upper"><i class="fas fa-circle"></i>Huruf besar (A–Z)</div></div>
-                                <div class="col-6"><div class="pw-rule fail" id="rule-number"><i class="fas fa-circle"></i>Angka (0–9)</div></div>
+                                <div class="col-6"><div class="pw-rule fail" id="rule-lower"><i class="fas fa-circle"></i>Huruf kecil (a�z)</div></div>
+                                <div class="col-6"><div class="pw-rule fail" id="rule-upper"><i class="fas fa-circle"></i>Huruf besar (A�Z)</div></div>
+                                <div class="col-6"><div class="pw-rule fail" id="rule-number"><i class="fas fa-circle"></i>Angka (0�9)</div></div>
                             </div>
                         </div>
                     </div>
@@ -308,7 +296,7 @@
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Pendidikan Terakhir</label>
                         <select name="pendidikan_terakhir" class="form-select">
-                            <option value="">— Pilih —</option>
+                            <option value="">� Pilih �</option>
                             @foreach(['D3','S1','S2','S3'] as $p)
                                 <option value="{{ $p }}" {{ old('pendidikan_terakhir')==$p ? 'selected':'' }}>{{ $p }}</option>
                             @endforeach
@@ -378,7 +366,7 @@
                     <div class="col-md-4">
                         <label class="form-label small fw-semibold">Jenis Kelamin</label>
                         <select name="jenis_kelamin" class="form-select">
-                            <option value="">— Pilih —</option>
+                            <option value="">� Pilih �</option>
                             <option value="L" {{ old('jenis_kelamin')=='L' ? 'selected':'' }}>Laki-laki</option>
                             <option value="P" {{ old('jenis_kelamin')=='P' ? 'selected':'' }}>Perempuan</option>
                         </select>
@@ -394,7 +382,7 @@
 
     </div>{{-- /col-lg-8 --}}
 
-    {{-- ═══ KANAN: Preview & Aksi ═══ --}}
+    {{-- --- KANAN: Preview & Aksi --- --}}
     <div class="col-lg-4">
 
         {{-- Live Preview --}}
@@ -476,7 +464,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    /* ── Subject checkbox search & counter ─────────── */
+    /* -- Subject checkbox search & counter ----------- */
     const searchInput   = document.getElementById('subjectSearch');
     const checkboxList  = document.getElementById('subjectCheckboxList');
     const countEl       = document.getElementById('selectedCount');
@@ -510,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    /* ── Toggle visibility ─────────────────────────── */
+    /* -- Toggle visibility --------------------------- */
     function makeToggle(btnId, inputId, iconId) {
         document.getElementById(btnId).addEventListener('click', function () {
             const inp  = document.getElementById(inputId);
@@ -523,7 +511,7 @@ document.addEventListener('DOMContentLoaded', function () {
     makeToggle('togglePw',      'passwordInput', 'pwIcon');
     makeToggle('toggleConfirm', 'confirmInput',  'confirmIcon');
 
-    /* ── Password strength & rules ─────────────────── */
+    /* -- Password strength & rules ------------------- */
     const pwInput  = document.getElementById('passwordInput');
     const cfInput  = document.getElementById('confirmInput');
     const bar      = document.getElementById('pwStrengthBar');
@@ -566,11 +554,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const pw = pwInput.value, cf = cfInput.value;
         if (!cf) { matchTxt.textContent = ''; matchTxt.className = 'd-block mt-1 small'; return; }
         const ok = pw === cf;
-        matchTxt.textContent = ok ? '✓ Password cocok' : '✗ Password tidak cocok';
+        matchTxt.textContent = ok ? '? Password cocok' : '? Password tidak cocok';
         matchTxt.className   = 'd-block mt-1 small fw-semibold ' + (ok ? 'text-success' : 'text-danger');
     }
 
-    /* ── Live Preview ──────────────────────────────── */
+    /* -- Live Preview -------------------------------- */
     const nameEl    = document.getElementById('nameInput');
     const emailEl   = document.getElementById('emailInput');
     const subjectEl = document.getElementById('subjectSelect');
@@ -592,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         pName.textContent  = name  || 'Nama Guru';
         pEmail.textContent = email || 'email@contoh.com';
-        pSubject.textContent = (subj && subj !== '— Pilih Mata Pelajaran —') ? subj : '';
+        pSubject.textContent = (subj && subj !== '� Pilih Mata Pelajaran �') ? subj : '';
 
         if (nip) { pNip.classList.remove('d-none'); pNipTxt.textContent = nip; }
         else     { pNip.classList.add('d-none'); }
@@ -611,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function () {
     subjectEl.addEventListener('change', updatePreview);
     nipEl.addEventListener('input', updatePreview);
 
-    /* ── Auto-generate username ────────────────────── */
+    /* -- Auto-generate username ---------------------- */
     nameEl.addEventListener('blur', function () {
         if (!userEl.value && this.value.trim()) {
             userEl.value = 'guru_' + this.value.trim()
@@ -620,12 +608,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    /* ── Submit guard ──────────────────────────────── */
+    /* -- Submit guard -------------------------------- */
     document.getElementById('guruForm').addEventListener('submit', function (e) {
         if (pwInput.value !== cfInput.value) {
             e.preventDefault();
             cfInput.focus();
-            matchTxt.textContent = '✗ Password tidak cocok!';
+            matchTxt.textContent = '? Password tidak cocok!';
             matchTxt.className   = 'd-block mt-1 small fw-semibold text-danger';
             return;
         }

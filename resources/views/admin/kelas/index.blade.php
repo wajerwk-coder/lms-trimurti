@@ -129,10 +129,10 @@
                         <td>
                             @php
                                 $jName = $kls->jurusan?->name ?? null;
-                                $jc = $jName ? match(strtolower($jName)) {
-                                    'keperawatan' => 'info',
-                                    default       => 'success'
-                                } : 'secondary';
+                                // Warna badge berdasarkan index jurusan, bukan hardcode nama
+                                $jColors = ['primary','success','info','warning','danger','secondary'];
+                                $jIndex  = $jName ? (abs(crc32($jName)) % count($jColors)) : count($jColors)-1;
+                                $jc      = $jName ? $jColors[$jIndex] : 'secondary';
                             @endphp
                             @if($jName)
                                 <span class="badge bg-{{ $jc }}">{{ $jName }}</span>
