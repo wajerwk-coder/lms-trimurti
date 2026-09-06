@@ -70,8 +70,8 @@
             <div class="card-body text-center py-4">
 
                 @php
-                    // Query langsung dari DB — hindari cache session
-                    $freshPhoto  = \App\Models\UserCentral::find(Auth::id())?->photo;
+                    // Query raw DB — bypass semua cache Eloquent/session
+                    $freshPhoto  = \Illuminate\Support\Facades\DB::table('users_central')->where('id', Auth::id())->value('photo');
                     $avatarSrc   = $freshPhoto && str_starts_with($freshPhoto, 'http')
                         ? $freshPhoto
                         : ($freshPhoto ? asset('storage/' . $freshPhoto) : null);

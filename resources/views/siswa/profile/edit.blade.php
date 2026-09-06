@@ -82,7 +82,7 @@
             </div>
             <div class="card-body text-center py-4">
                 @php
-                    $freshPhoto   = \App\Models\UserCentral::find(Auth::id())?->photo;
+                    $freshPhoto   = \Illuminate\Support\Facades\DB::table('users_central')->where('id', Auth::id())->value('photo');
                     $avatarSrc    = $freshPhoto && str_starts_with($freshPhoto, 'http')
                         ? $freshPhoto
                         : ($freshPhoto ? asset('storage/'.$freshPhoto) : null);
