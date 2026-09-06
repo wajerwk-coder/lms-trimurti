@@ -1,4 +1,4 @@
-﻿@extends('layouts.guru')
+@extends('layouts.guru')
 
 @section('title', 'Tambah Absensi')
 @section('page-title', 'Tambah Absensi')
@@ -27,25 +27,13 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 @endif
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-@if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
 
 <form action="{{ route('guru.absensi.store') }}" method="POST" id="absensiForm" novalidate>
     @csrf
 
     <div class="row g-4">
 
-        {{-- ═══ KIRI: Form Utama ═══ --}}
+        {{-- --- KIRI: Form Utama --- --}}
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-primary text-white">
@@ -62,7 +50,7 @@
                                 Kelas <span class="text-danger">*</span>
                             </label>
                             <select class="form-select" id="kelas_id" name="kelas_id" required>
-                                <option value="">— Pilih Kelas —</option>
+                                <option value="">� Pilih Kelas �</option>
                                 @foreach($classes as $k)
                                     <option value="{{ $k->id }}"
                                         {{ old('kelas_id') == $k->id ? 'selected' : '' }}>
@@ -80,7 +68,7 @@
                             <div class="position-relative">
                                 <select class="form-select @error('siswa_id') is-invalid @enderror"
                                         id="siswa_id" name="siswa_id" required>
-                                    <option value="">— Pilih kelas dulu —</option>
+                                    <option value="">� Pilih kelas dulu �</option>
                                 </select>
                                 {{-- Spinner overlay saat loading --}}
                                 <div id="siswaSpinner"
@@ -101,7 +89,7 @@
                             </label>
                             <select class="form-select @error('subject_id') is-invalid @enderror"
                                     id="subject_id" name="subject_id">
-                                <option value="">— Pilih Mapel —</option>
+                                <option value="">� Pilih Mapel �</option>
                                 @foreach($subjects as $subject)
                                     <option value="{{ $subject->id }}"
                                         {{ old('subject_id') == $subject->id ? 'selected' : '' }}>
@@ -167,7 +155,7 @@
             </div>{{-- /card --}}
         </div>{{-- /col-lg-8 --}}
 
-        {{-- ═══ KANAN: Info & Tombol ═══ --}}
+        {{-- --- KANAN: Info & Tombol --- --}}
         <div class="col-lg-4">
 
             {{-- Keterangan status --}}
@@ -230,17 +218,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const submitBtn    = document.getElementById('submitBtn');
     const csrfToken    = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 
-    // ── Load siswa via AJAX saat kelas berubah ─────────────────────────
+    // -- Load siswa via AJAX saat kelas berubah -------------------------
     kelasSelect.addEventListener('change', function () {
         const kelasId = this.value;
 
         // Reset dropdown siswa
-        siswaSelect.innerHTML = '<option value="">— Memuat siswa... —</option>';
-        // (disabled removed — field must always submit)
+        siswaSelect.innerHTML = '<option value="">� Memuat siswa... �</option>';
+        // (disabled removed � field must always submit)
         siswaHint.textContent = '';
 
         if (!kelasId) {
-            siswaSelect.innerHTML = '<option value="">— Pilih kelas dulu —</option>';
+            siswaSelect.innerHTML = '<option value="">� Pilih kelas dulu �</option>';
             siswaHint.textContent = 'Pilih kelas untuk memuat daftar siswa.';
             return;
         }
@@ -268,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const oldVal = '{{ old('siswa_id') }}';
-            let html = '<option value="">— Pilih Siswa —</option>';
+            let html = '<option value="">� Pilih Siswa �</option>';
             data.forEach(s => {
                 const label = s.name + (s.nis ? ` (${s.nis})` : '');
                 const sel   = oldVal && String(oldVal) === String(s.id) ? ' selected' : '';
@@ -287,13 +275,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ── Jika ada old('kelas_id') setelah validasi gagal, trigger AJAX ──
+    // -- Jika ada old('kelas_id') setelah validasi gagal, trigger AJAX --
     const oldKelas = kelasSelect.value;
     if (oldKelas) {
         kelasSelect.dispatchEvent(new Event('change'));
     }
 
-    // ── Submit spinner ─────────────────────────────────────────────────
+    // -- Submit spinner -------------------------------------------------
     document.getElementById('absensiForm').addEventListener('submit', function (e) {
         // Cegah submit jika siswa belum dipilih
         if (!siswaSelect.value) {

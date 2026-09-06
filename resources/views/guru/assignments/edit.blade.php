@@ -1,6 +1,6 @@
-ï»¿@extends('layouts.guru')
+@extends('layouts.guru')
 
-@section('title', 'Edit Tugas â€” ' . $assignment->title)
+@section('title', 'Edit Tugas — ' . $assignment->title)
 @section('page-title', 'Edit Tugas')
 @section('page-subtitle', 'Perbarui informasi tugas: ' . $assignment->title)
 
@@ -27,24 +27,6 @@
 </div>
 @endif
 
-@if(session('error'))
-<div class="alert alert-danger alert-dismissible fade show mb-4">
-    <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-@endif
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-@if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
 
 <form action="{{ route('guru.assignments.update', $assignment->id) }}"
       method="POST" enctype="multipart/form-data" id="assignmentForm">
@@ -74,7 +56,7 @@
                             <label class="form-label small fw-semibold">Mata Pelajaran <span class="text-danger">*</span></label>
                             <select name="subject_id"
                                     class="form-select @error('subject_id') is-invalid @enderror" required>
-                                <option value="">â€” Pilih Mata Pelajaran â€”</option>
+                                <option value="">— Pilih Mata Pelajaran —</option>
                                 @foreach($classSubjects as $cs)
                                     <option value="{{ $cs->subject_id }}"
                                             {{ old('subject_id', $assignment->subject_id) == $cs->subject_id ? 'selected' : '' }}>
@@ -87,7 +69,7 @@
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold">Kelas</label>
                             <select name="class_id" class="form-select @error('class_id') is-invalid @enderror">
-                                <option value="">â€” Semua Kelas â€”</option>
+                                <option value="">— Semua Kelas —</option>
                                 @foreach($classes as $class)
                                     <option value="{{ $class->id }}"
                                             {{ old('class_id', $assignment->kelas_id) == $class->id ? 'selected' : '' }}>
@@ -136,7 +118,7 @@
                         <label class="form-label small fw-semibold">Instruksi Detail</label>
                         {{-- Toolbar --}}
                         <div class="d-flex gap-1 mb-2">
-                            @foreach([['bold','B','bold'],['italic','I','italic'],['underline','U','underline'],['bullet','â€¢','insertBullet'],['numbered','1.','insertNumber']] as [$k,$lbl,$fn])
+                            @foreach([['bold','B','bold'],['italic','I','italic'],['underline','U','underline'],['bullet','•','insertBullet'],['numbered','1.','insertNumber']] as [$k,$lbl,$fn])
                             <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1"
                                     onclick="{{ $fn === 'insertBullet' || $fn === 'insertNumber' ? $fn.'()' : 'formatText(\''.$fn.'\')' }}"
                                     title="{{ $k }}">
@@ -288,7 +270,7 @@ function formatText(type) {
     ta.value = ta.value.substring(0, s) + rep + ta.value.substring(e);
     ta.focus(); ta.setSelectionRange(s + rep.length, s + rep.length);
 }
-function insertBullet()  { _ins('â€¢ '); }
+function insertBullet()  { _ins('• '); }
 function insertNumber()  { _ins('1. '); }
 function _ins(txt) {
     const ta = document.getElementById('instructions');

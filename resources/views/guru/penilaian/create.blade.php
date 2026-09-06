@@ -12,18 +12,6 @@
 
 @section('content')
 
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show mb-4">
-        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-@if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show mb-4">
-        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
 @if($errors->any())
     <div class="alert alert-danger alert-dismissible fade show mb-4">
         <i class="fas fa-exclamation-circle me-2"></i>
@@ -143,11 +131,11 @@
                             <select class="form-select @error('grade') is-invalid @enderror"
                                     id="grade" name="grade">
                                 <option value="">— Otomatis —</option>
-                                <option value="A">A (85–100)</option>
-                                <option value="B">B (70–84)</option>
-                                <option value="C">C (55–69)</option>
-                                <option value="D">D (40–54)</option>
-                                <option value="E">E (0–39)</option>
+                                <option value="A">A (90–100)</option>
+                                <option value="B">B (80–89)</option>
+                                <option value="C">C (70–79)</option>
+                                <option value="D">D (60–69)</option>
+                                <option value="E">E (0–59)</option>
                             </select>
                             @error('grade')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
@@ -197,11 +185,11 @@
             </div>
             <div class="card-body py-2">
                 @foreach([
-                    ['success', 'A', '85 – 100', 'Sangat Baik'],
-                    ['primary', 'B', '70 – 84',  'Baik'],
-                    ['warning', 'C', '55 – 69',  'Cukup'],
-                    ['danger',  'D', '40 – 54',  'Kurang'],
-                    ['secondary','E','0 – 39',   'Sangat Kurang'],
+                    ['success', 'A', '90 – 100', 'Sangat Baik'],
+                    ['primary', 'B', '80 – 89',  'Baik'],
+                    ['info',    'C', '70 – 79',  'Cukup'],
+                    ['warning', 'D', '60 – 69',  'Kurang'],
+                    ['secondary','E','0 – 59',   'Sangat Kurang'],
                 ] as [$c, $g, $r, $l])
                 <div class="d-flex align-items-center justify-content-between py-2 border-bottom small">
                     <div class="d-flex align-items-center gap-2">
@@ -260,10 +248,10 @@ function toggleAssessmentType() {
 document.getElementById('score').addEventListener('input', function () {
     const s = parseFloat(this.value);
     const g = document.getElementById('grade');
-    if      (s >= 85) g.value = 'A';
-    else if (s >= 70) g.value = 'B';
-    else if (s >= 55) g.value = 'C';
-    else if (s >= 40) g.value = 'D';
+    if      (s >= 90) g.value = 'A';
+    else if (s >= 80) g.value = 'B';
+    else if (s >= 70) g.value = 'C';
+    else if (s >= 60) g.value = 'D';
     else if (s >= 0)  g.value = 'E';
     else              g.value = '';
 });

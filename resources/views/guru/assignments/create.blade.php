@@ -1,4 +1,4 @@
-ï»¿@extends('layouts.guru')
+@extends('layouts.guru')
 
 @section('title', 'Buat Tugas Baru')
 @section('page-title', 'Buat Tugas Baru')
@@ -19,18 +19,6 @@
         <ul class="mb-0 mt-1 small">
             @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
         </ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-@if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 @endif
@@ -109,7 +97,7 @@
                         <label for="class_id" class="form-label fw-semibold">Kelas <span class="text-danger">*</span></label>
                         <select class="form-select @error('class_id') is-invalid @enderror"
                                 id="class_id" name="class_id" required>
-                            <option value="">â€” Pilih Kelas â€”</option>
+                            <option value="">— Pilih Kelas —</option>
                             @foreach($classes as $class)
                                 <option value="{{ $class->id }}" {{ old('class_id') == $class->id ? 'selected' : '' }}>
                                     {{ $class->name }}
@@ -123,7 +111,7 @@
                         <label for="subject_id" class="form-label fw-semibold">Mata Pelajaran <span class="text-danger">*</span></label>
                         <select class="form-select @error('subject_id') is-invalid @enderror"
                                 id="subject_id" name="subject_id" required>
-                            <option value="">â€” Pilih Mata Pelajaran â€”</option>
+                            <option value="">— Pilih Mata Pelajaran —</option>
                             @foreach($classSubjects ?? [] as $subj)
                                 <option value="{{ $subj->subject_id }}"
                                         {{ old('subject_id') == $subj->subject_id ? 'selected' : '' }}>

@@ -1,4 +1,4 @@
-﻿@extends('layouts.guru')
+@extends('layouts.guru')
 
 @section('title', 'Manajemen Absensi - Guru')
 @section('page-title', 'Manajemen Absensi')
@@ -229,13 +229,6 @@
 @endif
 
 <!-- Success Alert -->
-@if(session('success'))
-<div class="alert alert-success alert-dismissible fade show" role="alert">
-    <i class="fas fa-check-circle me-2"></i>
-    {{ session('success') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-@endif
 
 <!-- Statistics Cards -->
 <div class="attendance-stats">

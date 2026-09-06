@@ -33,6 +33,18 @@
 
 @section('content')
 
+@php
+    // Preload semua rata-rata skor per praktikum agar tidak N+1 query di dalam loop
+    $praktikalIds  = $practicals->pluck('id')->toArray();
+    $avgScoresByPk = \App\Models\NilaiPraktik::whereIn('practical_id', $praktikalIds)
+        ->whereNull('criteria_id')
+        ->whereNotNull('score')
+        ->groupBy('practical_id')
+        ->selectRaw('practical_id, AVG(score) as avg_score')
+        ->pluck('avg_score', 'practical_id')
+        ->toArray();
+@endphp
+
 {{-- ── Stats ──────────────────────────────────────────────────── --}}
 <div class="row g-3 mb-4">
     @foreach([
@@ -137,9 +149,10 @@
                     @forelse($practicals as $p)
                     @php
                         $isPast   = $p->due_date?->isPast();
-                        $avgScore = \App\Models\NilaiPraktik::where('practical_id', $p->id)
-                            ->whereNull('criteria_id')->whereNotNull('score')->avg('score');
-                        $sc2 = $avgScore >= 80 ? '#16a34a' : ($avgScore >= 60 ? '#d97706' : '#dc2626');
+                        $avgScore = isset($avgScoresByPk[$p->id]) ? (float) $avgScoresByPk[$p->id] : null;
+                        $sc2 = $avgScore !== null
+                            ? ($avgScore >= 80 ? '#16a34a' : ($avgScore >= 60 ? '#d97706' : '#dc2626'))
+                            : '#94a3b8';
                     @endphp
                     <tr>
                         <td class="ps-4">

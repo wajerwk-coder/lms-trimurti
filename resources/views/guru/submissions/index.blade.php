@@ -58,12 +58,6 @@
 
 @section('content')
 
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show mb-4 border-0 shadow-sm" style="border-radius:12px;">
-        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
 @if(isset($error))
     <div class="alert alert-danger border-0 shadow-sm mb-4" style="border-radius:12px;">
         <i class="fas fa-exclamation-circle me-2"></i>{{ $error }}

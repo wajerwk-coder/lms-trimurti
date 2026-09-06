@@ -1,4 +1,4 @@
-ï»¿@extends('layouts.guru')
+@extends('layouts.guru')
 
 @section('title', 'Tambah Materi')
 @section('page-title', 'Tambah Materi Pembelajaran')
@@ -19,18 +19,6 @@
         <ul class="mb-0 mt-1 small ps-3">
             @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
         </ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-@if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 @endif
@@ -72,7 +60,7 @@
                                    id="video_url" name="video_url" value="{{ old('video_url') }}"
                                    placeholder="https://youtube.com/watch?v=...">
                         </div>
-                        <div class="form-text">Opsional â€” link YouTube, Google Drive, dll.</div>
+                        <div class="form-text">Opsional — link YouTube, Google Drive, dll.</div>
                         @error('video_url')<div class="text-danger small">{{ $message }}</div>@enderror
                     </div>
 
@@ -108,7 +96,7 @@
                         </label>
                         <select class="form-select @error('subject_id') is-invalid @enderror"
                                 id="subject_id" name="subject_id" required>
-                            <option value="">â€” Pilih Mata Pelajaran â€”</option>
+                            <option value="">— Pilih Mata Pelajaran —</option>
                             @foreach($classSubjects ?? [] as $cs)
                                 <option value="{{ $cs->subject_id }}"
                                         {{ old('subject_id') == $cs->subject_id ? 'selected' : '' }}>
@@ -124,7 +112,7 @@
                     <div class="mb-3">
                         <label for="kelas_id" class="form-label fw-semibold">Kelas</label>
                         <select class="form-select" id="kelas_id" name="kelas_id">
-                            <option value="">â€” Semua Kelas â€”</option>
+                            <option value="">— Semua Kelas —</option>
                             @foreach($classes as $class)
                                 <option value="{{ $class->id }}" {{ old('kelas_id') == $class->id ? 'selected' : '' }}>
                                     {{ $class->name }}
@@ -144,7 +132,7 @@
                             Publikasikan Sekarang
                         </label>
                     </div>
-                    <small class="text-muted">Default aktif â€” materi langsung terlihat oleh siswa. Uncheck untuk simpan sebagai draft.</small>
+                    <small class="text-muted">Default aktif — materi langsung terlihat oleh siswa. Uncheck untuk simpan sebagai draft.</small>
                 </div>
             </div>
 

@@ -1,8 +1,8 @@
-ï»¿@extends('layouts.guru')
+@extends('layouts.guru')
 
 @section('title', $material->title)
 @section('page-title', $material->title)
-@section('page-subtitle', ($material->subject?->name ?? 'â€”') . ' Â· Materi')
+@section('page-subtitle', ($material->subject?->name ?? '—') . ' · Materi')
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('guru.materials.index') }}" class="text-decoration-none">Materi</a></li>
     <li class="breadcrumb-item active" aria-current="page">{{ $material->title }}</li>
@@ -25,18 +25,6 @@
 @endsection
 
 @section('content')
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show">
-        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-@if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
 
 <div class="row">
     <div class="col-12">
@@ -49,7 +37,7 @@
                         <div class="d-flex flex-wrap gap-3 mb-2">
                             <span class="text-muted">
                                 <i class="fas fa-book me-1"></i>
-                                {{ $material->subject?->name ?? 'â€”' }}
+                                {{ $material->subject?->name ?? '—' }}
                             </span>
                         </div>
                     </div>

@@ -190,9 +190,49 @@
 
     /* Card hover */
     .card.shadow-sm:hover { box-shadow: 0 6px 20px rgba(8,145,178,.1) !important; }
+
+    /* ── Nav Pills (tab) ──────────────────────────────────── */
+    .nav-pills .nav-link {
+        border-radius: 8px; font-size: .82rem; font-weight: 500;
+        padding: .4rem .85rem; color: #64748b;
+        transition: background .15s, color .15s;
+    }
+    .nav-pills .nav-link.active {
+        background: linear-gradient(135deg, #0f766e, #0891b2) !important;
+        color: #fff !important;
+    }
+    .nav-pills .nav-link:not(.active):hover {
+        background: #f0fdfa; color: #0f766e;
+    }
+
+    /* ── Table improvements ───────────────────────────────── */
+    .table thead th {
+        font-size: .72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .04em;
+        color: #64748b; border-bottom-width: 1px;
+    }
+    .table-hover tbody tr:hover { background: #f8fafc !important; }
+
+    /* ── Pagination teal ──────────────────────────────────── */
+    .pagination .page-link {
+        border-radius: 7px !important; margin: 0 2px;
+        border-color: #e2e8f0; color: #475569; font-size: .82rem;
+    }
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #0f766e, #0891b2);
+        border-color: transparent;
+    }
+    .pagination .page-link:hover { background: #f0fdfa; color: #0f766e; }
+
+    /* ── Input group ──────────────────────────────────────── */
+    .input-group-text { background: #f8fafc; border-color: #e2e8f0; color: #94a3b8; }
+    .form-control:focus, .form-select:focus {
+        border-color: #5eead4;
+        box-shadow: 0 0 0 3px rgba(15,118,110,.12);
+    }
     </style>
 </head>
-<body>
+<body class="guru-layout">
 <div class="lms-wrapper">
 
     {{-- SIDEBAR --}}
