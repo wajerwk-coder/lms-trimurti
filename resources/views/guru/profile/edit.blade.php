@@ -28,8 +28,10 @@
             <div class="card-body py-4">
                 {{-- Avatar --}}
                 @php
-                    // Query langsung dari DB untuk pastikan nilai terbaru
-                    $freshPhoto = \App\Models\UserCentral::find(Auth::id())?->photo;
+                    // Query raw DB — bypass semua ORM/session cache
+                    $freshPhoto = \Illuminate\Support\Facades\DB::table('users_central')
+                        ->where('id', Auth::id())
+                        ->value('photo');
                     $avatarSrc  = $freshPhoto && str_starts_with($freshPhoto, 'http')
                         ? $freshPhoto
                         : ($freshPhoto ? asset('storage/' . $freshPhoto)

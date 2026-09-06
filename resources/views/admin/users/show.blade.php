@@ -75,8 +75,7 @@
         {{-- Hero Card --}}
         <div class="profile-hero p-4 mb-4">
             <div class="text-center text-white mb-3">
-                @if($user->photo)
-                    <img src="{{ asset('storage/'.$user->photo) }}"
+                <img src="{{ $user->photo_url }}"
                          class="rounded-circle border border-3 border-white border-opacity-50 mb-3"
                          style="width:90px;height:90px;object-fit:cover;">
                 @else
