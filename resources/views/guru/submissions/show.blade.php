@@ -122,7 +122,7 @@
     $initial     = strtoupper(substr($siswaName, 0, 1));
     $colors      = ['#0891b2','#7c3aed','#16a34a','#d97706','#dc2626','#0f766e'];
     $avatarBg    = $colors[abs(crc32($siswaName)) % count($colors)];
-    $siswaProfile = \App\Models\Siswa::where('user_id', $siswa?->id)->with('kelas')->first();
+    $siswaProfile = $siswa?->siswaProfile; {{-- loaded via eager load dari controller --}}
 
     $score    = (float) ($submission->score ?? 0);
     $grade    = match(true) { $score >= 90 => 'A', $score >= 80 => 'B', $score >= 70 => 'C', $score >= 60 => 'D', default => 'E' };

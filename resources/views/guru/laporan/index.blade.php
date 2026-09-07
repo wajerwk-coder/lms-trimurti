@@ -269,7 +269,7 @@
                     <label class="form-label small fw-semibold">Kelas</label>
                     <select name="kelas" class="form-select">
                         <option value="">Semua Kelas</option>
-                        @foreach(\App\Models\Kelas::orderBy('name')->get() as $k)
+                        @foreach($kelasList as $k)
                             <option value="{{ $k->id }}">{{ $k->name }}</option>
                         @endforeach
                     </select>

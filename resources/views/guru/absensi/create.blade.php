@@ -36,10 +36,11 @@
         {{-- --- KIRI: Form Utama --- --}}
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0 fw-bold">
-                        <i class="fas fa-calendar-check me-2"></i>Data Absensi
-                    </h6>
+                <div class="card-header bg-white border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-calendar-check text-primary"></i>
+                        <h6 class="mb-0 fw-semibold">Data Absensi</h6>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -50,7 +51,7 @@
                                 Kelas <span class="text-danger">*</span>
                             </label>
                             <select class="form-select" id="kelas_id" name="kelas_id" required>
-                                <option value="">— Pilih Kelas —</option>
+                                <option value="">ï¿½ Pilih Kelas ï¿½</option>
                                 @foreach($classes as $k)
                                     <option value="{{ $k->id }}"
                                         {{ old('kelas_id') == $k->id ? 'selected' : '' }}>
@@ -68,7 +69,7 @@
                             <div class="position-relative">
                                 <select class="form-select @error('siswa_id') is-invalid @enderror"
                                         id="siswa_id" name="siswa_id" required>
-                                    <option value="">— Pilih kelas dulu —</option>
+                                    <option value="">ï¿½ Pilih kelas dulu ï¿½</option>
                                 </select>
                                 {{-- Spinner overlay saat loading --}}
                                 <div id="siswaSpinner"
@@ -89,7 +90,7 @@
                             </label>
                             <select class="form-select @error('subject_id') is-invalid @enderror"
                                     id="subject_id" name="subject_id">
-                                <option value="">— Pilih Mapel —</option>
+                                <option value="">ï¿½ Pilih Mapel ï¿½</option>
                                 @foreach($subjects as $subject)
                                     <option value="{{ $subject->id }}"
                                         {{ old('subject_id') == $subject->id ? 'selected' : '' }}>
@@ -223,12 +224,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const kelasId = this.value;
 
         // Reset dropdown siswa
-        siswaSelect.innerHTML = '<option value="">— Memuat siswa... —</option>';
-        // (disabled removed — field must always submit)
+        siswaSelect.innerHTML = '<option value="">ï¿½ Memuat siswa... ï¿½</option>';
+        // (disabled removed ï¿½ field must always submit)
         siswaHint.textContent = '';
 
         if (!kelasId) {
-            siswaSelect.innerHTML = '<option value="">— Pilih kelas dulu —</option>';
+            siswaSelect.innerHTML = '<option value="">ï¿½ Pilih kelas dulu ï¿½</option>';
             siswaHint.textContent = 'Pilih kelas untuk memuat daftar siswa.';
             return;
         }
@@ -256,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const oldVal = '{{ old('siswa_id') }}';
-            let html = '<option value="">— Pilih Siswa —</option>';
+            let html = '<option value="">ï¿½ Pilih Siswa ï¿½</option>';
             data.forEach(s => {
                 const label = s.name + (s.nis ? ` (${s.nis})` : '');
                 const sel   = oldVal && String(oldVal) === String(s.id) ? ' selected' : '';

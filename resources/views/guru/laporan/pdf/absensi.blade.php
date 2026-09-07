@@ -33,7 +33,7 @@
             <td>: {{ \Carbon\Carbon::parse($filters['start_date'])->format('d M Y') }} – {{ \Carbon\Carbon::parse($filters['end_date'])->format('d M Y') }}</td>
             <td>&nbsp;&nbsp;&nbsp;</td>
             <td><strong>Kelas</strong></td>
-            <td>: {{ $filters['kelas'] ? \App\Models\Kelas::find($filters['kelas'])?->name : 'Semua Kelas' }}</td>
+            <td>: {{ $filters['kelas'] ? (\App\Models\Kelas::find($filters['kelas'])?->name ?? 'Semua Kelas') : 'Semua Kelas' }}</td>
         </tr>
     </table>
 

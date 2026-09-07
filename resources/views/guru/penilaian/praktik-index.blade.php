@@ -251,12 +251,8 @@
                         $colors     = ['#0891b2','#7c3aed','#16a34a','#d97706','#dc2626','#0f766e'];
                         $avatarBg   = $colors[abs(crc32($siswaName)) % count($colors)];
 
-                        // Cari nilai summary (criteria_id IS NULL)
-                        $nilaiRecord = \App\Models\NilaiPraktik::where('practical_id', $p->id)
-                            ->where('siswa_id', $siswa->user_id)
-                            ->whereNull('criteria_id')
-                            ->first();
-
+                        // Pakai nilai_map yang sudah di-preload (bukan query per baris)
+                        $nilaiRecord  = $p->nilai_map[$siswa->user_id] ?? null;
                         $sudahDinilai = $nilaiRecord && !is_null($nilaiRecord->score);
                         $score        = $sudahDinilai ? (float) $nilaiRecord->score : null;
                         $grade        = match(true) {

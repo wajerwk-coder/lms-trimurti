@@ -79,7 +79,7 @@
             <label class="form-label small fw-semibold mb-1">Mata Pelajaran</label>
             <select name="subject_id" class="form-select form-select-sm">
                 <option value="">Semua Mata Pelajaran</option>
-                @foreach(\App\Models\Subject::where('is_active', true)->orderBy('name')->get() as $s2)
+                @foreach($subjectList as $s2)
                     <option value="{{ $s2->id }}" {{ request('subject_id') == $s2->id ? 'selected' : '' }}>
                         {{ $s2->name }}
                     </option>

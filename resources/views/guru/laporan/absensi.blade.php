@@ -84,9 +84,9 @@
             <label class="form-label small fw-semibold mb-1">Kelas</label>
             <select name="kelas" class="form-select form-select-sm">
                 <option value="">Semua Kelas</option>
-                @foreach(\App\Models\Kelas::orderBy('name')->get() as $k)
-                    <option value="{{ $k->id }}" {{ request('kelas') == $k->id ? 'selected' : '' }}>
-                        {{ $k->name }}
+                @foreach($classes as $kid => $kname)
+                    <option value="{{ $kid }}" {{ request('kelas') == $kid ? 'selected' : '' }}>
+                        {{ $kname }}
                     </option>
                 @endforeach
             </select>
@@ -157,9 +157,8 @@
                                 <div class="av-sm" style="background:{{ $avBg }};">{{ $initial }}</div>
                                 <div>
                                     <div class="fw-semibold text-dark" style="font-size:.84rem;">{{ $siswaName }}</div>
-                                    @php $siswaProfile = \App\Models\Siswa::where('user_id', $att->siswa?->id)->with('kelas')->first(); @endphp
                                     <div class="text-muted" style="font-size:.7rem;">
-                                        {{ $siswaProfile?->kelas?->name ?? '' }}
+                                        {{ $att->siswa?->siswaProfile?->kelas?->name ?? '' }}
                                     </div>
                                 </div>
                             </div>

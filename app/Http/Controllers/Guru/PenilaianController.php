@@ -35,52 +35,52 @@ class PenilaianController extends Controller
     {
         $guruId = Auth::id();
 
-        // Semua praktikum milik guru ini
         $practicals = Practical::with(['subject', 'kelas'])
             ->where('guru_id', $guruId)
-            ->when($request->filled('search'), fn($q, $s = null) =>
+            ->when($request->filled('search'), fn($q) =>
                 $q->where('title', 'like', '%' . $request->search . '%')
             )
             ->latest()
             ->get();
 
-        // Hitung statistik per praktikum
-        $practicals = $practicals->map(function ($p) {
-            // Siswa yang terdaftar di kelas praktikum
-            $kelasId = $p->kelas_id;
-            $siswaQuery = Siswa::with('user')
-                ->whereNull('deleted_at');
-            if ($kelasId) {
-                $siswaQuery->where('kelas_id', $kelasId);
-            }
-            $siswaList = $siswaQuery->get();
+        // ── Preload: 1 query untuk semua NilaiPraktik (bukan N+1) ────────────
+        $praktikalIds = $practicals->pluck('id');
+        $allNilai     = NilaiPraktik::whereIn('practical_id', $praktikalIds)
+            ->whereNull('criteria_id')
+            ->whereNotNull('score')
+            ->get()
+            ->groupBy('practical_id');   // key: practical_id
 
-            $totalSiswa = $siswaList->count();
+        // ── Preload: 1 query untuk semua Siswa (bukan N+1 per kelas) ─────────
+        $kelasIds   = $practicals->pluck('kelas_id')->filter()->unique();
+        $allSiswa   = Siswa::with('user')
+            ->whereNull('deleted_at')
+            ->when($kelasIds->isNotEmpty(), fn($q) => $q->whereIn('kelas_id', $kelasIds))
+            ->get()
+            ->groupBy('kelas_id');   // key: kelas_id
 
-            // Yang sudah dinilai (criteria_id IS NULL = nilai summary)
-            $sudahDinilai = NilaiPraktik::where('practical_id', $p->id)
-                ->whereNull('criteria_id')
-                ->whereNotNull('score')
-                ->count();
+        $practicals = $practicals->map(function ($p) use ($allNilai, $allSiswa) {
+            $siswaList  = $p->kelas_id
+                ? ($allSiswa->get($p->kelas_id) ?? collect())
+                : $allSiswa->flatten(1);
 
-            $belumDinilai = max(0, $totalSiswa - $sudahDinilai);
+            $nilaiList    = $allNilai->get($p->id) ?? collect();
+            $totalSiswa   = $siswaList->count();
+            $sudahDinilai = $nilaiList->count();
 
-            // Rata-rata nilai
-            $rataRata = NilaiPraktik::where('practical_id', $p->id)
-                ->whereNull('criteria_id')
-                ->whereNotNull('score')
-                ->avg('score');
-
-            $p->total_siswa    = $totalSiswa;
-            $p->sudah_dinilai  = $sudahDinilai;
-            $p->belum_dinilai  = $belumDinilai;
-            $p->rata_rata      = $rataRata ? round($rataRata, 1) : null;
-            $p->siswa_list     = $siswaList;
+            $p->total_siswa   = $totalSiswa;
+            $p->sudah_dinilai = $sudahDinilai;
+            $p->belum_dinilai = max(0, $totalSiswa - $sudahDinilai);
+            $p->rata_rata     = $nilaiList->isNotEmpty()
+                ? round($nilaiList->avg('score'), 1)
+                : null;
+            $p->siswa_list    = $siswaList;
+            // Map nilai keyed by siswa_id untuk lookup O(1) di view
+            $p->nilai_map     = $nilaiList->keyBy('siswa_id');
 
             return $p;
         });
 
-        // Stats global
         $stats = [
             'total_praktikum'  => $practicals->count(),
             'total_dinilai'    => $practicals->sum('sudah_dinilai'),
@@ -109,34 +109,36 @@ class PenilaianController extends Controller
             ->get();
 
         // ── TAB 2: Penilaian Praktikum (per siswa, summary scores) ───────────
-        $practicals = Practical::with(['subject', 'kelas'])
+        $rawPracticals = Practical::with(['subject', 'kelas'])
             ->where('guru_id', $guruId)
             ->latest()
-            ->get()
-            ->map(function ($p) {
-                $kelasId   = $p->kelas_id;
-                $siswaList = Siswa::with(['user', 'kelas'])
-                    ->whereNull('deleted_at')
-                    ->when($kelasId, fn($q) => $q->where('kelas_id', $kelasId))
-                    ->get();
+            ->get();
 
-                $sudahDinilai = NilaiPraktik::where('practical_id', $p->id)
-                    ->whereNull('criteria_id')
-                    ->whereNotNull('score')
-                    ->count();
+        // Preload semua NilaiPraktik & Siswa dengan bulk query (bukan N+1)
+        $pracIds2      = $rawPracticals->pluck('id');
+        $allNilai2     = NilaiPraktik::whereIn('practical_id', $pracIds2)
+            ->whereNull('criteria_id')->whereNotNull('score')
+            ->get()->groupBy('practical_id');
 
-                $rataRata = NilaiPraktik::where('practical_id', $p->id)
-                    ->whereNull('criteria_id')
-                    ->whereNotNull('score')
-                    ->avg('score');
+        $kelasIds2     = $rawPracticals->pluck('kelas_id')->filter()->unique();
+        $allSiswa2     = Siswa::with(['user', 'kelas'])->whereNull('deleted_at')
+            ->when($kelasIds2->isNotEmpty(), fn($q) => $q->whereIn('kelas_id', $kelasIds2))
+            ->get()->groupBy('kelas_id');
 
-                $p->siswa_list    = $siswaList;
-                $p->sudah_dinilai = $sudahDinilai;
-                $p->belum_dinilai = max(0, $siswaList->count() - $sudahDinilai);
-                $p->total_siswa   = $siswaList->count();
-                $p->rata_rata     = $rataRata ? round($rataRata, 1) : null;
-                return $p;
-            });
+        $practicals = $rawPracticals->map(function ($p) use ($allNilai2, $allSiswa2) {
+            $siswaList    = $p->kelas_id
+                ? ($allSiswa2->get($p->kelas_id) ?? collect())
+                : $allSiswa2->flatten(1);
+            $nilaiList    = $allNilai2->get($p->id) ?? collect();
+
+            $p->siswa_list    = $siswaList;
+            $p->sudah_dinilai = $nilaiList->count();
+            $p->belum_dinilai = max(0, $siswaList->count() - $nilaiList->count());
+            $p->total_siswa   = $siswaList->count();
+            $p->rata_rata     = $nilaiList->isNotEmpty() ? round($nilaiList->avg('score'), 1) : null;
+            $p->nilai_map     = $nilaiList->keyBy('siswa_id');
+            return $p;
+        });
 
         // ── Stats ─────────────────────────────────────────────────────────────
         $stats = [

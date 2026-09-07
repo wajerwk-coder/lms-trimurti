@@ -69,7 +69,9 @@ class ReportController extends Controller
             ? 'guru.reports.index'
             : 'guru.laporan.index';
 
-        return view($viewName, compact('stats', 'startDate', 'endDate', 'monthlyData'));
+        $kelasList = \App\Models\Kelas::orderBy('name')->get();
+
+        return view($viewName, compact('stats', 'startDate', 'endDate', 'monthlyData', 'kelasList'));
     }
 
     /**
@@ -194,7 +196,7 @@ class ReportController extends Controller
             ? Siswa::where('kelas_id', $filters['kelas'])->pluck('user_id')
             : null;
 
-        $query = Attendance::with(['siswa', 'subject', 'kelas'])
+        $query = Attendance::with(['siswa', 'siswa.siswaProfile.kelas', 'subject', 'kelas'])
             ->where('recorded_by', $guruId)
             ->whereBetween('date', [$filters['start_date'], $filters['end_date']])
             ->when($siswaUcIds, fn($q) => $q->whereIn('siswa_id', $siswaUcIds))
@@ -282,7 +284,9 @@ class ReportController extends Controller
             'average_score'     => round((clone $subBase)->whereNotNull('score')->avg('score') ?? 0, 1),
         ];
 
-        return view('guru.laporan.tugas', compact('assignments', 'assignmentStats', 'filters'));
+        $kelasList = \App\Models\Kelas::orderBy('name')->get(['id', 'name']);
+
+        return view('guru.laporan.tugas', compact('assignments', 'assignmentStats', 'filters', 'kelasList'));
     }
 
     /**
@@ -319,7 +323,9 @@ class ReportController extends Controller
                 ->orderByDesc('downloads_count')->first(),
         ];
 
-        return view('guru.laporan.materi', compact('materials', 'materialStats', 'filters'));
+        $subjectList = \App\Models\Subject::where('is_active', true)->orderBy('name')->get(['id', 'name']);
+
+        return view('guru.laporan.materi', compact('materials', 'materialStats', 'filters', 'subjectList'));
     }
 
     /**

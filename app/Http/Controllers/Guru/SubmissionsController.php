@@ -74,6 +74,7 @@ class SubmissionsController extends Controller
                 'assignment.subject',
                 'assignment.kelas',
                 'siswa',
+                'siswa.siswaProfile.kelas',
             ]);
 
             return view('guru.submissions.show', compact('submission'));

@@ -30,8 +30,11 @@
         {{-- Kiri: Konten --}}
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0 fw-bold"><i class="fas fa-book me-2"></i>Informasi Materi</h6>
+                <div class="card-header bg-white border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-book text-primary"></i>
+                        <h6 class="mb-0 fw-semibold">Informasi Materi</h6>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -60,7 +63,7 @@
                                    id="video_url" name="video_url" value="{{ old('video_url') }}"
                                    placeholder="https://youtube.com/watch?v=...">
                         </div>
-                        <div class="form-text">Opsional — link YouTube, Google Drive, dll.</div>
+                        <div class="form-text">Opsional ï¿½ link YouTube, Google Drive, dll.</div>
                         @error('video_url')<div class="text-danger small">{{ $message }}</div>@enderror
                     </div>
 
@@ -86,8 +89,11 @@
         {{-- Kanan: Pengaturan --}}
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0 fw-bold"><i class="fas fa-cog me-2"></i>Pengaturan</h6>
+                <div class="card-header bg-white border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-cog text-secondary"></i>
+                        <h6 class="mb-0 fw-semibold">Pengaturan</h6>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -96,7 +102,7 @@
                         </label>
                         <select class="form-select @error('subject_id') is-invalid @enderror"
                                 id="subject_id" name="subject_id" required>
-                            <option value="">— Pilih Mata Pelajaran —</option>
+                            <option value="">ï¿½ Pilih Mata Pelajaran ï¿½</option>
                             @foreach($classSubjects ?? [] as $cs)
                                 <option value="{{ $cs->subject_id }}"
                                         {{ old('subject_id') == $cs->subject_id ? 'selected' : '' }}>
@@ -112,7 +118,7 @@
                     <div class="mb-3">
                         <label for="kelas_id" class="form-label fw-semibold">Kelas</label>
                         <select class="form-select" id="kelas_id" name="kelas_id">
-                            <option value="">— Semua Kelas —</option>
+                            <option value="">ï¿½ Semua Kelas ï¿½</option>
                             @foreach($classes as $class)
                                 <option value="{{ $class->id }}" {{ old('kelas_id') == $class->id ? 'selected' : '' }}>
                                     {{ $class->name }}
@@ -132,7 +138,7 @@
                             Publikasikan Sekarang
                         </label>
                     </div>
-                    <small class="text-muted">Default aktif — materi langsung terlihat oleh siswa. Uncheck untuk simpan sebagai draft.</small>
+                    <small class="text-muted">Default aktif ï¿½ materi langsung terlihat oleh siswa. Uncheck untuk simpan sebagai draft.</small>
                 </div>
             </div>
 

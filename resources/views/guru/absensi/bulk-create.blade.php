@@ -31,10 +31,11 @@
 <div class="row g-4">
     <div class="col-lg-7">
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h6 class="mb-0 fw-bold">
-                    <i class="fas fa-users me-2"></i>Absensi Satu Kelas
-                </h6>
+            <div class="card-header bg-white border-bottom py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-users text-primary"></i>
+                    <h6 class="mb-0 fw-semibold">Absensi Satu Kelas</h6>
+                </div>
             </div>
             <div class="card-body">
                 <form action="{{ route('guru.absensi.bulk') }}" method="POST" id="bulkForm" novalidate>

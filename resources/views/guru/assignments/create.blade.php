@@ -34,8 +34,11 @@
 
             {{-- Informasi Dasar --}}
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0 fw-bold"><i class="fas fa-info-circle me-2"></i>Informasi Tugas</h6>
+                <div class="card-header bg-white border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-info-circle text-primary"></i>
+                        <h6 class="mb-0 fw-semibold">Informasi Tugas</h6>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -88,8 +91,11 @@
         {{-- Kanan: Pengaturan --}}
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0 fw-bold"><i class="fas fa-cog me-2"></i>Pengaturan</h6>
+                <div class="card-header bg-white border-bottom py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-cog text-secondary"></i>
+                        <h6 class="mb-0 fw-semibold">Pengaturan</h6>
+                    </div>
                 </div>
                 <div class="card-body">
 
@@ -97,7 +103,7 @@
                         <label for="class_id" class="form-label fw-semibold">Kelas <span class="text-danger">*</span></label>
                         <select class="form-select @error('class_id') is-invalid @enderror"
                                 id="class_id" name="class_id" required>
-                            <option value="">— Pilih Kelas —</option>
+                            <option value="">ï¿½ Pilih Kelas ï¿½</option>
                             @foreach($classes as $class)
                                 <option value="{{ $class->id }}" {{ old('class_id') == $class->id ? 'selected' : '' }}>
                                     {{ $class->name }}
@@ -111,7 +117,7 @@
                         <label for="subject_id" class="form-label fw-semibold">Mata Pelajaran <span class="text-danger">*</span></label>
                         <select class="form-select @error('subject_id') is-invalid @enderror"
                                 id="subject_id" name="subject_id" required>
-                            <option value="">— Pilih Mata Pelajaran —</option>
+                            <option value="">ï¿½ Pilih Mata Pelajaran ï¿½</option>
                             @foreach($classSubjects ?? [] as $subj)
                                 <option value="{{ $subj->subject_id }}"
                                         {{ old('subject_id') == $subj->subject_id ? 'selected' : '' }}>

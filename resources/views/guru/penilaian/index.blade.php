@@ -382,11 +382,8 @@
                             $colors2  = ['#0891b2','#7c3aed','#16a34a','#d97706','#dc2626','#0f766e'];
                             $sbg      = $colors2[abs(crc32($sn)) % count($colors2)];
 
-                            $nilaiRec = \App\Models\NilaiPraktik::where('practical_id', $p->id)
-                                ->where('siswa_id', $siswa->user_id)
-                                ->whereNull('criteria_id')
-                                ->first();
-
+                            // Pakai nilai_map yang sudah di-preload (bukan query per baris)
+                            $nilaiRec = $p->nilai_map[$siswa->user_id] ?? null;
                             $dinilai  = $nilaiRec && !is_null($nilaiRec->score);
                             $sc2      = $dinilai ? (float) $nilaiRec->score : null;
                             $grade    = match(true) {

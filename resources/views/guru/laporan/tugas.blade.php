@@ -77,7 +77,7 @@
             <label class="form-label small fw-semibold mb-1">Kelas</label>
             <select name="kelas" class="form-select form-select-sm">
                 <option value="">Semua Kelas</option>
-                @foreach(\App\Models\Kelas::orderBy('name')->get() as $k)
+                @foreach($kelasList as $k)
                     <option value="{{ $k->id }}" {{ ($filters['kelas'] ?? '') == $k->id ? 'selected' : '' }}>
                         {{ $k->name }}
                     </option>
