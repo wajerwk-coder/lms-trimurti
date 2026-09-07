@@ -12,19 +12,31 @@
 
 @push('css')
 <style>
-.pw-rule { display:flex; align-items:center; gap:.45rem; font-size:.78rem; color:#64748b; transition:color .2s; }
-.pw-rule i { width:14px; font-size:.7rem; transition:color .2s; }
-.pw-rule.pass { color:#16a34a; }
-.pw-rule.pass i { color:#16a34a; }
-.pw-rule.fail i { color:#cbd5e1; }
+.pw-rule {
+    display: flex; align-items: center; gap: .45rem;
+    font-size: .78rem; color: #94a3b8; transition: color .2s;
+}
+.pw-rule i { width: 14px; font-size: .7rem; transition: color .2s; }
+.pw-rule.pass { color: #16a34a; }
+.pw-rule.fail { color: #94a3b8; }
+
 .preview-banner {
     background: linear-gradient(135deg, #1e3a8a 0%, #4f46e5 50%, #7c3aed 100%);
     border-radius: 14px; padding: 1.5rem; position: relative; overflow: hidden;
 }
 .preview-banner::before {
-    content:''; position:absolute; top:-40px; right:-40px;
-    width:140px; height:140px; border-radius:50%; background:rgba(255,255,255,.06);
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 140px; height: 140px; border-radius: 50%;
+    background: rgba(255,255,255,.06); pointer-events: none;
 }
+
+/* strength bar levels */
+.str-0 { width: 0%; }
+.str-1 { width: 20%; background: #ef4444 !important; }
+.str-2 { width: 40%; background: #f59e0b !important; }
+.str-3 { width: 60%; background: #3b82f6 !important; }
+.str-4 { width: 80%; background: #6366f1 !important; }
+.str-5 { width: 100%; background: #16a34a !important; }
 </style>
 @endpush
 
@@ -51,7 +63,7 @@
 
 <div class="row g-4">
 
-    {{-- --- KIRI: Form --- --}}
+    {{-- ─── KIRI: Form ─── --}}
     <div class="col-lg-7">
 
         {{-- Seksi 1: Informasi Akun --}}
@@ -76,11 +88,9 @@
                             Nama Lengkap <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0">
-                                <i class="fas fa-user text-muted"></i>
-                            </span>
+                            <span class="input-group-text"><i class="fas fa-user text-muted"></i></span>
                             <input type="text" name="name" id="nameInput"
-                                   class="form-control border-start-0 @error('name') is-invalid @enderror"
+                                   class="form-control @error('name') is-invalid @enderror"
                                    value="{{ old('name') }}"
                                    placeholder="Nama lengkap administrator"
                                    autocomplete="off" required>
@@ -94,11 +104,9 @@
                             Email <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0">
-                                <i class="fas fa-envelope text-muted"></i>
-                            </span>
+                            <span class="input-group-text"><i class="fas fa-envelope text-muted"></i></span>
                             <input type="email" name="email" id="emailInput"
-                                   class="form-control border-start-0 @error('email') is-invalid @enderror"
+                                   class="form-control @error('email') is-invalid @enderror"
                                    value="{{ old('email') }}"
                                    placeholder="admin@sekolah.sch.id"
                                    autocomplete="off" required>
@@ -112,10 +120,9 @@
                             Username <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0 fw-bold text-muted"
-                                  style="font-size:.9rem;">@</span>
+                            <span class="input-group-text fw-bold text-muted" style="font-size:.9rem;">@</span>
                             <input type="text" name="username" id="usernameInput"
-                                   class="form-control border-start-0 @error('username') is-invalid @enderror"
+                                   class="form-control @error('username') is-invalid @enderror"
                                    value="{{ old('username') }}"
                                    placeholder="admin_nama"
                                    autocomplete="off" required>
@@ -130,11 +137,9 @@
                             Nomor Telepon <span class="text-muted fw-normal">(opsional)</span>
                         </label>
                         <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0">
-                                <i class="fas fa-phone text-muted"></i>
-                            </span>
+                            <span class="input-group-text"><i class="fas fa-phone text-muted"></i></span>
                             <input type="tel" name="phone"
-                                   class="form-control border-start-0"
+                                   class="form-control"
                                    value="{{ old('phone') }}"
                                    placeholder="08xxxxxxxxxx">
                         </div>
@@ -170,17 +175,16 @@
                                    class="form-control @error('password') is-invalid @enderror"
                                    placeholder="Min. 8 karakter"
                                    autocomplete="new-password" required>
-                            <button type="button" class="btn btn-outline-secondary" id="togglePw" tabindex="-1"
-                                    aria-label="Tampilkan password">
+                            <button type="button" class="btn btn-outline-secondary" id="togglePw" tabindex="-1">
                                 <i class="fas fa-eye" id="pwIcon"></i>
                             </button>
                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         {{-- Strength bar --}}
                         <div class="mt-2">
-                            <div class="progress mb-1" style="height:5px;border-radius:4px;">
-                                <div id="pwStrengthBar" class="progress-bar"
-                                     style="width:0%;transition:width .3s;border-radius:4px;"></div>
+                            <div class="progress mb-1" style="height: 5px; border-radius: 4px;">
+                                <div id="pwStrengthBar" class="progress-bar str-0"
+                                     style="transition: width .3s; border-radius: 4px;"></div>
                             </div>
                             <div class="d-flex justify-content-between">
                                 <small class="text-muted">Kekuatan password</small>
@@ -189,7 +193,7 @@
                         </div>
                     </div>
 
-                    {{-- Konfirmasi --}}
+                    {{-- Konfirmasi Password --}}
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">
                             Konfirmasi Password <span class="text-danger">*</span>
@@ -199,15 +203,14 @@
                                    class="form-control"
                                    placeholder="Ulangi password"
                                    autocomplete="new-password" required>
-                            <button type="button" class="btn btn-outline-secondary" id="toggleConfirm" tabindex="-1"
-                                    aria-label="Tampilkan konfirmasi password">
+                            <button type="button" class="btn btn-outline-secondary" id="toggleConfirm" tabindex="-1">
                                 <i class="fas fa-eye" id="confirmIcon"></i>
                             </button>
                         </div>
                         <small id="pwMatchText" class="d-block mt-1"></small>
                     </div>
 
-                    {{-- Rules --}}
+                    {{-- Password Rules --}}
                     <div class="col-12">
                         <div class="bg-light rounded-2 p-3">
                             <div class="row g-2">
@@ -218,17 +221,17 @@
                                 </div>
                                 <div class="col-6">
                                     <div class="pw-rule fail" id="rule-lower">
-                                        <i class="fas fa-circle"></i>Huruf kecil (a�z)
+                                        <i class="fas fa-circle"></i>Huruf kecil (a-z)
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="pw-rule fail" id="rule-upper">
-                                        <i class="fas fa-circle"></i>Huruf besar (A�Z)
+                                        <i class="fas fa-circle"></i>Huruf besar (A-Z)
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="pw-rule fail" id="rule-number">
-                                        <i class="fas fa-circle"></i>Angka (0�9)
+                                        <i class="fas fa-circle"></i>Angka (0-9)
                                     </div>
                                 </div>
                             </div>
@@ -241,12 +244,12 @@
 
     </div>{{-- /col-lg-7 --}}
 
-    {{-- --- KANAN: Preview & Aksi --- --}}
+    {{-- ─── KANAN: Preview & Aksi ─── --}}
     <div class="col-lg-5">
 
         {{-- Live Preview Card --}}
         <div class="preview-banner mb-4">
-            <div class="position-relative" style="z-index:1;">
+            <div class="position-relative" style="z-index: 1;">
                 <div class="d-flex align-items-center gap-3 mb-3">
                     <div id="previewAvatar"
                          class="rounded-circle bg-white bg-opacity-20 d-flex align-items-center
@@ -254,7 +257,7 @@
                          style="width:54px;height:54px;font-size:1.3rem;min-width:54px;">
                         <i class="fas fa-user-shield"></i>
                     </div>
-                    <div class="overflow-hidden flex-grow-1 min-w-0">
+                    <div class="overflow-hidden flex-grow-1" style="min-width:0;">
                         <div id="previewName" class="fw-bold text-white fs-6 text-truncate">
                             Nama Administrator
                         </div>
@@ -265,10 +268,10 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
-                    <span class="badge rounded-pill" style="background:rgba(255,255,255,.2)">
+                    <span class="badge rounded-pill" style="background: rgba(255,255,255,.2)">
                         <i class="fas fa-shield-alt me-1"></i>Administrator
                     </span>
-                    <span class="badge rounded-pill" style="background:rgba(255,255,255,.2)">
+                    <span class="badge rounded-pill" style="background: rgba(255,255,255,.2)">
                         <i class="fas fa-circle me-1" style="font-size:.55rem;"></i>Aktif
                     </span>
                 </div>
@@ -321,7 +324,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    /* -- Toggle visibility ----------------------------- */
+    // ── Toggle password visibility ──────────────────────────────
     function makeToggle(btnId, inputId, iconId) {
         document.getElementById(btnId).addEventListener('click', function () {
             const inp  = document.getElementById(inputId);
@@ -334,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function () {
     makeToggle('togglePw',      'passwordInput', 'pwIcon');
     makeToggle('toggleConfirm', 'confirmInput',  'confirmIcon');
 
-    /* -- Password strength ----------------------------- */
+    // ── Password strength ────────────────────────────────────────
     const pwInput  = document.getElementById('passwordInput');
     const cfInput  = document.getElementById('confirmInput');
     const bar      = document.getElementById('pwStrengthBar');
@@ -345,46 +348,59 @@ document.addEventListener('DOMContentLoaded', function () {
         length: { el: document.getElementById('rule-length'), fn: p => p.length >= 8 },
         lower:  { el: document.getElementById('rule-lower'),  fn: p => /[a-z]/.test(p) },
         upper:  { el: document.getElementById('rule-upper'),  fn: p => /[A-Z]/.test(p) },
-        number: { el: document.getElementById('rule-number'), fn: p => /\d/.test(p) },
+        number: { el: document.getElementById('rule-number'), fn: p => /[0-9]/.test(p) },
     };
 
     const levels = [
-        { w: 0,   cls: '',           lbl: '' },
-        { w: 20,  cls: 'bg-danger',  lbl: 'Sangat Lemah',  lc: 'text-danger' },
-        { w: 40,  cls: 'bg-warning', lbl: 'Lemah',         lc: 'text-warning' },
-        { w: 60,  cls: 'bg-info',    lbl: 'Cukup',         lc: 'text-info' },
-        { w: 80,  cls: 'bg-primary', lbl: 'Kuat',          lc: 'text-primary' },
-        { w: 100, cls: 'bg-success', lbl: 'Sangat Kuat',   lc: 'text-success' },
+        { cls: 'str-0', lbl: '',              lc: '' },
+        { cls: 'str-1', lbl: 'Sangat Lemah',  lc: 'text-danger' },
+        { cls: 'str-2', lbl: 'Lemah',         lc: 'text-warning' },
+        { cls: 'str-3', lbl: 'Cukup',         lc: 'text-primary' },
+        { cls: 'str-4', lbl: 'Kuat',          lc: 'text-info' },
+        { cls: 'str-5', lbl: 'Sangat Kuat',   lc: 'text-success' },
     ];
 
     pwInput.addEventListener('input', function () {
         const pw = this.value;
         let score = 0;
+
         Object.keys(rules).forEach(k => {
             const ok = rules[k].fn(pw);
             if (ok) score++;
             rules[k].el.classList.toggle('pass', ok);
             rules[k].el.classList.toggle('fail', !ok);
-            rules[k].el.querySelector('i').className = ok ? 'fas fa-check-circle' : 'fas fa-circle';
+            rules[k].el.querySelector('i').className = ok
+                ? 'fas fa-check-circle text-success'
+                : 'fas fa-circle';
         });
+
         const lvl = pw.length === 0 ? levels[0] : levels[Math.min(score, 5)];
-        bar.style.width = lvl.w + '%';
-        bar.className   = 'progress-bar ' + (lvl.cls || '');
-        stxt.textContent = lvl.lbl || '';
-        stxt.className   = 'fw-semibold ' + (lvl.lc || '');
+        bar.className = 'progress-bar ' + lvl.cls;
+        stxt.textContent = lvl.lbl;
+        stxt.className   = 'fw-semibold ' + lvl.lc;
+
         checkMatch();
     });
 
     cfInput.addEventListener('input', checkMatch);
+
     function checkMatch() {
-        const pw = pwInput.value, cf = cfInput.value;
-        if (!cf) { matchTxt.textContent = ''; matchTxt.className = 'd-block mt-1 small'; return; }
+        const pw = pwInput.value;
+        const cf = cfInput.value;
+        if (!cf) {
+            matchTxt.textContent = '';
+            matchTxt.className   = 'd-block mt-1 small';
+            return;
+        }
         const ok = pw === cf;
-        matchTxt.textContent = ok ? '? Password cocok' : '? Password tidak cocok';
+        matchTxt.textContent = ok ? 'Password cocok' : 'Password tidak cocok';
         matchTxt.className   = 'd-block mt-1 small fw-semibold ' + (ok ? 'text-success' : 'text-danger');
+        // Tambahkan ikon via CSS class agar tidak ada karakter encoding
+        cfInput.classList.toggle('is-valid',   ok);
+        cfInput.classList.toggle('is-invalid', !ok);
     }
 
-    /* -- Live Preview ---------------------------------- */
+    // ── Live Preview ─────────────────────────────────────────────
     const nameInput     = document.getElementById('nameInput');
     const emailInput    = document.getElementById('emailInput');
     const usernameInput = document.getElementById('usernameInput');
@@ -398,12 +414,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const email    = emailInput.value.trim();
         const username = usernameInput.value.trim();
 
-        pName.textContent    = name     || 'Nama Administrator';
-        pEmail.textContent   = email    || 'email@contoh.com';
+        pName.textContent     = name     || 'Nama Administrator';
+        pEmail.textContent    = email    || 'email@contoh.com';
         pUsername.textContent = username ? '@' + username : '';
 
         if (name) {
-            const ini = name.split(/\s+/).slice(0,2).map(w => w[0].toUpperCase()).join('');
+            const ini = name.split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('');
             pAvatar.textContent    = ini;
             pAvatar.style.fontSize = ini.length > 1 ? '1.1rem' : '1.4rem';
         } else {
@@ -415,22 +431,26 @@ document.addEventListener('DOMContentLoaded', function () {
     emailInput.addEventListener('input', updatePreview);
     usernameInput.addEventListener('input', updatePreview);
 
-    /* -- Auto-generate username dari nama -------------- */
+    // ── Auto-generate username dari nama ─────────────────────────
     nameInput.addEventListener('blur', function () {
         if (!usernameInput.value && this.value.trim()) {
             usernameInput.value = 'admin_' + this.value.trim()
-                .toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'').slice(0,25);
+                .toLowerCase()
+                .replace(/\s+/g, '_')
+                .replace(/[^a-z0-9_]/g, '')
+                .slice(0, 25);
             updatePreview();
         }
     });
 
-    /* -- Submit guard ---------------------------------- */
+    // ── Submit guard ─────────────────────────────────────────────
     document.getElementById('adminForm').addEventListener('submit', function (e) {
         if (pwInput.value !== cfInput.value) {
             e.preventDefault();
             cfInput.focus();
-            matchTxt.textContent = '? Password tidak cocok!';
+            matchTxt.textContent = 'Password tidak cocok!';
             matchTxt.className   = 'd-block mt-1 small fw-semibold text-danger';
+            cfInput.classList.add('is-invalid');
             return;
         }
         const btn = document.getElementById('submitBtn');
@@ -438,7 +458,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Membuat akun...';
     });
 
-    /* Restore jika tombol back ditekan */
+    // ── Restore jika tombol back ditekan ─────────────────────────
     window.addEventListener('pageshow', function (e) {
         if (!e.persisted) return;
         const btn = document.getElementById('submitBtn');
