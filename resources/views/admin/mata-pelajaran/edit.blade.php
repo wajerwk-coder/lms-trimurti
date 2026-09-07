@@ -31,12 +31,6 @@
             </div>
         @endif
 
-        @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show">
-                <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
 
         <form action="{{ route('admin.mata-pelajaran.update', $mataPelajaran->id) }}" method="POST" novalidate>
             @csrf
@@ -134,7 +128,7 @@
     </div>
 </div>
 
-@push('scripts')
+@push('js')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const codeInput   = document.getElementById('code');

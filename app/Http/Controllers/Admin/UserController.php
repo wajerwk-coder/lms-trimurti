@@ -109,8 +109,16 @@ class UserController extends Controller
 
         return match ($user->role) {
             'guru'  => view('admin.users.edit-guru', [
-                            'user'     => $user,
-                            'subjects' => \App\Models\Subject::orderBy('name')->get(),
+                            'user'               => $user,
+                            'subjects'           => \App\Models\Subject::orderBy('name')->get(),
+                            'selectedSubjectIds' => $user->guruProfile
+                                ? \App\Models\Subject::whereIn('name',
+                                    array_filter(array_map('trim',
+                                        explode(',', $user->guruProfile->mata_pelajaran ?? '')
+                                    ))
+                                  )->pluck('id')->toArray()
+                                : [],
+                            'profile'            => $user->guruProfile,
                        ]),
             'siswa' => view('admin.users.edit-siswa', [
                             'user'     => $user,

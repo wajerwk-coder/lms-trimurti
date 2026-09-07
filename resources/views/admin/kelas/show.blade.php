@@ -269,7 +269,7 @@
                         <i class="fas fa-user-slash fa-4x text-muted mb-3"></i>
                         <h5 class="text-muted">Belum ada siswa</h5>
                         <p class="text-muted mb-4">Kelas ini belum memiliki siswa yang terdaftar</p>
-                        <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.users.create.siswa') }}" class="btn btn-primary">
                             <i class="fas fa-user-plus me-1"></i>
                             Tambah Siswa Baru
                         </a>

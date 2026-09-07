@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+ï»¿@extends('layouts.admin')
 
 @section('title', 'Tambah Guru')
 @section('page-title', 'Tambah Guru')
@@ -174,9 +174,9 @@
                         <div class="bg-light rounded-2 p-3">
                             <div class="row g-2">
                                 <div class="col-6"><div class="pw-rule fail" id="rule-length"><i class="fas fa-circle"></i>Min. 8 karakter</div></div>
-                                <div class="col-6"><div class="pw-rule fail" id="rule-lower"><i class="fas fa-circle"></i>Huruf kecil (a–z)</div></div>
-                                <div class="col-6"><div class="pw-rule fail" id="rule-upper"><i class="fas fa-circle"></i>Huruf besar (A–Z)</div></div>
-                                <div class="col-6"><div class="pw-rule fail" id="rule-number"><i class="fas fa-circle"></i>Angka (0–9)</div></div>
+                                <div class="col-6"><div class="pw-rule fail" id="rule-lower"><i class="fas fa-circle"></i>Huruf kecil (a-z)</div></div>
+                                <div class="col-6"><div class="pw-rule fail" id="rule-upper"><i class="fas fa-circle"></i>Huruf besar (A-Z)</div></div>
+                                <div class="col-6"><div class="pw-rule fail" id="rule-number"><i class="fas fa-circle"></i>Angka (0-9)</div></div>
                             </div>
                         </div>
                     </div>
@@ -296,7 +296,7 @@
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Pendidikan Terakhir</label>
                         <select name="pendidikan_terakhir" class="form-select">
-                            <option value="">— Pilih —</option>
+                            <option value="">â€” Pilih â€”</option>
                             @foreach(['D3','S1','S2','S3'] as $p)
                                 <option value="{{ $p }}" {{ old('pendidikan_terakhir')==$p ? 'selected':'' }}>{{ $p }}</option>
                             @endforeach
@@ -366,7 +366,7 @@
                     <div class="col-md-4">
                         <label class="form-label small fw-semibold">Jenis Kelamin</label>
                         <select name="jenis_kelamin" class="form-select">
-                            <option value="">— Pilih —</option>
+                            <option value="">â€” Pilih â€”</option>
                             <option value="L" {{ old('jenis_kelamin')=='L' ? 'selected':'' }}>Laki-laki</option>
                             <option value="P" {{ old('jenis_kelamin')=='P' ? 'selected':'' }}>Perempuan</option>
                         </select>
@@ -554,7 +554,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const pw = pwInput.value, cf = cfInput.value;
         if (!cf) { matchTxt.textContent = ''; matchTxt.className = 'd-block mt-1 small'; return; }
         const ok = pw === cf;
-        matchTxt.textContent = ok ? '? Password cocok' : '? Password tidak cocok';
+        matchTxt.textContent = ok ? 'Password cocok' : 'Password tidak cocok';
         matchTxt.className   = 'd-block mt-1 small fw-semibold ' + (ok ? 'text-success' : 'text-danger');
     }
 
@@ -580,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         pName.textContent  = name  || 'Nama Guru';
         pEmail.textContent = email || 'email@contoh.com';
-        pSubject.textContent = (subj && subj !== '— Pilih Mata Pelajaran —') ? subj : '';
+        pSubject.textContent = (subj && subj !== 'â€” Pilih Mata Pelajaran â€”') ? subj : '';
 
         if (nip) { pNip.classList.remove('d-none'); pNipTxt.textContent = nip; }
         else     { pNip.classList.add('d-none'); }
@@ -613,7 +613,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (pwInput.value !== cfInput.value) {
             e.preventDefault();
             cfInput.focus();
-            matchTxt.textContent = '? Password tidak cocok!';
+            matchTxt.textContent = 'Password tidak cocok!';
             matchTxt.className   = 'd-block mt-1 small fw-semibold text-danger';
             return;
         }

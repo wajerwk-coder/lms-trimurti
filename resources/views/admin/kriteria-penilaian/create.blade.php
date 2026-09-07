@@ -153,7 +153,7 @@
     </div>
 </div>
 
-@push('scripts')
+@push('js')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     let counter = document.querySelectorAll('.checklist-item').length;

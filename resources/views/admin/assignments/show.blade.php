@@ -193,3 +193,22 @@
     </div>
 </div>
 @endsection
+
+@push('js')
+<script>
+function togglePublish(id) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ route("admin.assignments.toggle-publish", ":id") }}'.replace(':id', id);
+    form.innerHTML = '<input type="hidden" name="_token" value="{{ csrf_token() }}">';
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function deleteAssignment(id) {
+    document.getElementById('deleteForm').action =
+        '{{ route("admin.assignments.destroy", ":id") }}'.replace(':id', id);
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+@endpush

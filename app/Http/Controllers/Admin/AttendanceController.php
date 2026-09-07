@@ -154,7 +154,7 @@ class AttendanceController extends Controller
      */
     public function show(Attendance $attendance)
     {
-        $attendance->load(['siswa']);
+        $attendance->load(['siswa', 'kelas', 'subject']);
         return view('admin.attendance.show', compact('attendance'));
     }
 

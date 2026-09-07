@@ -61,7 +61,7 @@
                 <label class="form-label small fw-semibold">Jurusan</label>
                 <select class="form-select" id="majorFilter">
                     <option value="">Semua Jurusan</option>
-                    @foreach(\App\Models\Jurusan::orderBy('name')->get() as $jur)
+                    @foreach($jurusanList as $jur)
                         <option value="{{ strtolower($jur->name) }}">{{ $jur->name }}</option>
                     @endforeach
                 </select>

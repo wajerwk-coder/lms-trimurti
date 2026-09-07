@@ -172,7 +172,7 @@
 </div>
 @endsection
 
-@push('scripts')
+@push('js')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const PRECISION = 3; // tolerance when comparing floats

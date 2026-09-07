@@ -43,12 +43,6 @@
 </div>
 @endif
 
-@if(session('error'))
-<div class="alert alert-danger alert-dismissible fade show mb-4">
-    <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-@endif
 
 <form action="{{ route('admin.jurusan.update', $jurusan->id) }}" method="POST" id="jurusanForm" novalidate>
 @csrf

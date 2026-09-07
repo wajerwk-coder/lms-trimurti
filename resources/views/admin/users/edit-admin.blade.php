@@ -21,6 +21,8 @@
             </ul>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
 
 <form action="{{ route('admin.users.update', $user->id) }}" method="POST" id="editAdminForm">
     @csrf @method('PUT')

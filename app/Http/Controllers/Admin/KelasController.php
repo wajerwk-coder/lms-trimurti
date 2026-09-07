@@ -45,6 +45,7 @@ class KelasController extends Controller
             'namaJurusan1'     => $perJurusan->get(0)['name']  ?? 'Jurusan 1',
             'kelasFarmasi'     => $perJurusan->get(1)['count'] ?? 0,
             'namaJurusan2'     => $perJurusan->get(1)['name']  ?? 'Jurusan 2',
+            'jurusanList'      => Jurusan::orderBy('name')->get(), // untuk filter dropdown
         ]);
     }
 

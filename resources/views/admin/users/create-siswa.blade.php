@@ -172,9 +172,9 @@
                         <div class="bg-light rounded-2 p-3">
                             <div class="row g-2">
                                 <div class="col-6"><div class="pw-rule fail" id="rule-length"><i class="fas fa-circle"></i>Min. 8 karakter</div></div>
-                                <div class="col-6"><div class="pw-rule fail" id="rule-lower"><i class="fas fa-circle"></i>Huruf kecil (a–z)</div></div>
-                                <div class="col-6"><div class="pw-rule fail" id="rule-upper"><i class="fas fa-circle"></i>Huruf besar (A–Z)</div></div>
-                                <div class="col-6"><div class="pw-rule fail" id="rule-number"><i class="fas fa-circle"></i>Angka (0–9)</div></div>
+                                <div class="col-6"><div class="pw-rule fail" id="rule-lower"><i class="fas fa-circle"></i>Huruf kecil (aï¿½z)</div></div>
+                                <div class="col-6"><div class="pw-rule fail" id="rule-upper"><i class="fas fa-circle"></i>Huruf besar (Aï¿½Z)</div></div>
+                                <div class="col-6"><div class="pw-rule fail" id="rule-number"><i class="fas fa-circle"></i>Angka (0ï¿½9)</div></div>
                             </div>
                         </div>
                     </div>
@@ -201,7 +201,7 @@
                         <label class="form-label small fw-semibold">Kelas <span class="text-danger">*</span></label>
                         <select name="kelas_id" id="kelasSelect"
                                 class="form-select @error('kelas_id') is-invalid @enderror" required>
-                            <option value="">— Pilih Kelas —</option>
+                            <option value="">-- Pilih Kelas --</option>
                             @foreach($kelas as $k)
                                 <option value="{{ $k->id }}"
                                         data-jurusan="{{ $k->jurusan?->name ?? $k->major ?? '' }}"
@@ -223,7 +223,7 @@
                         <label class="form-label small fw-semibold">Jurusan <span class="text-danger">*</span></label>
                         <select name="major" id="majorSelect"
                                 class="form-select @error('major') is-invalid @enderror" required>
-                            <option value="">— Pilih Jurusan —</option>
+                            <option value="">-- Pilih Jurusan --</option>
                             @foreach($jurusans as $j)
                                 <option value="{{ $j->name }}" {{ old('major') == $j->name ? 'selected':'' }}>
                                     {{ $j->name }}
@@ -275,7 +275,7 @@
                     <div class="col-md-4">
                         <label class="form-label small fw-semibold">Jenis Kelamin</label>
                         <select name="jenis_kelamin" class="form-select">
-                            <option value="">— Pilih —</option>
+                            <option value="">-- Pilih --</option>
                             <option value="L" {{ old('jenis_kelamin')=='L' ? 'selected':'' }}>Laki-laki</option>
                             <option value="P" {{ old('jenis_kelamin')=='P' ? 'selected':'' }}>Perempuan</option>
                         </select>
@@ -343,7 +343,7 @@
                     <div class="col-md-4">
                         <label class="form-label small fw-semibold">Golongan Darah</label>
                         <select name="golongan_darah" class="form-select">
-                            <option value="">— Pilih —</option>
+                            <option value="">-- Pilih --</option>
                             @foreach(['A','B','AB','O'] as $gol)
                                 <option value="{{ $gol }}" {{ old('golongan_darah')==$gol ? 'selected':'' }}>{{ $gol }}</option>
                             @endforeach
@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const pw = pwInput.value, cf = cfInput.value;
         if (!cf) { matchTxt.textContent = ''; matchTxt.className = 'd-block mt-1 small'; return; }
         const ok = pw === cf;
-        matchTxt.textContent = ok ? '? Password cocok' : '? Password tidak cocok';
+        matchTxt.textContent = ok ? 'Password cocok' : 'Password tidak cocok';
         matchTxt.className   = 'd-block mt-1 small fw-semibold ' + (ok ? 'text-success' : 'text-danger');
     }
 
@@ -537,7 +537,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         pName.textContent  = name  || 'Nama Siswa';
         pEmail.textContent = email || 'email@contoh.com';
-        pKelas.textContent = (kelas && kelas !== '— Pilih Kelas —') ? kelas : '';
+        pKelas.textContent = (kelas && kelas !== '-- Pilih Kelas --') ? kelas : '';
 
         if (nis) { pNis.classList.remove('d-none'); pNisTxt.textContent = nis; }
         else     { pNis.classList.add('d-none'); }
@@ -583,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (pwInput.value !== cfInput.value) {
             e.preventDefault();
             cfInput.focus();
-            matchTxt.textContent = '? Password tidak cocok!';
+            matchTxt.textContent = 'Password tidak cocok!';
             matchTxt.className   = 'd-block mt-1 small fw-semibold text-danger';
             return;
         }
