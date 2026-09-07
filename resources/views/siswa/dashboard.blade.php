@@ -315,18 +315,6 @@
                 <h6 class="mb-0 fw-semibold"><i class="fas fa-calendar-alt me-2 text-info"></i>Jadwal Ujian</h6>
             </div>
             <div class="card-body p-0">
-                @php
-                    try {
-                        $upcomingExams = \App\Models\ExamSchedule::with(['subject','kelas'])
-                            ->where('is_published', true)
-                            ->where('start_time', '>', now())
-                            ->orderBy('start_time')
-                            ->take(5)
-                            ->get();
-                    } catch(\Throwable $e) {
-                        $upcomingExams = collect();
-                    }
-                @endphp
                 @forelse($upcomingExams as $exam)
                 <div class="d-flex align-items-start gap-3 px-4 py-3 border-bottom small">
                     @php $tc = ['uts'=>'info','uas'=>'danger','quiz'=>'warning','praktikum'=>'success'][$exam->exam_type ?? ''] ?? 'secondary'; @endphp

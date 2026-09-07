@@ -144,9 +144,48 @@
         h4, .h4 { font-size: 1.1rem; }
         h5, .h5 { font-size: 1rem; }
     }
+    /* ── Nav Pills ────────────────────────────────────────── */
+    .nav-pills .nav-link {
+        border-radius: 8px; font-size: .82rem; font-weight: 500;
+        padding: .4rem .85rem; color: #64748b;
+        transition: background .15s, color .15s;
+    }
+    .nav-pills .nav-link.active {
+        background: linear-gradient(135deg, #7c3aed, #db2777) !important;
+        color: #fff !important;
+    }
+    .nav-pills .nav-link:not(.active):hover {
+        background: #f5f3ff; color: #7c3aed;
+    }
+
+    /* ── Table ────────────────────────────────────────────── */
+    .table thead th {
+        font-size: .72rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .04em;
+        color: #64748b; border-bottom-width: 1px;
+    }
+    .table-hover tbody tr:hover { background: #faf5ff !important; }
+
+    /* ── Pagination purple ────────────────────────────────── */
+    .pagination .page-link {
+        border-radius: 7px !important; margin: 0 2px;
+        border-color: #e2e8f0; color: #475569; font-size: .82rem;
+    }
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #7c3aed, #db2777);
+        border-color: transparent;
+    }
+    .pagination .page-link:hover { background: #f5f3ff; color: #7c3aed; }
+
+    /* ── Input focus purple ───────────────────────────────── */
+    .input-group-text { background: #f8fafc; border-color: #e2e8f0; color: #94a3b8; }
+    .form-control:focus, .form-select:focus {
+        border-color: #c4b5fd;
+        box-shadow: 0 0 0 3px rgba(124,58,237,.12);
+    }
     </style>
 </head>
-<body>
+<body class="siswa-layout">
 <div class="lms-wrapper">
 
     {{-- SIDEBAR --}}

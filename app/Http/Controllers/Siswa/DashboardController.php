@@ -92,6 +92,8 @@ class DashboardController extends Controller
             ->count();
         $attendancePercentage = $stats['attendance_percentage'];
 
+        $upcomingExams       = $this->getUpcomingExams();
+
         return view('siswa.dashboard', compact(
             'stats',
             'recentMaterials',
@@ -100,8 +102,23 @@ class DashboardController extends Controller
             'pendingAssignmentsCount',
             'upcomingPracticalsCount',
             'attendancePercentage',
-            'siswaProfile'
+            'siswaProfile',
+            'upcomingExams'
         ));
+    }
+
+    protected function getUpcomingExams(): \Illuminate\Support\Collection
+    {
+        try {
+            return \App\Models\ExamSchedule::with(['subject', 'kelas'])
+                ->where('is_published', true)
+                ->where('start_time', '>', now())
+                ->orderBy('start_time')
+                ->take(5)
+                ->get();
+        } catch (\Throwable $e) {
+            return collect();
+        }
     }
 
     protected function getUpcomingDeadlines($siswaId, $kelasId)
