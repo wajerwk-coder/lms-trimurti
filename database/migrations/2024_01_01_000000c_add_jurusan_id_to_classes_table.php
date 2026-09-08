@@ -5,77 +5,76 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Tambah kolom jurusan_id ke tabel classes dan update FK siswa ke users_central.
- * Migration ini dijalankan setelah users_central, jurusans, gurus dibuat.
+ * Tambah kolom jurusan_id dan status ke tabel classes.
+ * FK siswa→users_central DIHAPUS dari migration ini karena data existing
+ * di Railway tidak konsisten (siswa.user_id mungkin tidak ada di users_central).
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        // Tambah jurusan_id ke classes jika belum ada
+        // 1. Tambah jurusan_id ke classes jika belum ada
         if (Schema::hasTable('classes') && !Schema::hasColumn('classes', 'jurusan_id')) {
             Schema::table('classes', function (Blueprint $table) {
                 $table->unsignedBigInteger('jurusan_id')->nullable()->after('major_id');
-                $table->foreign('jurusan_id')
-                      ->references('id')->on('jurusans')
-                      ->onDelete('set null');
             });
+
+            // Tambah FK hanya jika tabel jurusans ada DAN tidak ada data orphan
+            if (Schema::hasTable('jurusans')) {
+                try {
+                    Schema::table('classes', function (Blueprint $table) {
+                        $table->foreign('jurusan_id')
+                              ->references('id')->on('jurusans')
+                              ->onDelete('set null');
+                    });
+                } catch (\Throwable $e) {
+                    // FK gagal karena data tidak konsisten — skip, kolom tetap ada tanpa FK
+                    \Illuminate\Support\Facades\Log::warning('FK jurusan_id skip: ' . $e->getMessage());
+                }
+            }
         }
 
-        // Tambah kolom academic_year ke classes jika belum ada (di luar sudah ada tapi pastikan)
+        // 2. Tambah kolom status ke classes jika belum ada
         if (Schema::hasTable('classes') && !Schema::hasColumn('classes', 'status')) {
             Schema::table('classes', function (Blueprint $table) {
                 $table->string('status', 20)->default('active')->after('academic_year');
             });
         }
 
-        // Fix tabel siswa: FK user_id seharusnya ke users_central, bukan users lama
-        // Cek apakah FK lama masih ada, drop dulu sebelum buat baru
-        if (Schema::hasTable('siswa')) {
+        // 3. FK siswa→users_central DIHAPUS dari sini.
+        //    Data di Railway mungkin tidak konsisten sehingga FK constraint
+        //    selalu gagal. Relasi ini dihandle di level aplikasi (model).
+    }
+
+    public function down(): void
+    {
+        if (Schema::hasTable('classes')) {
+            // Drop FK jurusan_id jika ada
             $fkExists = \Illuminate\Support\Facades\DB::select("
                 SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS
                 WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = 'siswa'
+                  AND TABLE_NAME   = 'classes'
                   AND CONSTRAINT_TYPE = 'FOREIGN KEY'
-                  AND CONSTRAINT_NAME LIKE '%user_id%'
+                  AND CONSTRAINT_NAME LIKE '%jurusan_id%'
             ");
-
             if (!empty($fkExists)) {
-                Schema::table('siswa', function (Blueprint $table) use ($fkExists) {
+                Schema::table('classes', function (Blueprint $table) use ($fkExists) {
                     foreach ($fkExists as $fk) {
                         $table->dropForeign($fk->CONSTRAINT_NAME);
                     }
                 });
             }
 
-            // Tambah FK baru ke users_central jika users_central sudah ada
-            if (Schema::hasTable('users_central')) {
-                $newFkExists = \Illuminate\Support\Facades\DB::select("
-                    SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS
-                    WHERE TABLE_SCHEMA = DATABASE()
-                      AND TABLE_NAME = 'siswa'
-                      AND CONSTRAINT_TYPE = 'FOREIGN KEY'
-                      AND CONSTRAINT_NAME = 'siswa_user_id_foreign_central'
-                ");
-
-                if (empty($newFkExists)) {
-                    Schema::table('siswa', function (Blueprint $table) {
-                        $table->foreign('user_id', 'siswa_user_id_foreign_central')
-                              ->references('id')->on('users_central')
-                              ->onDelete('cascade');
-                    });
-                }
+            if (Schema::hasColumn('classes', 'jurusan_id')) {
+                Schema::table('classes', function (Blueprint $table) {
+                    $table->dropColumn('jurusan_id');
+                });
             }
-        }
-    }
-
-    public function down(): void
-    {
-        if (Schema::hasTable('classes') && Schema::hasColumn('classes', 'jurusan_id')) {
-            Schema::table('classes', function (Blueprint $table) {
-                $table->dropForeign(['jurusan_id']);
-                $table->dropColumn('jurusan_id');
-            });
+            if (Schema::hasColumn('classes', 'status')) {
+                Schema::table('classes', function (Blueprint $table) {
+                    $table->dropColumn('status');
+                });
+            }
         }
     }
 };
