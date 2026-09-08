@@ -50,6 +50,15 @@ return new class extends Migration
 
             // Tambah FK baru ke users_central jika users_central sudah ada
             if (Schema::hasTable('users_central')) {
+                // Bersihkan data orphan: set user_id ke null jika tidak ada di users_central
+                // agar penambahan FK tidak gagal karena constraint violation.
+                \Illuminate\Support\Facades\DB::table('siswa')
+                    ->whereNotNull('user_id')
+                    ->whereNotIn('user_id', function ($query) {
+                        $query->select('id')->from('users_central');
+                    })
+                    ->update(['user_id' => null]);
+
                 $newFkExists = \Illuminate\Support\Facades\DB::select("
                     SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS
                     WHERE TABLE_SCHEMA = DATABASE()
