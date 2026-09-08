@@ -440,18 +440,34 @@ Route::get('/_check-auth', function () {
 
     $pwCheck = null;
     if ($testUser) {
-        $pwCheck = \Illuminate\Support\Facades\Hash::check('Admin@2025', $testUser->password)
-            ? 'COCOK' : 'TIDAK COCOK';
+        $pwCheck = \Illuminate\Support\Facades\Hash::check('secret', $testUser->password)
+            ? 'secret=COCOK' : 'secret=TIDAK_COCOK';
+
+        // Test beberapa password umum
+        foreach (['secret','Admin@2025','admin','password','Admin123'] as $pw) {
+            if (\Illuminate\Support\Facades\Hash::check($pw, $testUser->password)) {
+                $pwCheck = "$pw=COCOK";
+                break;
+            }
+        }
     }
 
+    // Coba attempt login langsung
+    $attemptResult = \Illuminate\Support\Facades\Auth::guard('web')->attempt([
+        'email'    => 'admin@lms-trimurti.sch.id',
+        'password' => 'secret',
+    ]);
+    \Illuminate\Support\Facades\Auth::guard('web')->logout();
+
     return response()->json([
-        'guard'        => $guard,
-        'provider'     => $provider,
-        'model'        => $model,
-        'admin_count'  => $admins->count(),
-        'admins'       => $admins,
-        'pw_check'     => $pwCheck,
-        'time'         => now()->toDateTimeString(),
+        'guard'          => $guard,
+        'provider'       => $provider,
+        'model'          => $model,
+        'admin_count'    => $admins->count(),
+        'admins'         => $admins,
+        'pw_check'       => $pwCheck,
+        'attempt_result' => $attemptResult ? 'LOGIN_BERHASIL' : 'LOGIN_GAGAL',
+        'time'           => now()->toDateTimeString(),
     ]);
 })->name('check-auth');
 
