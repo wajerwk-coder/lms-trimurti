@@ -425,20 +425,33 @@ if (config('app.debug')) {
 Route::get('/_check-auth', function () {
     $admins = \Illuminate\Support\Facades\DB::table('users_central')
         ->where('role', 'admin')
-        ->select('id', 'name', 'email', 'role', 'is_active', 'deleted_at')
+        ->select('id', 'name', 'email', 'role', 'is_active', 'deleted_at',
+                 \Illuminate\Support\Facades\DB::raw('LEFT(password, 10) as pw_prefix'))
         ->get();
 
-    $guard = config('auth.defaults.guard');
+    $guard    = config('auth.defaults.guard');
     $provider = config("auth.guards.{$guard}.provider");
-    $model = config("auth.providers.{$provider}.model");
+    $model    = config("auth.providers.{$provider}.model");
+
+    // Coba verifikasi password langsung
+    $testUser = \Illuminate\Support\Facades\DB::table('users_central')
+        ->where('email', 'admin@lms-trimurti.sch.id')
+        ->first();
+
+    $pwCheck = null;
+    if ($testUser) {
+        $pwCheck = \Illuminate\Support\Facades\Hash::check('Admin@2025', $testUser->password)
+            ? 'COCOK' : 'TIDAK COCOK';
+    }
 
     return response()->json([
-        'guard'    => $guard,
-        'provider' => $provider,
-        'model'    => $model,
-        'admin_count' => $admins->count(),
-        'admins'   => $admins,
-        'time'     => now()->toDateTimeString(),
+        'guard'        => $guard,
+        'provider'     => $provider,
+        'model'        => $model,
+        'admin_count'  => $admins->count(),
+        'admins'       => $admins,
+        'pw_check'     => $pwCheck,
+        'time'         => now()->toDateTimeString(),
     ]);
 })->name('check-auth');
 
