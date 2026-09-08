@@ -421,6 +421,27 @@ if (config('app.debug')) {
     require __DIR__ . '/test.php';
 }
 
+// Route sementara untuk cek status users_central di Railway
+Route::get('/_check-auth', function () {
+    $admins = \Illuminate\Support\Facades\DB::table('users_central')
+        ->where('role', 'admin')
+        ->select('id', 'name', 'email', 'role', 'is_active', 'deleted_at')
+        ->get();
+
+    $guard = config('auth.defaults.guard');
+    $provider = config("auth.guards.{$guard}.provider");
+    $model = config("auth.providers.{$provider}.model");
+
+    return response()->json([
+        'guard'    => $guard,
+        'provider' => $provider,
+        'model'    => $model,
+        'admin_count' => $admins->count(),
+        'admins'   => $admins,
+        'time'     => now()->toDateTimeString(),
+    ]);
+})->name('check-auth');
+
 // Fallback Route
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
