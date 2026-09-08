@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 
 class LoginController extends Controller
 {
@@ -14,40 +12,46 @@ class LoginController extends Controller
     {
         return view('auth.login');
     }
-    
+
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required',
         ]);
-        
-        if (Auth::guard('web')->attempt($credentials)) {
+
+        // Guard 'web' sekarang memakai model UserCentral (tabel users_central)
+        if (Auth::guard('web')->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
-            
+
             $user = Auth::user();
-            
-            // Redirect based on role
+
+            // Pastikan akun aktif
+            if (!$user->is_active) {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Akun Anda tidak aktif. Hubungi administrator.',
+                ])->onlyInput('email');
+            }
+
             return match($user->role) {
-                'admin' => redirect()->route('admin.dashboard'),
-                'guru' => redirect()->route('guru.dashboard'),
-                'siswa' => redirect()->route('siswa.dashboard'),
-                default => redirect()->route('home')
+                'admin' => redirect()->intended(route('admin.dashboard')),
+                'guru'  => redirect()->intended(route('guru.dashboard')),
+                'siswa' => redirect()->intended(route('siswa.dashboard')),
+                default => redirect('/'),
             };
         }
-        
+
         return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ]);
+            'email' => 'Email atau password tidak sesuai.',
+        ])->onlyInput('email');
     }
-    
+
     public function logout(Request $request)
     {
         Auth::logout();
-        
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        
         return redirect('/');
     }
 }
