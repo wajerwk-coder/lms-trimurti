@@ -11,7 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Create practicals table for practical work schedules/activities
+        // Jika tabel sudah ada (import manual), skip create tapi tetap tambah kolom yang kurang
+        if (Schema::hasTable('practicals')) {
+            // Pastikan kolom yang diperlukan ada
+            Schema::table('practicals', function (Blueprint $table) {
+                if (!Schema::hasColumn('practicals', 'title'))       $table->string('title')->nullable()->after('id');
+                if (!Schema::hasColumn('practicals', 'description')) $table->text('description')->nullable();
+                if (!Schema::hasColumn('practicals', 'instructions'))$table->text('instructions')->nullable();
+                if (!Schema::hasColumn('practicals', 'due_date'))    $table->timestamp('due_date')->nullable();
+                if (!Schema::hasColumn('practicals', 'is_published'))$table->boolean('is_published')->default(false);
+                if (!Schema::hasColumn('practicals', 'published_at'))$table->timestamp('published_at')->nullable();
+                if (!Schema::hasColumn('practicals', 'views_count')) $table->integer('views_count')->default(0);
+                if (!Schema::hasColumn('practicals', 'submissions_count')) $table->integer('submissions_count')->default(0);
+            });
+            return;
+        }
+
+        // Buat tabel dari awal
         Schema::create('practicals', function (Blueprint $table) {
             $table->id();
             

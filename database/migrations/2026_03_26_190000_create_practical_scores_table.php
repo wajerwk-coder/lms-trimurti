@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         // Create practical_scores table for tracking student submissions/scores
-        Schema::create('practical_scores', function (Blueprint $table) {
+        if (!Schema::hasTable('practical_scores')) {
+            Schema::create('practical_scores', function (Blueprint $table) {
             $table->id();
             
             // Relationships
@@ -68,8 +69,10 @@ return new class extends Migration
             $table->foreign('siswa_id')->references('id')->on('users_central')->onDelete('cascade');
             $table->foreign('guru_id')->references('id')->on('users_central')->onDelete('set null');
             $table->foreign('subject_id')->references('id')->on('subjects')->onDelete('set null');
-        });
-        
+        }); // end Schema::create
+
+        } // end if (!hasTable)
+
         // Add scores_count column to practicals table if missing
         if (Schema::hasTable('practicals') && !Schema::hasColumn('practicals', 'scores_count')) {
             Schema::table('practicals', function (Blueprint $table) {

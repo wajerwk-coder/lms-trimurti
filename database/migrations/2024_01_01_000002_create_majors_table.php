@@ -1,33 +1,23 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('majors', function (Blueprint $table) {
-            $table->id();
-            $table->string('name'); // Contoh: Keperawatan, Farmasi, Analis Kesehatan
-            $table->string('code')->unique(); // Contoh: KEP, FAR
-            $table->text('description')->nullable();
-            $table->timestamps();
-            
-            // Indexes
-            $table->index('code');
-        });
+        if (!Schema::hasTable('majors')) {
+            Schema::create('majors', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('code')->unique()->nullable();
+                $table->text('description')->nullable();
+                $table->timestamps();
+                $table->index('code');
+            });
+        }
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('majors');
-    }
+    public function down(): void { Schema::dropIfExists('majors'); }
 };
