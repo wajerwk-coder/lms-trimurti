@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         // Create material_downloads table
         if (!Schema::hasTable('material_downloads')) {
             Schema::create('material_downloads', function (Blueprint $table) {

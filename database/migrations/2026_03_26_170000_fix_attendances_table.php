@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         Schema::table('attendances', function (Blueprint $table) {
             // Add missing columns that the model expects
             if (!Schema::hasColumn('attendances', 'recorded_by')) {

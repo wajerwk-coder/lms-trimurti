@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         // Jika tabel sudah ada (import manual), skip create tapi tetap tambah kolom yang kurang
         if (Schema::hasTable('practicals')) {
             // Pastikan kolom yang diperlukan ada

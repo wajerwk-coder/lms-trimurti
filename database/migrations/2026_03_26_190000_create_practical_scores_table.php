@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Nonaktifkan FK checks untuk migration ini agar tidak crash dengan data Railway
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         // Create practical_scores table for tracking student submissions/scores
         if (!Schema::hasTable('practical_scores')) {
             Schema::create('practical_scores', function (Blueprint $table) {
