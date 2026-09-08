@@ -64,10 +64,10 @@ return new class extends Migration
             $table->index('scored_at');
             $table->index(['practical_id', 'siswa_id']); // Composite index
             
-            // Foreign keys
+            // Foreign keys — FK ke users_central dinonaktifkan, relasi dihandle di model
             $table->foreign('practical_id')->references('id')->on('practicals')->onDelete('cascade');
-            $table->foreign('siswa_id')->references('id')->on('users_central')->onDelete('cascade');
-            $table->foreign('guru_id')->references('id')->on('users_central')->onDelete('set null');
+            // $table->foreign('siswa_id')->references('id')->on('users_central')->onDelete('cascade');
+            // $table->foreign('guru_id')->references('id')->on('users_central')->onDelete('set null');
             $table->foreign('subject_id')->references('id')->on('subjects')->onDelete('set null');
         }); // end Schema::create
 

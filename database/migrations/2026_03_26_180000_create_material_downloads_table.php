@@ -41,10 +41,10 @@ return new class extends Migration
             $table->index('downloaded_at');
             $table->index('completed');
             
-            // Foreign keys
+            // Foreign keys — FK ke users_central dinonaktifkan, relasi dihandle di model
             $table->foreign('material_id')->references('id')->on('materials')->onDelete('cascade');
-            $table->foreign('siswa_id')->references('id')->on('users_central')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users_central')->onDelete('cascade');
+            // $table->foreign('siswa_id')->references('id')->on('users_central')->onDelete('cascade');
+            // $table->foreign('user_id')->references('id')->on('users_central')->onDelete('cascade');
             });
         }
         

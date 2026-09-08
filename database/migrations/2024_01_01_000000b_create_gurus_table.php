@@ -41,10 +41,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            // FK ke users_central
-            $table->foreign('user_id')
-                  ->references('id')->on('users_central')
-                  ->onDelete('set null');
+            // FK ke users_central — skip, relasi dihandle di model
+            // $table->foreign('user_id')->references('id')->on('users_central')->onDelete('set null');
         });
     }
 

@@ -55,15 +55,15 @@ return new class extends Migration
                 $table->index('subject_id');
             }
             
-            // Add foreign key constraints
-            if (Schema::hasColumn('attendances', 'recorded_by')) {
-                $table->foreign('recorded_by')->references('id')->on('users_central')->onDelete('set null');
-            }
-            
-            if (Schema::hasColumn('attendances', 'siswa_id')) {
-                $table->foreign('siswa_id')->references('id')->on('users_central')->onDelete('cascade');
-            }
-            
+            // FK ke users_central dinonaktifkan — data mungkin tidak konsisten
+            // Relasi dihandle di level model
+            // if (Schema::hasColumn('attendances', 'recorded_by')) {
+            //     $table->foreign('recorded_by')->references('id')->on('users_central')->onDelete('set null');
+            // }
+            // if (Schema::hasColumn('attendances', 'siswa_id')) {
+            //     $table->foreign('siswa_id')->references('id')->on('users_central')->onDelete('cascade');
+            // }
+
             if (Schema::hasColumn('attendances', 'practical_id')) {
                 $table->foreign('practical_id')->references('id')->on('practicals')->onDelete('set null');
             }

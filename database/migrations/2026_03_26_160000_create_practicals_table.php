@@ -79,8 +79,9 @@ return new class extends Migration
             $table->index('is_published');
             $table->index('is_active');
             
-            // Foreign keys
-            $table->foreign('guru_id')->references('id')->on('users_central')->onDelete('set null');
+            // Foreign keys — FK ke users_central dinonaktifkan karena data mungkin tidak konsisten
+            // Relasi dihandle di level model Laravel
+            // $table->foreign('guru_id')->references('id')->on('users_central')->onDelete('set null');
             $table->foreign('subject_id')->references('id')->on('subjects')->onDelete('set null');
             $table->foreign('kelas_id')->references('id')->on('classes')->onDelete('set null');
             $table->foreign('class_subject_id')->references('id')->on('class_subjects')->onDelete('set null');
