@@ -1,1 +1,1 @@
-﻿web: php artisan config:clear && php artisan route:clear && php artisan cache:clear ; php artisan migrate --force || true ; php artisan lms:create-users || true ; php artisan config:cache ; php artisan route:cache ; php artisan serve --host=0.0.0.0 --port=$PORT
+﻿web: php artisan cache:clear ; php artisan config:clear ; php artisan route:clear ; php artisan view:clear ; php artisan migrate --force || true ; php artisan lms:create-users || true ; php artisan config:cache ; php artisan route:cache ; php artisan view:cache ; php artisan serve --host=0.0.0.0 --port=$PORT
