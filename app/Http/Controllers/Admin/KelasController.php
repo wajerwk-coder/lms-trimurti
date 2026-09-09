@@ -80,14 +80,19 @@ class KelasController extends Controller
             $jurusan = Jurusan::findOrFail($request->major_id);
             $majorId = $this->syncMajorFromJurusan($jurusan);
 
-            Kelas::create([
+            $createData = [
                 'name'          => $request->name,
                 'grade'         => $request->grade,
                 'major_id'      => $majorId,
-                'jurusan_id'    => $jurusan->id,
                 'academic_year' => $request->academic_year,
                 'status'        => $request->status ?? 'active',
-            ]);
+            ];
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn('classes', 'jurusan_id')) {
+                $createData['jurusan_id'] = $jurusan->id;
+            }
+
+            Kelas::create($createData);
 
             return redirect()->route('admin.kelas.index')
                 ->with('success', 'Kelas ' . $request->name . ' berhasil ditambahkan.');
@@ -145,14 +150,21 @@ class KelasController extends Controller
         $jurusan = Jurusan::findOrFail($request->major_id);
         $majorId = $this->syncMajorFromJurusan($jurusan);
 
-        $kelas->update([
+        // Siapkan data update — hanya sertakan jurusan_id jika kolom ada
+        $updateData = [
             'name'          => $request->name,
             'grade'         => $request->grade,
             'major_id'      => $majorId,
-            'jurusan_id'    => $jurusan->id,
             'academic_year' => $request->academic_year,
             'status'        => $request->status ?? 'active',
-        ]);
+        ];
+
+        // Tambah jurusan_id hanya jika kolom sudah ada di DB
+        if (\Illuminate\Support\Facades\Schema::hasColumn('classes', 'jurusan_id')) {
+            $updateData['jurusan_id'] = $jurusan->id;
+        }
+
+        $kelas->update($updateData);
 
         return redirect()->route('admin.kelas.index')
             ->with('success', 'Kelas ' . $request->name . ' berhasil diperbarui.');

@@ -13,6 +13,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         // 1. Tambah jurusan_id ke classes jika belum ada
         if (Schema::hasTable('classes') && !Schema::hasColumn('classes', 'jurusan_id')) {
             Schema::table('classes', function (Blueprint $table) {
@@ -41,7 +43,12 @@ return new class extends Migration
             });
         }
 
-        // 3. FK siswa→users_central DIHAPUS dari sini.
+        // 3. Sync jurusan_id dari major_id untuk data yang sudah ada
+        if (Schema::hasTable('classes') && Schema::hasColumn('classes', 'jurusan_id')) {
+            \Illuminate\Support\Facades\DB::statement(
+                'UPDATE classes SET jurusan_id = major_id WHERE jurusan_id IS NULL AND major_id IS NOT NULL'
+            );
+        }
         //    Data di Railway mungkin tidak konsisten sehingga FK constraint
         //    selalu gagal. Relasi ini dihandle di level aplikasi (model).
     }
