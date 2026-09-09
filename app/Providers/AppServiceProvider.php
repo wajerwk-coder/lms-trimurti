@@ -37,6 +37,12 @@ class AppServiceProvider extends ServiceProvider
             'driver' => 'eloquent',
             'model'  => \App\Models\UserCentral::class,
         ]);
+
+        // ── Force SESSION_DRIVER ke file ──────────────────────────────────────
+        // Menghindari crash jika tabel sessions belum ada di Railway
+        if (!\Illuminate\Support\Facades\Schema::hasTable('sessions')) {
+            $this->app['config']->set('session.driver', 'file');
+        }
         // ─────────────────────────────────────────────────────────────────────
 
         // Header composer
