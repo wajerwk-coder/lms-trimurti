@@ -31,7 +31,6 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // ── Force auth provider ke users_central saat runtime ────────────────
-        // Ini override config cache yang mungkin masih pakai tabel users lama
         $this->app['config']->set('auth.guards.web.provider', 'users_central');
         $this->app['config']->set('auth.providers.users_central', [
             'driver' => 'eloquent',
@@ -39,10 +38,9 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         // ── Force SESSION_DRIVER ke file ──────────────────────────────────────
-        // Menghindari crash jika tabel sessions belum ada di Railway
-        if (!\Illuminate\Support\Facades\Schema::hasTable('sessions')) {
-            $this->app['config']->set('session.driver', 'file');
-        }
+        // Database session membutuhkan tabel sessions yang mungkin belum ada
+        // File session lebih reliable di Railway environment
+        $this->app['config']->set('session.driver', 'file');
         // ─────────────────────────────────────────────────────────────────────
 
         // Header composer
