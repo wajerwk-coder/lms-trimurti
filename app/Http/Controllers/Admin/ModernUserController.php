@@ -272,32 +272,29 @@ class ModernUserController extends BaseController
                 'is_active' => true,
             ]);
 
-            // 2. Buat profil di tabel siswa
-            // Kolom siswa: user_id, nis, nisn, jenis_kelamin, tempat_lahir,
-            //              tanggal_lahir, alamat, no_telepon, kelas_id, major,
-            //              tahun_ajaran, nama_ortu, no_telepon_ortu,
-            //              golongan_darah, riwayat_penyakit, alergi,
-            //              info_kesehatan, foto, status
-            Siswa::create([
-                'user_id'          => $user->id,
-                'nis'              => $request->nis,
-                'nisn'             => $request->nisn,
-                'jenis_kelamin'    => $request->jenis_kelamin    ?? 'L',
-                'tempat_lahir'     => $request->tempat_lahir     ?? '-',
-                'tanggal_lahir'    => $request->tanggal_lahir    ?? now()->format('Y-m-d'),
-                'alamat'           => $request->alamat           ?: '-',
-                'no_telepon'       => $request->phone            ?: '-',
-                'kelas_id'         => $request->kelas_id,
-                'major'            => $request->major,
-                'tahun_ajaran'     => $request->tahun_ajaran,
-                'nama_ortu'        => $request->nama_ortu        ?: null,
-                'no_telepon_ortu'  => $request->no_telepon_ortu  ?: null,
-                'golongan_darah'   => $request->golongan_darah   ?: null,
-                'riwayat_penyakit' => $request->riwayat_penyakit ?: null,
-                'alergi'           => $request->alergi           ?: null,
-                'info_kesehatan'   => $request->info_kesehatan   ?: null,
-                'status'           => 'aktif',
-            ]);
+            // 2. Buat profil di tabel siswa (updateOrCreate agar tidak crash jika user_id sudah ada)
+            Siswa::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'nis'              => $request->nis,
+                    'nisn'             => $request->nisn,
+                    'jenis_kelamin'    => $request->jenis_kelamin    ?? 'L',
+                    'tempat_lahir'     => $request->tempat_lahir     ?? '-',
+                    'tanggal_lahir'    => $request->tanggal_lahir    ?? now()->format('Y-m-d'),
+                    'alamat'           => $request->alamat           ?: '-',
+                    'no_telepon'       => $request->phone            ?: '-',
+                    'kelas_id'         => $request->kelas_id,
+                    'major'            => $request->major,
+                    'tahun_ajaran'     => $request->tahun_ajaran,
+                    'nama_ortu'        => $request->nama_ortu        ?: null,
+                    'no_telepon_ortu'  => $request->no_telepon_ortu  ?: null,
+                    'golongan_darah'   => $request->golongan_darah   ?: null,
+                    'riwayat_penyakit' => $request->riwayat_penyakit ?: null,
+                    'alergi'           => $request->alergi           ?: null,
+                    'info_kesehatan'   => $request->info_kesehatan   ?: null,
+                    'status'           => 'aktif',
+                ]
+            );
 
             DB::commit();
             return redirect()->route('admin.users.siswa')
