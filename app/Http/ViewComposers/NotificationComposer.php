@@ -21,9 +21,8 @@ class NotificationComposer
         $user = Auth::user();
 
         try {
-            // Ambil notifikasi untuk user ini
-            $notifications = \Illuminate\Support\Facades\DB::table('notifications')
-                ->where(function($q) use ($user) {
+            // Gunakan Eloquent agar created_at otomatis di-cast ke Carbon
+            $notifications = Notification::where(function($q) use ($user) {
                     $q->where('penerima_id', $user->id)
                       ->orWhere('tipe_penerima', 'semua');
                 })
@@ -31,9 +30,7 @@ class NotificationComposer
                 ->limit(10)
                 ->get();
 
-            // Hitung yang belum dibaca: is_read = 0 ATAU read_at IS NULL
-            $unreadCount = \Illuminate\Support\Facades\DB::table('notifications')
-                ->where(function($q) use ($user) {
+            $unreadCount = Notification::where(function($q) use ($user) {
                     $q->where('penerima_id', $user->id)
                       ->orWhere('tipe_penerima', 'semua');
                 })
