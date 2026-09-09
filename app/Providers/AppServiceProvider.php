@@ -37,10 +37,14 @@ class AppServiceProvider extends ServiceProvider
             'model'  => \App\Models\UserCentral::class,
         ]);
 
-        // ── Force SESSION_DRIVER ke file ──────────────────────────────────────
-        // Database session membutuhkan tabel sessions yang mungkin belum ada
-        // File session lebih reliable di Railway environment
+        // ── Force SESSION dan CACHE ke file ───────────────────────────────────
+        // DATABASE driver butuh tabel sessions/cache yang mungkin belum ada
         $this->app['config']->set('session.driver', 'file');
+        $this->app['config']->set('cache.default', 'file');
+        $this->app['config']->set('cache.stores.file', [
+            'driver' => 'file',
+            'path'   => storage_path('framework/cache/data'),
+        ]);
         // ─────────────────────────────────────────────────────────────────────
 
         // Header composer
