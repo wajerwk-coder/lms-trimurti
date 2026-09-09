@@ -190,8 +190,8 @@
                 <hr class="my-2">
                 <small class="text-muted">
                     <i class="fas fa-clock me-1"></i>
-                    Dibuat: {{ $jurusan->created_at->format('d M Y') }}
-                    · Diperbarui: {{ $jurusan->updated_at->format('d M Y') }}
+                    Dibuat: {{ \Carbon\Carbon::parse($jurusan->created_at)->format('d M Y') }}
+                    · Diperbarui: {{ \Carbon\Carbon::parse($jurusan->updated_at)->format('d M Y') }}
                 </small>
                 @endif
             </div>

@@ -70,7 +70,7 @@
             </div>
             <div class="card-body text-center py-4">
                 @php
-                    $freshPhoto   = \Illuminate\Support\Facades\DB::table('users_central')->where('id', Auth::id())->value('photo');
+                    $freshPhoto   = $user->photo;
                     $avatarSrc    = $freshPhoto && str_starts_with($freshPhoto, 'http')
                         ? $freshPhoto
                         : ($freshPhoto ? asset('storage/'.$freshPhoto) : null);
@@ -230,7 +230,7 @@
                             <label class="form-label small fw-semibold">Tanggal Lahir</label>
                             <input type="date" name="tanggal_lahir"
                                    class="form-control @error('tanggal_lahir') is-invalid @enderror"
-                                   value="{{ old('tanggal_lahir', $student->tanggal_lahir?->format('Y-m-d')) }}"
+                                   value="{{ old('tanggal_lahir', $student->tanggal_lahir ? \Carbon\Carbon::parse($student->tanggal_lahir)->format('Y-m-d') : '') }}"
                                    style="border-radius:8px;">
                             @error('tanggal_lahir')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>

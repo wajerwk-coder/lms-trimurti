@@ -16,21 +16,16 @@
             <div class="card-body py-4">
                 {{-- Avatar --}}
                 @php
-                    // Query raw DB — bypass semua ORM/session cache
-                    $freshPhoto = \Illuminate\Support\Facades\DB::table('users_central')
-                        ->where('id', Auth::id())
-                        ->value('photo');
-                    $avatarSrc  = $freshPhoto && str_starts_with($freshPhoto, 'http')
-                        ? $freshPhoto
-                        : ($freshPhoto ? asset('storage/' . $freshPhoto)
-                        : 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=0f766e&color=fff&size=128&bold=true');
+                    // Foto dari controller — sudah dikirim via $user dari ProfileController
+                    $avatarSrc = $user->photo_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=0f766e&color=fff&size=128&bold=true';
                 @endphp
                 <img src="{{ $avatarSrc }}"
                      alt="{{ $user->name }}"
                      class="rounded-circle border mb-3"
                      id="avatarPreview"
                      style="width:90px;height:90px;object-fit:cover;"
-                     onerror="console.error('Avatar load failed:', this.src); this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=0f766e&color=fff&size=128&bold=true'">
+                     onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=0f766e&color=fff&size=128&bold=true'">
+                @php $freshPhoto = $user->photo; @endphp
                 @if($freshPhoto && str_starts_with($freshPhoto, 'http'))
                 <div class="small text-success mb-1" style="font-size:.65rem;">
                     <i class="fas fa-check-circle me-1"></i>Foto Cloudinary aktif
@@ -76,7 +71,7 @@
                 </form>
 
                 <div class="mt-3 text-start small text-muted">
-                    <div><i class="fas fa-calendar me-1"></i>Bergabung: {{ $user->created_at->format('M Y') }}</div>
+                    <div><i class="fas fa-calendar me-1"></i>Bergabung: {{ $user->created_at ? \Carbon\Carbon::parse($user->created_at)->format('M Y') : '—' }}</div>
                     @if($guruProfile?->nip)
                         <div class="mt-1"><i class="fas fa-id-badge me-1"></i>NIP: {{ $guruProfile->nip }}</div>
                     @endif
