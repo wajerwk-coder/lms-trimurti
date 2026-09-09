@@ -30,6 +30,23 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // ── FORCE auth guard ke users_central saat runtime ────────────────────
+        // Ini memastikan auth pakai UserCentral tidak peduli config cache lama.
+        \Illuminate\Support\Facades\Auth::provider('users_central_provider', function ($app, array $config) {
+            return new \Illuminate\Auth\EloquentUserProvider(
+                $app['hash'],
+                \App\Models\UserCentral::class
+            );
+        });
+
+        $this->app['config']->set('auth.guards.web.provider', 'users_central');
+        $this->app['config']->set('auth.providers.users_central', [
+            'driver' => 'eloquent',
+            'model'  => \App\Models\UserCentral::class,
+        ]);
+        $this->app['config']->set('auth.defaults.guard', 'web');
+        // ─────────────────────────────────────────────────────────────────────
+
         // Header composer
         View::composer([
             'partials.header-admin',

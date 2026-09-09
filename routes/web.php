@@ -421,56 +421,6 @@ if (config('app.debug')) {
     require __DIR__ . '/test.php';
 }
 
-// Route sementara untuk cek status users_central di Railway
-Route::get('/_check-auth', function () {
-    $admins = \Illuminate\Support\Facades\DB::table('users_central')
-        ->where('role', 'admin')
-        ->select('id', 'name', 'email', 'role', 'is_active', 'deleted_at',
-                 \Illuminate\Support\Facades\DB::raw('LEFT(password, 10) as pw_prefix'))
-        ->get();
-
-    $guard    = config('auth.defaults.guard');
-    $provider = config("auth.guards.{$guard}.provider");
-    $model    = config("auth.providers.{$provider}.model");
-
-    // Coba verifikasi password langsung
-    $testUser = \Illuminate\Support\Facades\DB::table('users_central')
-        ->where('email', 'admin@lms-trimurti.sch.id')
-        ->first();
-
-    $pwCheck = null;
-    if ($testUser) {
-        $pwCheck = \Illuminate\Support\Facades\Hash::check('secret', $testUser->password)
-            ? 'secret=COCOK' : 'secret=TIDAK_COCOK';
-
-        // Test beberapa password umum
-        foreach (['secret','Admin@2025','admin','password','Admin123'] as $pw) {
-            if (\Illuminate\Support\Facades\Hash::check($pw, $testUser->password)) {
-                $pwCheck = "$pw=COCOK";
-                break;
-            }
-        }
-    }
-
-    // Coba attempt login langsung
-    $attemptResult = \Illuminate\Support\Facades\Auth::guard('web')->attempt([
-        'email'    => 'admin@lms-trimurti.sch.id',
-        'password' => 'secret',
-    ]);
-    \Illuminate\Support\Facades\Auth::guard('web')->logout();
-
-    return response()->json([
-        'guard'          => $guard,
-        'provider'       => $provider,
-        'model'          => $model,
-        'admin_count'    => $admins->count(),
-        'admins'         => $admins,
-        'pw_check'       => $pwCheck,
-        'attempt_result' => $attemptResult ? 'LOGIN_BERHASIL' : 'LOGIN_GAGAL',
-        'time'           => now()->toDateTimeString(),
-    ]);
-})->name('check-auth');
-
 // Fallback Route
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
