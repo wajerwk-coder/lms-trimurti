@@ -9,6 +9,6 @@
     ]
   },
   "deploy": {
-    "cmd": "php artisan migrate --force || true ; php artisan lms:create-users || true ; php artisan serve --host=0.0.0.0 --port=$PORT"
+    "cmd": "php artisan migrate --force || true ; php artisan lms:create-users || true ; php artisan lms:sync-siswa || true ; php artisan serve --host=0.0.0.0 --port=$PORT"
   }
 }
