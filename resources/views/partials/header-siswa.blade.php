@@ -72,7 +72,7 @@
                                     {{ $notif->judul ?? $notif->title ?? 'Notifikasi' }}
                                 </div>
                                 <div class="text-muted" style="font-size:.75rem;">
-                                    {{ $notif->created_at?->diffForHumans() ?? '' }}
+                                    {{ $notif->created_at ? \Carbon\Carbon::parse($notif->created_at)->diffForHumans() : '' }}
                                 </div>
                             </div>
                             @if(is_null($notif->read_at))

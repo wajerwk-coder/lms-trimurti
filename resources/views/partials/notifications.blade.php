@@ -30,7 +30,7 @@
                             </div>
                         </div>
                         <div>
-                            <div class="small text-muted">{{ $notification->created_at->diffForHumans() }}</div>
+                            <div class="small text-muted">{{ $notification->created_at ? \Carbon\Carbon::parse($notification->created_at)->diffForHumans() : '' }}</div>
                             <div class="fw-bold text-sm">{{ $notification->title }}</div>
                             <span class="{{ $notification->read_at ? '' : 'fw-bold' }}">
                                 {{ $notification->message }}

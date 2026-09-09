@@ -512,7 +512,7 @@
                                 </td>
                                 <td class="text-muted">
                                     <div>{{ optional($usr->created_at)->format('d M Y') }}</div>
-                                    <div style="font-size:.7rem;">{{ optional($usr->created_at)->diffForHumans() }}</div>
+                                    <div style="font-size:.7rem;">{{ $usr->created_at ? \Carbon\Carbon::parse($usr->created_at)->diffForHumans() : '' }}</div>
                                 </td>
                                 <td class="pe-4 text-center">
                                     <a href="{{ route('admin.users.show', $usr->id) }}"
@@ -557,8 +557,8 @@
                         @php
                             $desc    = is_array($act) ? ($act['description'] ?? '—') : ($act->description ?? '—');
                             $actTime = is_array($act)
-                                ? optional(\Carbon\Carbon::parse($act['created_at'] ?? null))->diffForHumans()
-                                : optional($act->created_at)->diffForHumans();
+                                ? ($act['created_at'] ? \Carbon\Carbon::parse($act['created_at'])->diffForHumans() : '')
+                                : ($act->created_at ? \Carbon\Carbon::parse($act->created_at)->diffForHumans() : '');
                         @endphp
                         <li class="list-group-item px-4 py-2 border-0 border-bottom small">
                             <div class="d-flex gap-2 align-items-start">

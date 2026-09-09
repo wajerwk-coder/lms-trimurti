@@ -66,7 +66,7 @@
                                     {{ Str::limit($notif->pesan ?? $notif->message ?? '', 60) }}
                                 </div>
                                 <div class="text-muted" style="font-size:.72rem;">
-                                    {{ $notif->created_at?->diffForHumans() ?? '' }}
+                                    {{ $notif->created_at ? \Carbon\Carbon::parse($notif->created_at)->diffForHumans() : '' }}
                                 </div>
                             </div>
                             @if(is_null($notif->read_at))
