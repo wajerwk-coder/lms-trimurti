@@ -77,7 +77,7 @@
                         <div class="col-md-6">
                             <label class="form-label small text-muted fw-semibold">WAKTU PENGUMPULAN</label>
                             <div class="fw-medium">{{ $submission->submitted_at->format('d M Y H:i') }}</div>
-                            <small class="text-muted">{{ $submission->submitted_at->diffForHumans() }}</small>
+                            <small class="text-muted">{{ (\Carbon\Carbon::parse($submission->submitted_at)->diffForHumans()) }}</small>
                         </div>
                         @endif
                     </div>

@@ -290,7 +290,7 @@
                         <div class="fw-semibold text-dark text-truncate">{{ $material->title ?? '—' }}</div>
                         <div class="text-muted" style="font-size:.75rem;">
                             {{ $material->subject?->name ?? '—' }} ·
-                            {{ optional($material->created_at)->diffForHumans() ?? '' }}
+                            {{ (\Carbon\Carbon::parse($material->created_at)->diffForHumans()) ?? '' }}
                         </div>
                     </div>
                     <a href="{{ route('siswa.materials.show', $material->id) }}"
@@ -330,7 +330,7 @@
                         </div>
                     </div>
                     <span class="badge bg-{{ $tc }} flex-shrink-0">
-                        {{ $exam->start_time->diffForHumans() }}
+                        {{ (\Carbon\Carbon::parse($exam->start_time)->diffForHumans()) }}
                     </span>
                 </div>
                 @empty

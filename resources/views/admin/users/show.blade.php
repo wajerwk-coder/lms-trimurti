@@ -174,7 +174,7 @@
                         <div>
                             <div class="fw-semibold text-dark">Akun dibuat</div>
                             <div class="text-muted">{{ $user->created_at->format('d M Y, H:i') }}</div>
-                            <div class="text-muted" style="font-size:.7rem;">{{ $user->created_at->diffForHumans() }}</div>
+                            <div class="text-muted" style="font-size:.7rem;">{{ (\Carbon\Carbon::parse($user->created_at)->diffForHumans()) }}</div>
                         </div>
                     </div>
                     @if($user->updated_at && $user->updated_at->ne($user->created_at))
@@ -186,7 +186,7 @@
                         <div>
                             <div class="fw-semibold text-dark">Terakhir diupdate</div>
                             <div class="text-muted">{{ $user->updated_at->format('d M Y, H:i') }}</div>
-                            <div class="text-muted" style="font-size:.7rem;">{{ $user->updated_at->diffForHumans() }}</div>
+                            <div class="text-muted" style="font-size:.7rem;">{{ (\Carbon\Carbon::parse($user->updated_at)->diffForHumans()) }}</div>
                         </div>
                     </div>
                     @endif
@@ -381,7 +381,7 @@
                             <div>
                                 <div class="text-dark">{{ $act->description ?? $act }}</div>
                                 <div class="text-muted" style="font-size:.7rem;">
-                                    {{ optional($act->created_at)->diffForHumans() }}
+                                    {{ (\Carbon\Carbon::parse($act->created_at)->diffForHumans()) }}
                                 </div>
                             </div>
                         </div>

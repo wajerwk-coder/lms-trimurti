@@ -177,7 +177,7 @@
                             </td>
                             <td class="text-muted">
                                 <div>{{ $user->created_at->format('d M Y') }}</div>
-                                <small class="opacity-75">{{ $user->created_at->diffForHumans() }}</small>
+                                <small class="opacity-75">{{ (\Carbon\Carbon::parse($user->created_at)->diffForHumans()) }}</small>
                             </td>
                             <td class="text-center pe-4">
                                 <div class="d-flex gap-1 justify-content-center">

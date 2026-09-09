@@ -495,7 +495,7 @@
                     <i class="fas fa-circle flex-shrink-0" style="color:#d97706;font-size:.4rem;"></i>
                     <div class="flex-grow-1 min-w-0">
                         <div class="fw-semibold text-truncate" style="font-size:.82rem;">{{ $ua->title }}</div>
-                        <div class="text-muted" style="font-size:.7rem;">{{ $ua->due_date->diffForHumans() }}</div>
+                        <div class="text-muted" style="font-size:.7rem;">{{ (\Carbon\Carbon::parse($ua->due_date)->diffForHumans()) }}</div>
                     </div>
                 </div>
                 @endforeach

@@ -191,7 +191,7 @@
                             </td>
                             <td>
                                 <div class="text-dark">{{ $guru->created_at->format('d M Y') }}</div>
-                                <small class="text-muted">{{ $guru->created_at->diffForHumans() }}</small>
+                                <small class="text-muted">{{ (\Carbon\Carbon::parse($guru->created_at)->diffForHumans()) }}</small>
                             </td>
                             <td class="text-center pe-4">
                                 <div class="d-flex gap-1 justify-content-center">

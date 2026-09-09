@@ -320,7 +320,7 @@
                 </div>
                 @if($submission->graded_at)
                     <small class="text-muted d-block mt-2">
-                        <i class="fas fa-clock me-1"></i>Dinilai {{ $submission->graded_at->diffForHumans() }}
+                        <i class="fas fa-clock me-1"></i>Dinilai {{ (\Carbon\Carbon::parse($submission->graded_at)->diffForHumans()) }}
                     </small>
                 @endif
             </div>
@@ -479,7 +479,7 @@
                             </div>
                             <div class="tl-time">
                                 {{ $submission->submitted_at->format('d M Y, H:i') }}
-                                <span class="ms-1">({{ $submission->submitted_at->diffForHumans() }})</span>
+                                <span class="ms-1">({{ (\Carbon\Carbon::parse($submission->submitted_at)->diffForHumans()) }})</span>
                             </div>
                         </div>
                     </li>

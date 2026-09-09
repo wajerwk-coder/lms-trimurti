@@ -1,4 +1,4 @@
-﻿@extends('layouts.base')
+@extends('layouts.base')
 
 @section('title', 'Detail Jadwal Ujian')
 @section('page-title', 'Detail Jadwal Ujian')
@@ -101,7 +101,7 @@
                             <strong>{{ $examSchedule->status }}</strong>
                             <p class="mb-0 small">
                                 @if($examSchedule->status == 'Akan Datang')
-                                    Ujian akan dimulai dalam {{ $examSchedule->start_time->diffForHumans() }}
+                                    Ujian akan dimulai dalam {{ (\Carbon\Carbon::parse($examSchedule->start_time)->diffForHumans()) }}
                                 @elseif($examSchedule->status == 'Sedang Berlangsung')
                                     Ujian sedang berlangsung, selesaikan sebelum {{ $examSchedule->end_time->format('H:i') }}
                                 @else

@@ -38,13 +38,18 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         // ── Force SESSION dan CACHE ke file ───────────────────────────────────
-        // DATABASE driver butuh tabel sessions/cache yang mungkin belum ada
         $this->app['config']->set('session.driver', 'file');
         $this->app['config']->set('cache.default', 'file');
         $this->app['config']->set('cache.stores.file', [
             'driver' => 'file',
             'path'   => storage_path('framework/cache/data'),
         ]);
+
+        // ── Safe diffForHumans: string/Carbon → string ────────────────────────
+        // Dipakai di view sebagai helper agar tidak crash jika nilai string
+        \Illuminate\Support\Facades\Blade::directive('diffForHumans', function ($expression) {
+            return "<?php echo $expression ? \\Carbon\\Carbon::parse($expression)->diffForHumans() : ''; ?>";
+        });
         // ─────────────────────────────────────────────────────────────────────
 
         // Header composer
