@@ -17,11 +17,17 @@ return new class extends Migration
 
         // Index untuk classes — dipakai filter dan query
         Schema::table('classes', function (Blueprint $table) {
-            if (!$this->indexExists('classes', 'classes_jurusan_id_index')) {
-                $table->index('jurusan_id', 'classes_jurusan_id_index');
+            // Hanya tambah index jurusan_id jika kolom ada
+            if (Schema::hasColumn('classes', 'jurusan_id')) {
+                if (!$this->indexExists('classes', 'classes_jurusan_id_index')) {
+                    $table->index('jurusan_id', 'classes_jurusan_id_index');
+                }
             }
-            if (!$this->indexExists('classes', 'classes_status_index')) {
-                $table->index('status', 'classes_status_index');
+            // Hanya tambah index status jika kolom ada
+            if (Schema::hasColumn('classes', 'status')) {
+                if (!$this->indexExists('classes', 'classes_status_index')) {
+                    $table->index('status', 'classes_status_index');
+                }
             }
         });
     }

@@ -9,6 +9,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         // 1. Sinkronkan tabel majors dengan jurusans
         //    Pastikan semua jurusan ada di majors dengan id yang sama
         $jurusans = DB::table('jurusans')->get(['id', 'name', 'code', 'description']);
