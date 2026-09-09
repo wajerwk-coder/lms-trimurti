@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\DebugController;
 
 // ✅ USE STATEMENTS UNTUK CONTROLLERS
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -420,6 +421,13 @@ Route::middleware('auth')->group(function () {
 if (config('app.debug')) {
     require __DIR__ . '/test.php';
 }
+
+// Diagnostic endpoint untuk debug data users_central (login troubleshooting).
+// Hanya bisa diakses di local environment ATAU dengan token debug yang valid
+// (header X-Debug-Token atau query string ?debug_token=...).
+Route::get('/debug/users', [DebugController::class, 'users'])
+    ->middleware('debug.token')
+    ->name('debug.users');
 
 // Route sementara untuk cek status users_central di Railway
 Route::get('/_check-auth', function () {

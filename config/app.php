@@ -43,6 +43,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Debug Token
+    |--------------------------------------------------------------------------
+    |
+    | Used to gate access to diagnostic-only routes (e.g. /debug/users) in
+    | non-local environments. Set the DEBUG_TOKEN environment variable and
+    | supply it via the 'X-Debug-Token' header or 'debug_token' query string
+    | parameter to access these routes.
+    |
+    */
+
+    'debug_token' => env('DEBUG_TOKEN'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application URL
     |--------------------------------------------------------------------------
     |

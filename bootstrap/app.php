@@ -30,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'guru' => \App\Http\Middleware\GuruMiddleware::class,
             'siswa' => \App\Http\Middleware\SiswaMiddleware::class,
+            'debug.token' => \App\Http\Middleware\DebugTokenMiddleware::class,
             // ❌ COMMENT MIDDLEWARE YANG TIDAK DIBUTUHKAN
             // 'active_student' => \App\Http\Middleware\ActiveStudentMiddleware::class,
             // 'permission' => \App\Http\Middleware\PermissionMiddleware::class,
