@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'default' => env('CACHE_DRIVER', 'file'), // ✅ PERBAIKI: CACHE_DRIVER bukan CACHE_STORE
+    'default' => 'file',
 
     /*
     |--------------------------------------------------------------------------
