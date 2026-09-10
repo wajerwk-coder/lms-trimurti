@@ -56,12 +56,25 @@ class AttendanceController extends Controller
             ->whereHas('students')
             ->pluck('name', 'id');
             
-        // Get status counts
+        // Re-build query for counts (cannot clone after paginate)
+        $countQuery = Attendance::where('type', 'praktik')->whereDate('date', $date);
+        if ($practical_id) {
+            $countQuery->where('practical_id', $practical_id);
+        }
+        if ($class !== 'all') {
+            $countQuery->whereHas('siswa', function($q) use ($class) {
+                $q->where('kelas_id', $class);
+            });
+        }
+        $statusCounts = $countQuery->selectRaw('status, COUNT(*) as cnt')
+            ->groupBy('status')
+            ->pluck('cnt', 'status')
+            ->toArray();
         $statusCounts = [
-            'hadir' => $query->clone()->where('status', 'hadir')->count(),
-            'izin' => $query->clone()->where('status', 'izin')->count(),
-            'sakit' => $query->clone()->where('status', 'sakit')->count(),
-            'alpha' => $query->clone()->where('status', 'alpha')->count(),
+            'hadir' => $statusCounts['hadir'] ?? 0,
+            'izin'  => $statusCounts['izin']  ?? 0,
+            'sakit' => $statusCounts['sakit'] ?? 0,
+            'alpha' => $statusCounts['alpha'] ?? 0,
         ];
 
         return view('guru.attendance.praktik', [

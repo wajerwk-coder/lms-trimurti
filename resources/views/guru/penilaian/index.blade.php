@@ -268,7 +268,7 @@
                                        title="Lihat Detail">
                                         <i class="fas fa-eye" style="font-size:.65rem;"></i>
                                     </a>
-                                    <a href="{{ route('guru.penilaian.edit', $sub->id) }}"
+                                    <a href="{{ route('guru.penilaian.edit', $sub->id) }}?type=assignment"
                                        class="btn btn-sm {{ $isGraded ? 'btn-outline-success' : 'btn-outline-warning' }}"
                                        style="border-radius:7px;width:28px;height:28px;padding:0;
                                               display:inline-flex;align-items:center;justify-content:center;"

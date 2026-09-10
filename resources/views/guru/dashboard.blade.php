@@ -1,4 +1,4 @@
-@extends('layouts.guru')
+ï»¿@extends('layouts.guru')
 
 @section('title', 'Dashboard')
 @section('page-title', 'Dashboard')
@@ -41,7 +41,7 @@
     backdrop-filter: blur(4px);
 }
 
-/* -- Hero banner buttons — konsisten semua role ----------------- */
+/* -- Hero banner buttons ï¿½ konsisten semua role ----------------- */
 .hero-guru .btn-light,
 .hero-guru .btn-outline-light {
     background: rgba(255,255,255,.92) !important;
@@ -312,7 +312,7 @@
                 @forelse($recentSubmissions ?? [] as $sub)
                 @php
                     $siswaName = $sub->siswa?->name ?? 'Siswa';
-                    $judul     = $sub->assignment?->title ?? '—';
+                    $judul     = $sub->assignment?->title ?? 'ï¿½';
                     $subTime   = $sub->submitted_at ?? $sub->created_at;
                     $initials  = strtoupper(substr($siswaName, 0, 1));
                 @endphp
@@ -383,10 +383,10 @@
                 <div class="deadline-item" style="border-left-color:{{ $clr }};">
                     <div class="flex-grow-1" style="min-width:0;">
                         <div class="fw-semibold text-truncate" style="font-size:.85rem;">
-                            {{ $dl->title ?? '—' }}
+                            {{ $dl->title ?? 'ï¿½' }}
                         </div>
                         <div class="text-muted" style="font-size:.73rem;">
-                            {{ $dl->subject?->name ?? '—' }}
+                            {{ $dl->subject?->name ?? 'ï¿½' }}
                         </div>
                     </div>
                     <div class="text-end flex-shrink-0">
@@ -421,7 +421,7 @@
             <div class="card-body p-0">
                 @forelse($recentActivities ?? [] as $activity)
                 @php
-                    $desc    = is_array($activity) ? ($activity['description'] ?? '—') : ($activity->description ?? '—');
+                    $desc    = is_array($activity) ? ($activity['description'] ?? 'ï¿½') : ($activity->description ?? 'ï¿½');
                     $actTime = is_array($activity)
                         ? optional(\Carbon\Carbon::parse($activity['created_at'] ?? null))->diffForHumans()
                         : (\Carbon\Carbon::parse($activity->created_at)->diffForHumans());
@@ -478,9 +478,9 @@
                     @foreach($upcomingExams->take(5) as $exam)
                     <tr>
                         <td class="ps-4 py-3">
-                            <div class="fw-semibold text-dark">{{ $exam->title ?? '—' }}</div>
+                            <div class="fw-semibold text-dark">{{ $exam->title ?? 'ï¿½' }}</div>
                             <small class="text-muted">
-                                {{ $exam->subject?->name ?? $exam->subject?->nama ?? '—' }}
+                                {{ $exam->subject?->name ?? $exam->subject?->nama ?? 'ï¿½' }}
                             </small>
                         </td>
                         <td class="text-center py-3">
@@ -488,11 +488,11 @@
                                 $tc = ['uts'=>'info','uas'=>'danger','quiz'=>'warning','praktikum'=>'success'][$exam->exam_type ?? ''] ?? 'secondary';
                             @endphp
                             <span class="badge bg-{{ $tc }}">
-                                {{ strtoupper($exam->exam_type ?? '—') }}
+                                {{ strtoupper($exam->exam_type ?? 'ï¿½') }}
                             </span>
                         </td>
                         <td class="py-3">
-                            <div class="fw-medium">{{ $exam->start_time?->format('d M Y') ?? '—' }}</div>
+                            <div class="fw-medium">{{ $exam->start_time?->format('d M Y') ?? 'ï¿½' }}</div>
                             <small class="text-muted">
                                 {{ $exam->start_time?->format('H:i') ?? '' }} WIB
                             </small>
@@ -500,7 +500,7 @@
                         <td class="text-muted py-3">{{ $exam->kelas?->name ?? 'Semua Kelas' }}</td>
                         <td class="text-center pe-4 py-3">
                             <span class="badge bg-{{ $exam->status_color ?? 'secondary' }}">
-                                {{ ucfirst($exam->status ?? '—') }}
+                                {{ ucfirst($exam->status ?? 'ï¿½') }}
                             </span>
                         </td>
                     </tr>
@@ -533,3 +533,4 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endpush
+

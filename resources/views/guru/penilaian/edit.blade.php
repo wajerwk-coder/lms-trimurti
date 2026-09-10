@@ -26,6 +26,8 @@
 <form action="{{ route('guru.penilaian.update', $submission->id) }}" method="POST" id="assessmentForm">
     @csrf
     @method('PUT')
+    <input type="hidden" name="submission_type"
+           value="{{ ($submission instanceof \App\Models\NilaiPraktik) ? 'practical' : 'assignment' }}">
 
     <div class="row g-4">
         {{-- Kiri: Info + Form --}}
@@ -52,24 +54,24 @@
                             <label class="form-label small text-muted fw-semibold">MATA PELAJARAN</label>
                             <div class="fw-medium">
                                 @if(isset($submission->assignment_id) && $submission->assignment_id)
-                                    {{ $submission->assignment->subject->name ?? '—' }}
+                                    {{ $submission->assignment?->subject?->name ?? '—' }}
                                 @else
-                                    {{ $submission->practical->subject->name ?? '—' }}
+                                    {{ $submission->practical?->subject?->name ?? '—' }}
                                 @endif
                             </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small text-muted fw-semibold">NAMA SISWA</label>
                             <div class="fw-medium">{{ $submission->siswa?->name ?? '—' }}</div>
-                            <small class="text-muted">NIS: {{ $submission->siswa?->nis ?? '—' }}</small>
+                            <small class="text-muted">NIS: {{ $submission->siswa?->siswaProfile?->nis ?? '—' }}</small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small text-muted fw-semibold">JUDUL AKTIVITAS</label>
                             <div class="fw-medium">
                                 @if(isset($submission->assignment_id) && $submission->assignment_id)
-                                    {{ $submission->assignment->title ?? '—' }}
+                                    {{ $submission->assignment?->title ?? '—' }}
                                 @else
-                                    {{ $submission->practical->title ?? '—' }}
+                                    {{ $submission->practical?->title ?? '—' }}
                                 @endif
                             </div>
                         </div>
@@ -163,7 +165,7 @@
                             </div>
                             <div class="progress" style="height: 8px;">
                                 <div class="progress-bar bg-success" id="progressBar" role="progressbar"
-                                     style="width: {{ $submission->score ?? 0 }}%"></div>
+                                     style="width: {{ min(100, ($submission->score ?? 0)) }}%"></div>
                             </div>
                         </div>
                         <div class="col-12">

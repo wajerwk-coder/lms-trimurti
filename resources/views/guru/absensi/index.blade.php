@@ -108,7 +108,7 @@
                         <tr>
                             <td class="ps-4">
                                 <div class="fw-semibold">{{ $attendance->siswa?->name ?? '—' }}</div>
-                                <small class="text-muted">{{ $attendance->siswa?->nis ?? '' }}</small>
+                                <small class="text-muted">{{ $attendance->siswa?->siswaProfile?->nis ?? '' }}</small>
                             </td>
                             <td class="text-muted">{{ $attendance->kelas?->name ?? '—' }}</td>
                             <td class="text-muted">

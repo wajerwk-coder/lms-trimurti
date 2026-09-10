@@ -227,7 +227,12 @@ class PenilaianController extends Controller
         ]);
 
         // Konversi siswa.id → users_central.id
-        $siswa = Siswa::findOrFail($request->siswa_id);
+        // Form bisa kirim 'siswa_id' (tugas) atau 'siswa_id_practical' (praktikum)
+        $siswaIdRaw = $request->assessment_type === 'practical'
+            ? ($request->siswa_id_practical ?? $request->siswa_id)
+            : $request->siswa_id;
+
+        $siswa = Siswa::findOrFail($siswaIdRaw);
         $ucId  = $siswa->user_id;
 
         try {
@@ -290,11 +295,14 @@ class PenilaianController extends Controller
      */
     public function edit($id): View
     {
-        // Cari di AssignmentSubmission dulu, lalu NilaiPraktik
-        $submission = AssignmentSubmission::find($id) ?? NilaiPraktik::find($id);
+        // Cari berdasarkan tipe yang dikirim via query string untuk hindari ID clash
+        // antara AssignmentSubmission dan NilaiPraktik yang sama-sama auto-increment
+        $type = request('type', 'assignment');
 
-        if (!$submission) {
-            abort(404);
+        if ($type === 'practical') {
+            $submission = NilaiPraktik::findOrFail($id);
+        } else {
+            $submission = AssignmentSubmission::findOrFail($id);
         }
 
         // Ownership check
@@ -324,8 +332,12 @@ class PenilaianController extends Controller
     {
         $guruId = Auth::id();
 
-        $submission = AssignmentSubmission::find($id) ?? NilaiPraktik::find($id);
-        if (!$submission) abort(404);
+        $type = $request->input('submission_type', request('type', 'assignment'));
+        if ($type === 'practical') {
+            $submission = NilaiPraktik::findOrFail($id);
+        } else {
+            $submission = AssignmentSubmission::findOrFail($id);
+        }
 
         $request->validate([
             'score'    => 'required|numeric|min:0|max:1000',

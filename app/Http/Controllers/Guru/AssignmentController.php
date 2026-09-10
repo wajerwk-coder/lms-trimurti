@@ -58,13 +58,13 @@ class AssignmentController extends Controller
         
         // Apply additional filters if provided
         if ($request->filled('subject_id')) {
-            $query->where('class_subject_id', $request->subject_id);
+            // Gunakan subject_id langsung (kolom yang disimpan saat store)
+            $query->where('subject_id', $request->subject_id);
         }
         
         if ($request->filled('class_id')) {
-            $query->whereHas('classSubject', function($q) use ($request) {
-                $q->where('class_id', $request->class_id);
-            });
+            // Gunakan kelas_id langsung (kolom yang disimpan saat store)
+            $query->where('kelas_id', $request->class_id);
         }
         
         if ($request->filled('status')) {
@@ -112,25 +112,29 @@ class AssignmentController extends Controller
             });
         }
         
-        // Get subjects and stats for filters
+        // Get subjects and stats for filters — ambil dari assignments guru ini (bukan class_subjects)
         $guruId = Auth::id();
-        $subjects = \DB::table('class_subjects')
-            ->join('subjects', 'class_subjects.subject_id', '=', 'subjects.id')
-            ->where('class_subjects.teacher_id', $guruId)
+        $subjects = \DB::table('subjects')
+            ->join('assignments', 'subjects.id', '=', 'assignments.subject_id')
+            ->where('assignments.guru_id', $guruId)
+            ->whereNull('assignments.deleted_at')
             ->where('subjects.is_active', true)
-            ->select('class_subjects.id', 'subjects.name')
+            ->select('subjects.id', 'subjects.name')
             ->distinct()
+            ->orderBy('subjects.name')
             ->get();
             
         $classes = \DB::table('classes')
-            ->join('class_subjects', 'classes.id', '=', 'class_subjects.class_id')
-            ->where('class_subjects.teacher_id', $guruId)
+            ->join('assignments', 'classes.id', '=', 'assignments.kelas_id')
+            ->where('assignments.guru_id', $guruId)
+            ->whereNull('assignments.deleted_at')
+            ->whereNull('classes.deleted_at')
             ->select('classes.id', 'classes.name')
             ->distinct()
             ->orderBy('classes.name')
             ->get();
 
-        // Fallback: semua kelas jika guru belum terdaftar di class_subjects
+        // Fallback: semua kelas jika guru belum punya tugas
         if ($classes->isEmpty()) {
             $classes = \DB::table('classes')
                 ->whereNull('deleted_at')
