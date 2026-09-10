@@ -147,27 +147,34 @@ class KelasController extends Controller
             'academic_year.required' => 'Tahun ajaran wajib diisi.',
         ]);
 
-        $jurusan = Jurusan::findOrFail($request->major_id);
-        $majorId = $this->syncMajorFromJurusan($jurusan);
+        try {
+            $jurusan = Jurusan::findOrFail($request->major_id);
+            $majorId = $this->syncMajorFromJurusan($jurusan);
 
-        // Siapkan data update — hanya sertakan jurusan_id jika kolom ada
-        $updateData = [
-            'name'          => $request->name,
-            'grade'         => $request->grade,
-            'major_id'      => $majorId,
-            'academic_year' => $request->academic_year,
-            'status'        => $request->status ?? 'active',
-        ];
+            // Siapkan data update — hanya sertakan jurusan_id jika kolom ada
+            $updateData = [
+                'name'          => $request->name,
+                'grade'         => $request->grade,
+                'major_id'      => $majorId,
+                'academic_year' => $request->academic_year,
+                'status'        => $request->status ?? 'active',
+            ];
 
-        // Tambah jurusan_id hanya jika kolom sudah ada di DB
-        if (\Illuminate\Support\Facades\Schema::hasColumn('classes', 'jurusan_id')) {
-            $updateData['jurusan_id'] = $jurusan->id;
+            // Tambah jurusan_id hanya jika kolom sudah ada di DB
+            if (\Illuminate\Support\Facades\Schema::hasColumn('classes', 'jurusan_id')) {
+                $updateData['jurusan_id'] = $jurusan->id;
+            }
+
+            $kelas->update($updateData);
+
+            return redirect()->route('admin.kelas.index')
+                ->with('success', 'Kelas ' . $request->name . ' berhasil diperbarui.');
+
+        } catch (\Throwable $e) {
+            Log::error('KelasController::update: ' . $e->getMessage());
+            return back()->withInput()
+                ->with('error', 'Gagal memperbarui kelas: ' . $e->getMessage());
         }
-
-        $kelas->update($updateData);
-
-        return redirect()->route('admin.kelas.index')
-            ->with('success', 'Kelas ' . $request->name . ' berhasil diperbarui.');
     }
 
     // ── Destroy ───────────────────────────────────────────────────────────────
@@ -188,7 +195,10 @@ class KelasController extends Controller
 
         try {
             $nama = $kelas->name;
-            DB::table('class_subjects')->where('class_id', $kelas->id)->delete();
+            // Hapus class_subjects jika tabelnya ada
+            if (\Illuminate\Support\Facades\Schema::hasTable('class_subjects')) {
+                DB::table('class_subjects')->where('class_id', $kelas->id)->delete();
+            }
             $kelas->delete();
 
             return redirect()->route('admin.kelas.index')
@@ -209,25 +219,35 @@ class KelasController extends Controller
      */
     private function syncMajorFromJurusan(Jurusan $jurusan): int
     {
+        // Jika tabel majors tidak ada, langsung return jurusan id
+        if (!\Illuminate\Support\Facades\Schema::hasTable('majors')) {
+            return $jurusan->id;
+        }
+
         $code = $jurusan->code ?? strtoupper(substr($jurusan->name, 0, 4));
 
-        $exists = DB::table('majors')->where('id', $jurusan->id)->exists();
+        try {
+            $exists = DB::table('majors')->where('id', $jurusan->id)->exists();
 
-        if ($exists) {
-            DB::table('majors')->where('id', $jurusan->id)->update([
-                'name'       => $jurusan->name,
-                'code'       => $code,
-                'updated_at' => now(),
-            ]);
-        } else {
-            DB::table('majors')->insert([
-                'id'          => $jurusan->id,
-                'name'        => $jurusan->name,
-                'code'        => $code,
-                'description' => $jurusan->description,
-                'created_at'  => now(),
-                'updated_at'  => now(),
-            ]);
+            if ($exists) {
+                DB::table('majors')->where('id', $jurusan->id)->update([
+                    'name'       => $jurusan->name,
+                    'code'       => $code,
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('majors')->insert([
+                    'id'          => $jurusan->id,
+                    'name'        => $jurusan->name,
+                    'code'        => $code,
+                    'description' => $jurusan->description,
+                    'created_at'  => now(),
+                    'updated_at'  => now(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // Jika sync majors gagal, tidak perlu crash — lanjutkan
+            Log::warning('syncMajorFromJurusan failed: ' . $e->getMessage());
         }
 
         return $jurusan->id;

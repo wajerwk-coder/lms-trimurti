@@ -51,8 +51,8 @@
 @endif
 
 @php
-    // Tentukan nilai jurusan yang dipilih — coba jurusan_id dulu, fallback ke major_id
-    $selectedJurusanId = old('major_id', $kelas->jurusan_id ?? $kelas->major_id ?? '');
+    // Tentukan nilai jurusan yang dipilih — cast ke int agar perbandingan tepat
+    $selectedJurusanId = (int) old('major_id', $kelas->jurusan_id ?? $kelas->major_id ?? 0);
 @endphp
 
 <form action="{{ route('admin.kelas.update', $kelas->id) }}" method="POST" id="kelasForm" novalidate>
@@ -125,7 +125,7 @@
                             @foreach($jurusans as $j)
                                 <option value="{{ $j->id }}"
                                         data-name="{{ $j->name }}"
-                                        {{ $selectedJurusanId == $j->id ? 'selected' : '' }}>
+                                        {{ (int)$selectedJurusanId === (int)$j->id ? 'selected' : '' }}>
                                     {{ $j->name }}{{ $j->code ? ' ('.$j->code.')' : '' }}
                                 </option>
                             @endforeach
