@@ -62,28 +62,14 @@
     transition: transform .2s ease, box-shadow .2s ease;
 }
 .stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 24px rgba(0,0,0,.1) !important;
-}
-.stat-icon {
-    width: 44px; height: 44px;
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem;
-    flex-shrink: 0;
-}
-    border: none;
-    transition: transform .2s ease, box-shadow .2s ease;
-}
-.stat-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 28px rgba(0,0,0,.12) !important;
 }
 .stat-icon {
-    width: 52px; height: 52px;
+    width: 48px; height: 48px;
     border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     flex-shrink: 0;
 }
 .quick-btn {
@@ -711,12 +697,12 @@
             <div class="card-body">
                 @php
                     $sysInfo = [
-                        ['Laravel Version',   app()->version(),                           'fa-laravel',     'danger'],
+                        ['Laravel Version',   app()->version(),                           'fa-leaf',        'danger'],
                         ['PHP Version',       phpversion(),                               'fa-code',        'primary'],
                         ['Environment',       app()->environment(),                       'fa-server',      'success'],
                         ['Timezone',          config('app.timezone'),                    'fa-clock',       'warning'],
                         ['Database',          config('database.default'),                'fa-database',    'info'],
-                        ['Cache Driver',      config('cache.default'),                   'fa-memory',      'secondary'],
+                        ['Cache Driver',      config('cache.default'),                   'fa-hdd',         'secondary'],
                     ];
                 @endphp
                 <div class="row g-2">
@@ -724,7 +710,7 @@
                     <div class="col-6">
                         <div class="d-flex align-items-center gap-2 p-2 rounded-2 bg-light">
                             <div class="rounded-2 bg-{{ $color }} bg-opacity-10 p-1 flex-shrink-0" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">
-                                <i class="fab {{ $icon }} text-{{ $color }}" style="font-size:.75rem;"></i>
+                                <i class="fas {{ $icon }} text-{{ $color }}" style="font-size:.75rem;"></i>
                             </div>
                             <div>
                                 <div class="text-muted" style="font-size:.68rem;">{{ $label }}</div>

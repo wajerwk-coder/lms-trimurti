@@ -162,7 +162,7 @@
             </a>
         </div>
 
-        {{-- Notifikasi --}}
+        {{-- Komunikasi & Laporan --}}
         <div class="nav-section">
             <span class="nav-section-label">Komunikasi</span>
             <a href="{{ route('admin.notifications.index') }}"
@@ -180,6 +180,12 @@
                 @if($adminUnread > 0)
                     <span class="badge bg-danger rounded-pill ms-auto">{{ $adminUnread }}</span>
                 @endif
+            </a>
+            <a href="{{ route('admin.scores.index') }}"
+               class="nav-item {{ request()->routeIs('admin.scores.*') ? 'active' : '' }}"
+               data-tooltip="Rekapitulasi Nilai">
+                <i class="fas fa-chart-bar"></i>
+                <span>Rekapitulasi Nilai</span>
             </a>
         </div>
 

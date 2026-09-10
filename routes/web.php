@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\ExamScheduleController as AdminExamScheduleController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Admin\NotificationAdminController;
+use App\Http\Controllers\Admin\ScoreController as AdminScoreController;
 use App\Http\Controllers\Admin\KelasController;
 use App\Http\Controllers\Admin\JurusanController;
 use App\Http\Controllers\Admin\MataPelajaranController;
@@ -164,6 +165,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Manajemen Notifikasi Admin
     Route::resource('notifications', NotificationAdminController::class)->only(['index', 'create', 'store', 'destroy']);
+
+    // Rekapitulasi Nilai
+    Route::get('scores', [AdminScoreController::class, 'index'])->name('scores.index');
 });
 
 // ✅ GURU ROUTES - middleware digabung dalam array
@@ -411,13 +415,19 @@ Route::middleware('auth')->group(function () {
     Route::delete('notifications/{notification}', [NotificationController::class, 'delete'])->name('notifications.delete');
 });
 
-// Exam Schedule Public Route (untuk guru dan siswa lihat detail jadwal)
+// Exam Schedule Shared Route (admin, guru, siswa — semua bisa akses)
+// Catatan: route ini untuk view shared. Admin juga punya admin.exam-schedules.show di group admin.
 Route::middleware('auth')->group(function () {
-    Route::get('exam-schedules/{examSchedule}', function ($examSchedule) {
+    Route::get('jadwal/{examSchedule}', function ($examSchedule) {
+        $role     = auth()->user()->role ?? 'siswa';
         $schedule = \App\Models\ExamSchedule::with(['subject', 'kelas'])->find($examSchedule);
         if (!$schedule) abort(404);
+        // Admin redirect ke halaman admin yang benar
+        if ($role === 'admin') {
+            return redirect()->route('admin.exam-schedules.show', $examSchedule);
+        }
         return view('shared.jadwal-ujian.show', compact('schedule'));
-    })->name('exam-schedules.show');
+    })->name('jadwal.show');
 });
 
 // Test routes untuk debugging - hanya di development
