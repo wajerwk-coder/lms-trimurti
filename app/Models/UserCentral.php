@@ -40,9 +40,6 @@ class UserCentral extends Authenticatable
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
     ];
 
     protected $appends = ['photo_url', 'role_display'];
@@ -131,10 +128,16 @@ class UserCentral extends Authenticatable
     }
 
     // Relationships
+    /**
+     * Profil admin — saat ini sistem tidak punya tabel admins terpisah,
+     * admin hanya diidentifikasi dari role di users_central.
+     * Method ini tidak dipakai secara aktif; tersedia untuk backward compat.
+     */
     public function adminProfile(): HasOne
     {
-        // Jika tabel admins belum ada, skip
-        return $this->hasOne(Guru::class, 'user_id')->where('role', 'admin');
+        // Admin tidak punya tabel profil sendiri — kembalikan null-safe hasOne ke diri sendiri
+        // dengan kondisi yang tidak akan pernah match agar tidak error
+        return $this->hasOne(static::class, 'id')->whereRaw('0=1');
     }
 
     public function guruProfile(): HasOne

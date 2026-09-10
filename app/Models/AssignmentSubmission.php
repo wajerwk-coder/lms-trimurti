@@ -67,10 +67,15 @@ class AssignmentSubmission extends Model
     }
 
     /**
-     * Get siswa yang valid: prioritas siswa_id, fallback student_id
+     * Get siswa yang valid: prioritas siswa_id, fallback student_id.
+     * Accessor ini bernama 'submitter' untuk menghindari konflik dengan
+     * relasi Eloquent siswa() yang bernama 'siswa'.
      */
-    public function getSiswaAttribute(): ?UserCentral
+    public function getSubmitterAttribute(): ?UserCentral
     {
+        if ($this->relationLoaded('siswa') && $this->getRelation('siswa') !== null) {
+            return $this->getRelation('siswa');
+        }
         if (!empty($this->attributes['siswa_id'])) {
             return $this->siswa()->first();
         }
@@ -82,7 +87,7 @@ class AssignmentSubmission extends Model
      */
     public function getNamaSiswaAttribute(): string
     {
-        return $this->getAttribute('siswa')?->name ?? '—';
+        return $this->submitter?->name ?? '—';
     }
 
     // Scopes

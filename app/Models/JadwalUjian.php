@@ -68,11 +68,12 @@ class JadwalUjian extends Model
     }
 
     /**
-     * Relationship dengan scheduled notifications
+     * Relationship dengan scheduled notifications.
+     * FK yang dipakai: jadwal_ujian_id (bukan exam_schedule_id).
      */
     public function scheduledNotifications(): HasMany
     {
-        return $this->hasMany(ScheduledNotification::class);
+        return $this->hasMany(ScheduledNotification::class, 'jadwal_ujian_id');
     }
 
     /**
@@ -253,9 +254,10 @@ class JadwalUjian extends Model
             // Hanya buat notifikasi untuk waktu yang akan datang
             if ($notification['scheduled_at']->greaterThan(now())) {
                 $this->scheduledNotifications()->create([
+                    'jadwal_ujian_id'   => $this->id,
                     'notification_type' => $notification['notification_type'],
-                    'scheduled_at' => $notification['scheduled_at'],
-                    'status' => 'pending'
+                    'scheduled_at'      => $notification['scheduled_at'],
+                    'status'            => 'pending'
                 ]);
             }
         }
@@ -266,8 +268,8 @@ class JadwalUjian extends Model
      */
     public function getSiswaList()
     {
-        return User::where('role', 'siswa')
-                  ->where('kelas_id', $this->kelas_id)
+        return UserCentral::where('role', 'siswa')
+                  ->whereHas('siswaProfile', fn($q) => $q->where('kelas_id', $this->kelas_id))
                   ->where('is_active', true)
                   ->get();
     }

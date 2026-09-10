@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Score extends Model
 {
@@ -15,7 +14,6 @@ class Score extends Model
         'siswa_id',
         'guru_id',
         'practical_id',
-        'practice_module_id',
         'score',
         'theory_score',
         'practice_score',
@@ -56,22 +54,6 @@ class Score extends Model
     }
 
     /**
-     * Get the practice module that owns the score.
-     */
-    public function module(): BelongsTo
-    {
-        return $this->belongsTo(PracticeModule::class, 'practice_module_id');
-    }
-
-    /**
-     * Get the competency indicators for the score.
-     */
-    public function competencyIndicators(): HasMany
-    {
-        return $this->hasMany(CompetencyIndicator::class);
-    }
-
-    /**
      * Scope a query to only include scores with passing grade.
      */
     public function scopePassed($query)
@@ -108,22 +90,11 @@ class Score extends Model
     }
 
     /**
-     * Get total weighted score from competency indicators.
-     */
-    public function getTotalWeightedScoreAttribute(): float
-    {
-        return $this->competencyIndicators->sum(function($indicator) {
-            return $indicator->weighted_score ?? 0;
-        });
-    }
-
-    /**
      * Get completion status based on practical date.
      */
     public function getCompletionStatusAttribute(): string
     {
         if (!$this->practical) return 'not_started';
-
         return $this->scored_at ? 'completed' : 'in_progress';
     }
 }
