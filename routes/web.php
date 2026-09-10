@@ -47,6 +47,7 @@ use App\Http\Controllers\Siswa\MaterialController as SiswaMaterialController;
 use App\Http\Controllers\Siswa\AssignmentController as SiswaAssignmentController;
 use App\Http\Controllers\Siswa\PracticalController as SiswaPracticalController;
 use App\Http\Controllers\Siswa\ScoreController as SiswaScoreController;
+use App\Http\Controllers\Siswa\ReportController as SiswaReportController;
 use App\Http\Controllers\Siswa\AttendanceController as SiswaAttendanceController;
 use App\Http\Controllers\Siswa\ProfileController as SiswaProfileController;
 
@@ -375,6 +376,9 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'siswa'])->group(fun
     Route::get('reports/praktikum',    [SiswaScoreController::class, 'practical'])->name('reports.practical');
     Route::get('reports/assignments',  [SiswaScoreController::class, 'assignment'])->name('reports.assignment');
     Route::get('reports/attendance',   [SiswaAttendanceController::class, 'index'])->name('reports.attendance');
+
+    // Laporan komprehensif siswa (rapor)
+    Route::get('laporan',              [\App\Http\Controllers\Siswa\ReportController::class, 'index'])->name('laporan.index');
 
     // Attendance — CUSTOM ROUTES SEBELUM {attendance}
     Route::get('attendance',           [SiswaAttendanceController::class, 'index'])->name('attendance.index');

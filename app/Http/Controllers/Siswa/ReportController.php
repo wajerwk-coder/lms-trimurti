@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Siswa;
 use App\Http\Controllers\Controller;
 use App\Models\Siswa;
 use App\Models\AssignmentSubmission;
-use App\Models\PracticalScore;
+use App\Models\NilaiPraktik;
 use App\Models\Attendance;
 use Illuminate\Http\Request;
 use Illuminate\View\View;

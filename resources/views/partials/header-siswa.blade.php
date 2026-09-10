@@ -159,6 +159,19 @@
                 <li><hr class="dropdown-divider mx-2 my-1"></li>
 
                 <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3"
+                       href="{{ route('siswa.profile.edit') }}">
+                        <span class="rounded-2 bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                              style="width:28px;height:28px;">
+                            <i class="fas fa-user-cog text-primary" style="font-size:.7rem;"></i>
+                        </span>
+                        <span>Profil Saya</span>
+                    </a>
+                </li>
+
+                <li><hr class="dropdown-divider mx-2 my-1"></li>
+
+                <li>
                     <a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-danger"
                        href="#"
                        onclick="event.preventDefault(); document.getElementById('siswa-logout-form').submit();">

@@ -275,7 +275,7 @@ class AssignmentController extends Controller
                 $q->where('siswa_id', $studentId);
             }])
             ->where('is_published', true)
-            ->orderBy('deadline', 'asc')
+            ->orderBy('due_date', 'asc')
             ->limit(1000)
             ->get();
 
@@ -295,7 +295,7 @@ class AssignmentController extends Controller
                 fputcsv($handle, [
                     $a->title ?? $a->judul ?? '-',
                     str_replace(["\r","\n"], ' ', (string)($a->description ?? '')),
-                    optional($a->deadline)->format('Y-m-d H:i') ?? '-',
+                    optional($a->due_date)->format('Y-m-d H:i') ?? '-',
                     $submitted,
                 ]);
             }

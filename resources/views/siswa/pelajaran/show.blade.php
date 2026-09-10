@@ -201,8 +201,17 @@
                                     {{ optional($material->published_at)->format('d M Y') ?? '—' }}
                                 </span>
                                 @if($ext)
+                                    @php
+                                        $extRgb = match($extClr) {
+                                            '#dc2626' => '220,38,38',
+                                            '#3b82f6' => '59,130,246',
+                                            '#ea580c' => '234,88,12',
+                                            '#16a34a' => '22,163,74',
+                                            default   => '100,116,139',
+                                        };
+                                    @endphp
                                     <span class="badge-pill"
-                                          style="background:rgba({{ implode(',', sscanf(ltrim($extClr,'#'),'%02x%02x%02x')) ?? '100,116,139' }},.12);color:{{ $extClr }};">
+                                          style="background:rgba({{ $extRgb }},.12);color:{{ $extClr }};">
                                         {{ $ext }}
                                     </span>
                                 @endif

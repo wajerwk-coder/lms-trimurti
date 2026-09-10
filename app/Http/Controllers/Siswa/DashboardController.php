@@ -94,6 +94,9 @@ class DashboardController extends Controller
 
         $upcomingExams       = $this->getUpcomingExams();
 
+        // Notifikasi logis untuk siswa (deadline urgent, absen hari ini, dll)
+        $dashboardNotifications = $this->getNotifications($siswaId, $kelasId);
+
         return view('siswa.dashboard', compact(
             'stats',
             'recentMaterials',
@@ -103,7 +106,8 @@ class DashboardController extends Controller
             'upcomingPracticalsCount',
             'attendancePercentage',
             'siswaProfile',
-            'upcomingExams'
+            'upcomingExams',
+            'dashboardNotifications'
         ));
     }
 
