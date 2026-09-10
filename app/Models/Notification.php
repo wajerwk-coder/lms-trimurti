@@ -65,16 +65,61 @@ class Notification extends Model
         return is_null($this->read_at);
     }
 
+    /**
+     * Apakah notifikasi sudah dibaca? Dipakai di view.
+     */
+    public function getIsReadAttribute(): bool
+    {
+        return !is_null($this->read_at);
+    }
+
+    /**
+     * Bootstrap color class berdasarkan tipe.
+     */
+    public function getColorAttribute(): string
+    {
+        return match($this->tipe ?? $this->type ?? '') {
+            'peringatan'    => 'warning',
+            'sukses'        => 'success',
+            'error'         => 'danger',
+            'sistem'        => 'secondary',
+            'pengumuman'    => 'info',
+            'exam',
+            'exam_schedule',
+            'ujian'         => 'primary',
+            'assignment',
+            'tugas'         => 'warning',
+            default         => 'primary',
+        };
+    }
+
+    /**
+     * FontAwesome icon class berdasarkan tipe.
+     */
     public function getIconAttribute(): string
     {
-        return match($this->tipe) {
-            'info' => 'ℹ️',
-            'peringatan' => '⚠️',
-            'sukses' => '✅',
-            'error' => '❌',
-            'sistem' => '⚙️',
-            default => '📧'
+        return match($this->tipe ?? $this->type ?? '') {
+            'peringatan'    => 'fas fa-exclamation-triangle',
+            'sukses'        => 'fas fa-check-circle',
+            'error'         => 'fas fa-times-circle',
+            'sistem'        => 'fas fa-cog',
+            'pengumuman'    => 'fas fa-bullhorn',
+            'exam',
+            'exam_schedule',
+            'ujian'         => 'fas fa-calendar-check',
+            'assignment',
+            'tugas'         => 'fas fa-tasks',
+            default         => 'fas fa-bell',
         };
+    }
+
+    /**
+     * Waktu relatif, misalnya "2 jam yang lalu".
+     */
+    public function getTimeAgoAttribute(): string
+    {
+        if (!$this->created_at) return '-';
+        return \Carbon\Carbon::parse($this->created_at)->diffForHumans();
     }
 
     public function getPriorityColorAttribute(): string

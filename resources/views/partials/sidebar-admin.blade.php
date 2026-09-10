@@ -162,6 +162,27 @@
             </a>
         </div>
 
+        {{-- Notifikasi --}}
+        <div class="nav-section">
+            <span class="nav-section-label">Komunikasi</span>
+            <a href="{{ route('admin.notifications.index') }}"
+               class="nav-item {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}"
+               data-tooltip="Notifikasi">
+                <i class="fas fa-bell"></i>
+                <span>Notifikasi</span>
+                @php
+                    try {
+                        $adminUnread = \App\Models\Notification::whereNotNull('pengirim_id')
+                            ->where('created_at', '>=', now()->subDays(7))
+                            ->count();
+                    } catch(\Exception $e) { $adminUnread = 0; }
+                @endphp
+                @if($adminUnread > 0)
+                    <span class="badge bg-danger rounded-pill ms-auto">{{ $adminUnread }}</span>
+                @endif
+            </a>
+        </div>
+
     </nav>
 
     {{-- COLLAPSE TOGGLE --}}

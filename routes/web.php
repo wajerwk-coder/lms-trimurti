@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\ExamScheduleController as AdminExamScheduleController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Admin\NotificationAdminController;
 use App\Http\Controllers\Admin\KelasController;
 use App\Http\Controllers\Admin\JurusanController;
 use App\Http\Controllers\Admin\MataPelajaranController;
@@ -160,6 +161,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('profile', [AdminProfileController::class, 'edit'])->name('profile.edit');
     Route::put('profile', [AdminProfileController::class, 'update'])->name('profile.update');
     Route::post('profile/update-photo-url', [AdminProfileController::class, 'updatePhotoUrl'])->name('profile.update-photo-url');
+
+    // Manajemen Notifikasi Admin
+    Route::resource('notifications', NotificationAdminController::class)->only(['index', 'create', 'store', 'destroy']);
 });
 
 // ✅ GURU ROUTES - middleware digabung dalam array
