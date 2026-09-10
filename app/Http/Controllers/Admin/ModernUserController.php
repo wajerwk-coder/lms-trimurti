@@ -55,19 +55,22 @@ class ModernUserController extends BaseController
     public function siswaIndex(): View
     {
         $siswas = UserCentral::where('role', 'siswa')
-            ->with(['siswaProfile.kelas'])
+            ->with(['siswaProfile' => function ($q) {
+                // Sertakan profil yang soft-deleted agar data tetap tampil
+                $q->withTrashed()->with('kelas');
+            }])
             ->latest()
             ->paginate(20);
 
         // Counts untuk tab badge dan stats cards
-        $countAdmin    = UserCentral::where('role', 'admin')->count();
-        $countGuru     = UserCentral::where('role', 'guru')->count();
+        $countAdmin      = UserCentral::where('role', 'admin')->count();
+        $countGuru       = UserCentral::where('role', 'guru')->count();
         $countSiswaAktif = UserCentral::where('role', 'siswa')->where('is_active', true)->count();
         try {
-            $countKelas    = \App\Models\Kelas::count();
-            $countJurusan  = \App\Models\Jurusan::count();
-            $allKelas      = \App\Models\Kelas::orderBy('name')->pluck('name');
-            $allJurusan    = \App\Models\Jurusan::orderBy('name')->pluck('name');
+            $countKelas   = \App\Models\Kelas::count();
+            $countJurusan = \App\Models\Jurusan::count();
+            $allKelas     = \App\Models\Kelas::orderBy('name')->pluck('name');
+            $allJurusan   = \App\Models\Jurusan::orderBy('name')->pluck('name');
         } catch (\Throwable $e) {
             $countKelas = $countJurusan = 0;
             $allKelas = $allJurusan = collect();

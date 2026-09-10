@@ -156,13 +156,17 @@
                 <tbody id="siswaTableBody">
                     @forelse($siswas as $i => $siswa)
                     @php
-                        $kelasName   = $siswa->siswaProfile?->kelas?->name ?? '';
-                        $majorName   = $siswa->siswaProfile?->major ?? '';
+                        $profile     = $siswa->siswaProfile;
+                        $kelasName   = $profile?->kelas?->name ?? '';
+                        $majorName   = $profile?->major ?? '';
+                        $nis         = $profile?->nis ?? null;
+                        $nisn        = $profile?->nisn ?? null;
+                        $statusSiswa = $siswa->is_active ? 'aktif' : 'nonaktif';
                     @endphp
                     <tr class="siswa-row"
                         data-kelas="{{ strtolower($kelasName) }}"
                         data-jurusan="{{ strtolower($majorName) }}"
-                        data-status="{{ $siswa->is_active ? 'aktif' : 'nonaktif' }}">
+                        data-status="{{ $statusSiswa }}">
                         <td class="ps-4">
                             <input type="checkbox" class="form-check-input siswa-check"
                                    value="{{ $siswa->id }}">
@@ -183,13 +187,13 @@
                         </td>
                         <td class="text-muted">{{ $siswa->email }}</td>
                         <td>
-                            @if($siswa->siswaProfile?->nis)
-                                <div><span class="badge bg-primary bg-opacity-10 text-primary">NIS: {{ $siswa->siswaProfile->nis }}</span></div>
+                            @if($nis)
+                                <div><span class="badge bg-primary bg-opacity-10 text-primary">NIS: {{ $nis }}</span></div>
                             @endif
-                            @if($siswa->siswaProfile?->nisn)
-                                <div class="mt-1"><span class="badge bg-secondary bg-opacity-10 text-secondary">NISN: {{ $siswa->siswaProfile->nisn }}</span></div>
+                            @if($nisn)
+                                <div class="mt-1"><span class="badge bg-secondary bg-opacity-10 text-secondary">NISN: {{ $nisn }}</span></div>
                             @endif
-                            @if(!$siswa->siswaProfile?->nis && !$siswa->siswaProfile?->nisn)
+                            @if(!$nis && !$nisn)
                                 <span class="text-muted">—</span>
                             @endif
                         </td>
