@@ -1,402 +1,276 @@
 ﻿@extends('layouts.admin')
 
-@section('title', 'Detail Kelas - ' . $kelas->name)
+@section('title', 'Detail Kelas — ' . $kelas->name)
 @section('page-title', 'Detail Kelas')
-@section('page-subtitle', $kelas->name . ' — ' . $kelas->grade . ' | ' . ($kelas->academic_year ?? ''))
+@section('page-subtitle', $kelas->name . ' · ' . ($kelas->grade ?? '') . ' · ' . ($kelas->jurusan?->name ?? ''))
 
 @section('page-actions')
-    <a href="{{ route('admin.kelas.edit', $kelas->id) }}" class="btn btn-sm btn-warning me-1">
-        <i class="fas fa-edit me-1"></i> Edit
+    <a href="{{ route('admin.kelas.edit', $kelas->id) }}" class="btn btn-warning btn-sm me-1">
+        <i class="fas fa-edit me-1"></i>Edit
     </a>
-    <a href="{{ route('admin.kelas.index') }}" class="btn btn-sm btn-secondary">
-        <i class="fas fa-arrow-left me-1"></i> Kembali
+    <a href="{{ route('admin.kelas.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Kembali
     </a>
 @endsection
 
-@push('css')
-<style>
-/* Custom styling for kelas detail page */
-.info-card {
-    background: linear-gradient(135deg, #f8f9fc 0%, #ffffff 100%);
-    border: 1px solid #e3e6f0;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-}
-
-.info-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-}
-
-.info-label {
-    font-weight: 600;
-    color: #5a5c69;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.info-value {
-    color: #3a3b45;
-    font-weight: 500;
-    font-size: 1rem;
-}
-
-.student-avatar {
-    width: 32px;
-    height: 32px;
-    object-fit: cover;
-}
-
-.action-buttons .btn {
-    border-radius: 8px;
-    font-weight: 500;
-    padding: 10px 20px;
-    transition: all 0.3s ease;
-}
-
-@media (max-width: 768px) {
-    .action-buttons {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .action-buttons .btn {
-        width: 100%;
-    }
-}
-</style>
-@endpush
-
 @section('content')
-<div class="row">
-    <!-- Back Button -->
-    <div class="col-12 mb-3">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Beranda</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('admin.kelas.index') }}">Manajemen Kelas</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ $kelas->name }}</li>
-            </ol>
-        </nav>
-    </div>
-    
-    <!-- Class Information Card -->
-    <div class="col-lg-4 mb-4">
-        <div class="card h-100">
-            <div class="card-header bg-primary text-white">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-school me-2"></i>
-                    Informasi Kelas
-                </h5>
+
+<div class="row g-4">
+
+    {{-- ═══ KIRI: Info Kelas ═══ --}}
+    <div class="col-lg-4">
+
+        {{-- Info card --}}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="mb-0 fw-semibold">
+                    <i class="fas fa-school me-2 text-primary"></i>Informasi Kelas
+                </h6>
             </div>
-            <div class="card-body">
-                <div class="text-center mb-4">
-                    <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                        <i class="fas fa-school text-primary fs-1"></i>
-                    </div>
-                    <h4 class="mt-3 mb-2">{{ $kelas->name }}</h4>
-                    @if($kelas->grade)
-                        <span class="badge bg-secondary mb-2">Kelas {{ $kelas->grade }}</span>
-                    @endif
-                    <p class="text-muted mb-0">{{ $kelas->jurusan?->name ?? 'Jurusan tidak ditentukan' }}</p>
+            <div class="card-body text-center py-4">
+                <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center
+                            justify-content-center mb-3"
+                     style="width:72px;height:72px;">
+                    <i class="fas fa-school text-primary fa-2x"></i>
                 </div>
-
-                <hr>
-
-                <div class="info-card p-3 mb-3">
-                    <div class="row">
-                        <div class="col-6">
-                            <div class="text-center">
-                                <div class="info-label">Tingkat</div>
-                                <div class="info-value">{{ $kelas->grade }}</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="text-center">
-                                <div class="info-label">Jurusan</div>
-                                <div class="info-value">
-                                    @php $jurusanName = $kelas->jurusan?->name ?? '—'; @endphp
-                                    @php $jc = match(strtolower($jurusanName)) { 'keperawatan' => 'info', 'farmasi' => 'warning', default => 'success' }; @endphp
-                                    <span class="badge bg-{{ $jc }}">{{ $jurusanName }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row text-center">
-                    <div class="col-6">
-                        <div class="info-label">Kapasitas</div>
-                        <div class="info-value">{{ $kelas->siswa->count() }} siswa</div>
-                    </div>
-                    <div class="col-6">
-                        <div class="info-label">Status</div>
-                        <div class="info-value">
-                            @if($kelas->status === 'active')
-                                <span class="badge bg-success">Aktif</span>
-                            @else
-                                <span class="badge bg-secondary">Nonaktif</span>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
-                <hr>
-
-                <div class="mb-3">
-                    <div class="info-label">Tahun Ajaran</div>
-                    <div class="info-value">{{ $kelas->academic_year }}</div>
-                </div>
-
-                <div class="mb-3">
-                    <div class="info-label">Wali Kelas</div>
-                    <div class="info-value">
-                        @if($kelas->guru_id && $kelas->guru)
-                            <div class="d-flex align-items-center">
-                                <img src="{{ asset('images/default-avatar.png') }}" 
-                                     class="rounded-circle me-2 student-avatar" alt="Wali Kelas">
-                                <span>{{ $kelas->guru->name }}</span>
-                            </div>
-                        @else
-                            <span class="text-muted">Belum ditentukan</span>
-                        @endif
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <div class="info-label">Dibuat</div>
-                    <div class="info-value">
+                <h5 class="fw-bold mb-1">{{ $kelas->name }}</h5>
+                @if($kelas->grade)
+                    <span class="badge bg-primary bg-opacity-10 text-primary mb-2">Kelas {{ $kelas->grade }}</span>
+                @endif
+                <p class="text-muted small mb-0">{{ $kelas->jurusan?->name ?? 'Jurusan belum ditentukan' }}</p>
+            </div>
+            <div class="card-body pt-0">
+                <table class="table table-sm small mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted ps-0" style="width:40%">Tingkat</td>
+                            <td class="fw-semibold">{{ $kelas->grade ?? '—' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted ps-0">Jurusan</td>
+                            <td>
+                                @php
+                                    $jName  = $kelas->jurusan?->name ?? null;
+                                    $jColors = ['primary','success','info','warning','danger'];
+                                    $jc     = $jName ? $jColors[abs(crc32($jName)) % count($jColors)] : 'secondary';
+                                @endphp
+                                @if($jName)
+                                    <span class="badge bg-{{ $jc }}">{{ $jName }}</span>
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted ps-0">Tahun Ajaran</td>
+                            <td class="fw-semibold">{{ $kelas->academic_year ?? '—' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted ps-0">Status</td>
+                            <td>
+                                @if(($kelas->status ?? 'active') === 'active')
+                                    <span class="badge bg-success">Aktif</span>
+                                @else
+                                    <span class="badge bg-secondary">Nonaktif</span>
+                                @endif
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted ps-0">Jumlah Siswa</td>
+                            <td class="fw-semibold">{{ $kelas->siswa->count() }} siswa</td>
+                        </tr>
                         @if($kelas->created_at)
-                            {{ $kelas->created_at->format('d M Y H:i') }}
-                        @else
-                            <span class="text-muted">Tidak tersedia</span>
+                        <tr>
+                            <td class="text-muted ps-0 border-0">Dibuat</td>
+                            <td class="border-0">{{ \Carbon\Carbon::parse($kelas->created_at)->format('d M Y') }}</td>
+                        </tr>
                         @endif
-                    </div>
-                </div>
+                    </tbody>
+                </table>
             </div>
-
-            <div class="card-footer">
-                <div class="action-buttons d-flex gap-2">
-                    <a href="{{ route('admin.kelas.edit', $kelas->id) }}" class="btn btn-warning flex-fill">
-                        <i class="fas fa-edit me-1"></i>
-                        Edit
-                    </a>
-                    <button type="button" class="btn btn-danger flex-fill" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                        <i class="fas fa-trash me-1"></i>
-                        Hapus
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Students List -->
-    <div class="col-lg-8">
-        <div class="card h-100">
-            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-users me-2"></i>
-                    Daftar Siswa ({{ $kelas->siswa->count() }} siswa)
-                </h5>
-                @if($kelas->siswa->count() > 0)
-                    <span class="badge bg-primary">{{ $kelas->siswa->count() }} siswa</span>
-                @else
-                    <span class="badge bg-secondary">Kosong</span>
-                @endif
-            </div>
-            
-            <div class="card-body">
-                @if($kelas->siswa->count() > 0)
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th width="60">#</th>
-                                    <th>Nama Siswa</th>
-                                    <th>NIS</th>
-                                    <th>Email</th>
-                                    <th>Status</th>
-                                    <th width="100">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($kelas->siswa as $index => $siswa)
-                                <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <img src="{{ $siswa->photo_url ?? asset('images/default-avatar.png') }}" 
-                                                 class="rounded-circle me-2 student-avatar" alt="Avatar">
-                                            <div>
-                                                <div class="fw-semibold">{{ $siswa->name }}</div>
-                                                <small class="text-muted">{{ $siswa->phone ?? 'No phone' }}</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-secondary">
-                                            {{ $siswa->siswa?->nis ?? 'N/A' }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $siswa->email }}</td>
-                                    <td>
-                                        @if($siswa->status === 'active')
-                                            <span class="badge bg-success">Aktif</span>
-                                        @else
-                                            <span class="badge bg-danger">Nonaktif</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="{{ route('admin.users.show', $siswa->id) }}" 
-                                               class="btn btn-sm btn-outline-info" title="Lihat Detail">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="{{ route('admin.users.edit', $siswa->id) }}" 
-                                               class="btn btn-sm btn-outline-warning" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    <div class="text-center py-5">
-                        <i class="fas fa-user-slash fa-4x text-muted mb-3"></i>
-                        <h5 class="text-muted">Belum ada siswa</h5>
-                        <p class="text-muted mb-4">Kelas ini belum memiliki siswa yang terdaftar</p>
-                        <a href="{{ route('admin.users.create.siswa') }}" class="btn btn-primary">
-                            <i class="fas fa-user-plus me-1"></i>
-                            Tambah Siswa Baru
-                        </a>
-                    </div>
-                @endif
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Statistics Cards -->
-<div class="row mt-4">
-    <div class="col-md-3 mb-3">
-        <div class="info-card p-3 text-center h-100">
-            <div class="text-primary">
-                <i class="fas fa-user-graduate fa-2x mb-2"></i>
-            </div>
-            <div class="h4 mb-1 text-primary">{{ $kelas->siswa->count() }}</div>
-            <div class="small text-muted">Total Siswa</div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="info-card p-3 text-center h-100">
-            <div class="text-success">
-                <i class="fas fa-user-check fa-2x mb-2"></i>
-            </div>
-            <div class="h4 mb-1 text-success">{{ $kelas->siswa->where('status', 'active')->count() }}</div>
-            <div class="small text-muted">Siswa Aktif</div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="info-card p-3 text-center h-100">
-            <div class="text-warning">
-                <i class="fas fa-percentage fa-2x mb-2"></i>
-            </div>
-            <div class="h4 mb-1 text-warning">
-                {{ $kelas->siswa->count() > 0 ? 100 : 0 }}%
-            </div>
-            <div class="small text-muted">Terisi</div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="info-card p-3 text-center h-100">
-            <div class="text-info">
-                <i class="fas fa-users fa-2x mb-2"></i>
-            </div>
-            <div class="h4 mb-1 text-info">{{ $kelas->siswa->count() }}</div>
-            <div class="small text-muted">Total Siswa</div>
-        </div>
-    </div>
-</div>
-
-<!-- Back and Actions -->
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="d-flex justify-content-between">
-            <a href="{{ route('admin.kelas.index') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i>
-                Kembali ke Daftar Kelas
-            </a>
-            <div>
-                <a href="{{ route('admin.kelas.edit', $kelas->id) }}" class="btn btn-warning me-2">
-                    <i class="fas fa-edit me-1"></i>
-                    Edit Kelas
+            <div class="card-footer bg-white border-top d-flex gap-2 py-3">
+                <a href="{{ route('admin.kelas.edit', $kelas->id) }}" class="btn btn-warning btn-sm flex-fill">
+                    <i class="fas fa-edit me-1"></i>Edit
                 </a>
-                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                    <i class="fas fa-trash me-1"></i>
-                    Hapus Kelas
+                <button type="button" class="btn btn-outline-danger btn-sm flex-fill"
+                        data-bs-toggle="modal" data-bs-target="#deleteModal">
+                    <i class="fas fa-trash me-1"></i>Hapus
                 </button>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Delete Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        {{-- Stats mini --}}
+        <div class="row g-3">
+            @php $totalSiswa = $kelas->siswa->count(); @endphp
+            <div class="col-6">
+                <div class="card border-0 shadow-sm text-center p-3">
+                    <div class="h3 fw-bold text-primary mb-0">{{ $totalSiswa }}</div>
+                    <small class="text-muted">Total Siswa</small>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card border-0 shadow-sm text-center p-3">
+                    <div class="h3 fw-bold text-success mb-0">
+                        {{ $kelas->siswa->where('is_active', true)->count() }}
+                    </div>
+                    <small class="text-muted">Aktif</small>
+                </div>
+            </div>
+        </div>
+
+    </div>{{-- /col-lg-4 --}}
+
+    {{-- ═══ KANAN: Daftar Siswa ═══ --}}
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between py-3">
+                <h6 class="mb-0 fw-semibold">
+                    <i class="fas fa-users me-2 text-success"></i>Daftar Siswa
+                </h6>
+                <span class="badge bg-secondary">{{ $kelas->siswa->count() }} siswa</span>
+            </div>
+
+            @if($kelas->siswa->count() > 0)
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">#</th>
+                                <th>Nama Siswa</th>
+                                <th>NIS</th>
+                                <th>Email</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center pe-4">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($kelas->siswa as $i => $siswa)
+                            <tr>
+                                <td class="ps-4 text-muted">{{ $i + 1 }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {{-- Avatar inisial --}}
+                                        @php
+                                            $sName  = $siswa->name ?? 'S';
+                                            $sBg    = ['#0891b2','#7c3aed','#16a34a','#d97706','#dc2626'][abs(crc32($sName)) % 5];
+                                        @endphp
+                                        @if($siswa->photo)
+                                            <img src="{{ $siswa->photo_url }}"
+                                                 class="rounded-circle flex-shrink-0"
+                                                 style="width:34px;height:34px;object-fit:cover;" alt=""
+                                                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                                            <div class="rounded-circle flex-shrink-0 d-none align-items-center
+                                                        justify-content-center text-white fw-bold"
+                                                 style="width:34px;height:34px;background:{{ $sBg }};font-size:.8rem;">
+                                                {{ strtoupper(substr($sName,0,1)) }}
+                                            </div>
+                                        @else
+                                            <div class="rounded-circle flex-shrink-0 d-flex align-items-center
+                                                        justify-content-center text-white fw-bold"
+                                                 style="width:34px;height:34px;background:{{ $sBg }};font-size:.8rem;">
+                                                {{ strtoupper(substr($sName,0,1)) }}
+                                            </div>
+                                        @endif
+                                        <div>
+                                            <div class="fw-semibold">{{ $siswa->name }}</div>
+                                            <small class="text-muted">{{ $siswa->phone ?? '' }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if($siswa->siswa?->nis)
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary">
+                                            {{ $siswa->siswa->nis }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                                <td class="text-muted">{{ $siswa->email }}</td>
+                                <td class="text-center">
+                                    @if($siswa->is_active)
+                                        <span class="badge bg-success">Aktif</span>
+                                    @else
+                                        <span class="badge bg-secondary">Nonaktif</span>
+                                    @endif
+                                </td>
+                                <td class="text-center pe-4">
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <a href="{{ route('admin.users.show', $siswa->id) }}"
+                                           class="btn btn-outline-info btn-sm" title="Detail">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ route('admin.users.edit', $siswa->id) }}"
+                                           class="btn btn-outline-warning btn-sm" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @else
+            <div class="card-body text-center py-5">
+                <i class="fas fa-user-slash fa-3x text-muted opacity-25 mb-3 d-block"></i>
+                <h6 class="text-muted">Belum ada siswa di kelas ini</h6>
+                <p class="text-muted small">Siswa dapat ditambahkan dari menu Manajemen Siswa.</p>
+                <a href="{{ route('admin.users.create.siswa') }}" class="btn btn-primary btn-sm mt-2">
+                    <i class="fas fa-user-plus me-1"></i>Tambah Siswa Baru
+                </a>
+            </div>
+            @endif
+        </div>
+    </div>{{-- /col-lg-8 --}}
+
+</div>{{-- /row --}}
+
+{{-- Delete Modal --}}
+<div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteModalLabel">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    Konfirmasi Hapus Kelas
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-semibold">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>Konfirmasi Hapus
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="text-center mb-4">
-                    <i class="fas fa-school fa-4x text-danger mb-3"></i>
-                    <h5 class="mb-3">Hapus Kelas: {{ $kelas->name }}?</h5>
-                    <p class="text-muted mb-0">Tindakan ini tidak dapat dibatalkan.</p>
-                </div>
-                
+            <div class="modal-body text-center py-4">
+                <p class="text-muted mb-2">Hapus kelas <strong>{{ $kelas->name }}</strong>?</p>
+
                 @if($kelas->siswa->count() > 0)
-                    <div class="alert alert-warning" role="alert">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Peringatan:</strong> Kelas ini masih memiliki {{ $kelas->siswa->count() }} siswa. 
-                        Anda harus memindahkan semua siswa ke kelas lain terlebih dahulu sebelum menghapus kelas ini.
+                    <div class="alert alert-warning text-start small">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Kelas ini masih memiliki <strong>{{ $kelas->siswa->count() }} siswa</strong>.
+                        Pindahkan semua siswa sebelum menghapus.
                     </div>
                 @else
-                    <div class="alert alert-info" role="alert">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Kelas ini tidak memiliki siswa dan aman untuk dihapus.
+                    <div class="alert alert-info text-start small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Kelas kosong dan aman untuk dihapus.
                     </div>
                 @endif
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-1"></i>
-                    Batal
-                </button>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                 @if($kelas->siswa->count() === 0)
                     <form action="{{ route('admin.kelas.destroy', $kelas->id) }}" method="POST" class="d-inline">
-                        @csrf
-                        @method('DELETE')
+                        @csrf @method('DELETE')
                         <button type="submit" class="btn btn-danger">
-                            <i class="fas fa-trash me-1"></i>
-                            Ya, Hapus Kelas
+                            <i class="fas fa-trash me-1"></i>Ya, Hapus
                         </button>
                     </form>
                 @else
-                    <button type="button" class="btn btn-danger" disabled>
-                        <i class="fas fa-ban me-1"></i>
-                        Tidak Dapat Dihapus
+                    <button type="button" class="btn btn-secondary" disabled>
+                        <i class="fas fa-ban me-1"></i>Tidak Bisa Dihapus
                     </button>
                 @endif
             </div>
         </div>
     </div>
 </div>
+
 @endsection

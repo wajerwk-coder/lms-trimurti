@@ -27,7 +27,7 @@
                     <i class="fas {{ $icon }} text-{{ $color }} fa-lg"></i>
                 </div>
                 <div>
-                    <div class="h3 fw-bold mb-0">{{ $val }}</div>
+                    <div class="fw-bold mb-0" style="font-size:1.5rem;line-height:1.2;">{{ $val }}</div>
                     <small class="text-muted">{{ $label }}</small>
                 </div>
             </div>
@@ -73,6 +73,11 @@
                     <option value="active">Aktif</option>
                     <option value="inactive">Nonaktif</option>
                 </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-secondary w-100" id="resetFilter">
+                    <i class="fas fa-undo me-1"></i>Reset
+                </button>
             </div>
         </div>
     </div>
@@ -227,6 +232,17 @@ document.addEventListener('DOMContentLoaded', function () {
     grade.addEventListener('change', filter);
     major.addEventListener('change', filter);
     status.addEventListener('change', filter);
+
+    const resetBtn = document.getElementById('resetFilter');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function () {
+            search.value = '';
+            grade.value  = '';
+            major.value  = '';
+            status.value = '';
+            filter();
+        });
+    }
 });
 </script>
 @endpush
