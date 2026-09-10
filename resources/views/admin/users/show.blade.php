@@ -75,16 +75,18 @@
         {{-- Hero Card --}}
         <div class="profile-hero p-4 mb-4">
             <div class="text-center text-white mb-3">
+                @if($user->photo)
                 <img src="{{ $user->photo_url }}"
                          class="rounded-circle border border-3 border-white border-opacity-50 mb-3"
-                         style="width:90px;height:90px;object-fit:cover;">
-                @else
-                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center
-                                fw-bold text-white mb-3 border border-3 border-white border-opacity-25"
-                         style="width:90px;height:90px;font-size:2.2rem;background:rgba(255,255,255,.2);">
-                        {{ strtoupper(substr($user->name, 0, 1)) }}
-                    </div>
+                         style="width:90px;height:90px;object-fit:cover;"
+                         onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='inline-flex'">
                 @endif
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center
+                            fw-bold text-white mb-3 border border-3 border-white border-opacity-25"
+                     style="width:90px;height:90px;font-size:2.2rem;background:rgba(255,255,255,.2);
+                            {{ $user->photo ? 'display:none !important;' : '' }}">
+                    {{ strtoupper(substr($user->name, 0, 1)) }}
+                </div>
                 <h5 class="fw-bold mb-1 lh-sm">{{ $user->name }}</h5>
                 <div class="opacity-75 small mb-2">{{ $user->email }}</div>
                 <div class="d-flex gap-2 justify-content-center flex-wrap">
