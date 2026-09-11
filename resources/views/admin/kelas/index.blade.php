@@ -67,6 +67,14 @@
                 </select>
             </div>
             <div class="col-md-2">
+                <label class="form-label small fw-semibold">Semester</label>
+                <select class="form-select" id="semesterFilter">
+                    <option value="">Semua</option>
+                    <option value="ganjil">Ganjil</option>
+                    <option value="genap">Genap</option>
+                </select>
+            </div>
+            <div class="col-md-2">
                 <label class="form-label small fw-semibold">Status</label>
                 <select class="form-select" id="statusFilter">
                     <option value="">Semua</option>
@@ -99,7 +107,7 @@
                         <th class="ps-4">Nama Kelas</th>
                         <th class="text-center">Tingkat</th>
                         <th>Jurusan</th>
-                        <th>Tahun Ajaran</th>
+                        <th>Tahun Ajaran / Semester</th>
                         <th class="text-center">Siswa</th>
                         <th class="text-center">Status</th>
                         <th class="text-center pe-4">Aksi</th>
@@ -110,7 +118,8 @@
                     <tr class="kelas-row"
                         data-grade="{{ $kls->grade ?? '' }}"
                         data-major="{{ strtolower($kls->jurusan?->name ?? '') }}"
-                        data-status="{{ $kls->status ?? 'active' }}">
+                        data-status="{{ $kls->status ?? 'active' }}"
+                        data-semester="{{ $kls->semester ?? '' }}">
                         <td class="ps-4">
                             <div class="d-flex align-items-center gap-2">
                                 <div class="rounded-2 bg-primary bg-opacity-10 p-2 flex-shrink-0">
@@ -118,7 +127,7 @@
                                 </div>
                                 <div>
                                     <div class="fw-semibold">{{ $kls->name }}</div>
-                                    <small class="text-muted">{{ $kls->academic_year ?? '' }}</small>
+                                    <small class="text-muted">{{ $kls->periode_label }}</small>
                                 </div>
                             </div>
                         </td>
@@ -145,7 +154,14 @@
                                 <span class="text-muted">—</span>
                             @endif
                         </td>
-                        <td class="text-muted">{{ $kls->academic_year ?? '—' }}</td>
+                        <td class="text-muted">
+                            <div>{{ $kls->academic_year ?? '—' }}</div>
+                            @if($kls->semester)
+                                <small class="badge bg-{{ $kls->semester === 'ganjil' ? 'info' : 'warning' }} bg-opacity-15 text-{{ $kls->semester === 'ganjil' ? 'info' : 'warning' }}">
+                                    Sem. {{ ucfirst($kls->semester) }}
+                                </small>
+                            @endif
+                        </td>
                         <td class="text-center">
                             <span class="badge bg-secondary bg-opacity-10 text-dark">
                                 {{ $kls->siswa_count ?? 0 }}
@@ -198,17 +214,19 @@
 @push('js')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const search  = document.getElementById('searchInput');
-    const grade   = document.getElementById('gradeFilter');
-    const major   = document.getElementById('majorFilter');
-    const status  = document.getElementById('statusFilter');
-    const counter = document.getElementById('kelasCount');
-    const rows    = document.querySelectorAll('.kelas-row');
+    const search   = document.getElementById('searchInput');
+    const grade    = document.getElementById('gradeFilter');
+    const major    = document.getElementById('majorFilter');
+    const semester = document.getElementById('semesterFilter');
+    const status   = document.getElementById('statusFilter');
+    const counter  = document.getElementById('kelasCount');
+    const rows     = document.querySelectorAll('.kelas-row');
 
     function filter() {
         const q  = search.value.toLowerCase().trim();
         const g  = grade.value;
         const m  = major.value.toLowerCase();
+        const sm = semester.value;
         const s  = status.value;
         let visible = 0;
 
@@ -217,9 +235,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const rg   = row.dataset.grade;
             const rm   = row.dataset.major;
             const rs   = row.dataset.status;
+            const rsm  = row.dataset.semester;
             const show = (!q || txt.includes(q))
                       && (!g || rg === g)
                       && (!m || rm === m)
+                      && (!sm || rsm === sm)
                       && (!s || rs === s);
             row.style.display = show ? '' : 'none';
             if (show) visible++;
@@ -231,15 +251,17 @@ document.addEventListener('DOMContentLoaded', function () {
     search.addEventListener('input', filter);
     grade.addEventListener('change', filter);
     major.addEventListener('change', filter);
+    semester.addEventListener('change', filter);
     status.addEventListener('change', filter);
 
     const resetBtn = document.getElementById('resetFilter');
     if (resetBtn) {
         resetBtn.addEventListener('click', function () {
-            search.value = '';
-            grade.value  = '';
-            major.value  = '';
-            status.value = '';
+            search.value   = '';
+            grade.value    = '';
+            major.value    = '';
+            semester.value = '';
+            status.value   = '';
             filter();
         });
     }

@@ -157,6 +157,50 @@
                         <div class="form-text">Format: YYYY/YYYY (contoh: 2025/2026)</div>
                     </div>
 
+                    {{-- Semester --}}
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">
+                            Semester <span class="text-danger">*</span>
+                        </label>
+                        <select name="semester" id="semesterSelect"
+                                class="form-select @error('semester') is-invalid @enderror" required>
+                            <option value="">— Pilih Semester —</option>
+                            <option value="ganjil"
+                                {{ old('semester', $kelas->semester ?? 'ganjil') === 'ganjil' ? 'selected' : '' }}>
+                                Semester Ganjil (1)
+                            </option>
+                            <option value="genap"
+                                {{ old('semester', $kelas->semester ?? '') === 'genap' ? 'selected' : '' }}>
+                                Semester Genap (2)
+                            </option>
+                        </select>
+                        @error('semester')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    {{-- Periode Pembelajaran --}}
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">
+                            Periode Pembelajaran
+                            <span class="text-muted fw-normal">(opsional)</span>
+                        </label>
+                        <select name="academic_period_id" id="periodSelect"
+                                class="form-select @error('academic_period_id') is-invalid @enderror">
+                            <option value="">— Tidak terhubung ke periode —</option>
+                            @foreach($academicPeriods as $p)
+                                <option value="{{ $p->id }}"
+                                    {{ old('academic_period_id', $kelas->academic_period_id) == $p->id ? 'selected' : '' }}>
+                                    {{ $p->full_label }}
+                                    @if($p->is_active) ✓ Aktif @endif
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('academic_period_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Hubungkan kelas ke periode pembelajaran untuk filter laporan.
+                        </div>
+                    </div>
+
                     {{-- Status --}}
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Status</label>
@@ -280,14 +324,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const pStatus = document.getElementById('previewStatus');
 
     window.updatePreview = function () {
-        const grade = document.getElementById('gradeInput').value;
-        const opt   = majorEl.options[majorEl.selectedIndex];
-        const major = opt && opt.value ? (opt.dataset.name || opt.text) : '';
+        const grade    = document.getElementById('gradeInput').value;
+        const opt      = majorEl.options[majorEl.selectedIndex];
+        const major    = opt && opt.value ? (opt.dataset.name || opt.text) : '';
+        const semEl    = document.getElementById('semesterSelect');
+        const semShort = semEl?.value === 'ganjil' ? 'Ganjil' : (semEl?.value === 'genap' ? 'Genap' : '');
 
         pName.textContent  = nameEl.value.trim() || 'Nama Kelas';
         pMajor.textContent = major || '—';
         pGrade.textContent = grade ? 'Kelas ' + grade : '—';
-        pYear.innerHTML    = '<i class="fas fa-calendar me-1"></i>' + (yearEl.value.trim() || '—');
+        pYear.innerHTML    = '<i class="fas fa-calendar me-1"></i>' +
+                             (yearEl.value.trim() || '—') +
+                             (semShort ? ' · Sem. ' + semShort : '');
         pStatus.innerHTML  = '<i class="fas fa-circle me-1" style="font-size:.55rem;"></i>' +
                              (statusEl.value === 'active' ? 'Aktif' : 'Nonaktif');
     };
@@ -296,6 +344,7 @@ document.addEventListener('DOMContentLoaded', function () {
     majorEl.addEventListener('change', updatePreview);
     yearEl.addEventListener('input', updatePreview);
     statusEl.addEventListener('change', updatePreview);
+    document.getElementById('semesterSelect')?.addEventListener('change', updatePreview);
 
     // Submit guard
     document.getElementById('kelasForm').addEventListener('submit', function (e) {

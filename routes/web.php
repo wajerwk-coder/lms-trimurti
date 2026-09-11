@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\KelasController;
 use App\Http\Controllers\Admin\JurusanController;
 use App\Http\Controllers\Admin\MataPelajaranController;
 use App\Http\Controllers\Admin\KriteriaPenilaianController;
+use App\Http\Controllers\Admin\AcademicPeriodController;
 
 use App\Http\Controllers\Guru\DashboardController as GuruDashboardController;
 use App\Http\Controllers\Guru\MaterialController as GuruMaterialController;
@@ -104,6 +105,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     
     // Kelola Kelas
     Route::resource('kelas', KelasController::class)->parameters(['kelas' => 'kelas']);
+
+    // Kelola Periode Pembelajaran
+    Route::post('academic-periods/{academicPeriod}/set-active', [AcademicPeriodController::class, 'setActive'])
+         ->name('academic-periods.set-active');
+    Route::resource('academic-periods', AcademicPeriodController::class);
     
     // Kelola Jurusan
     Route::resource('jurusan', JurusanController::class);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicPeriod;
 use App\Models\Kelas;
 use App\Models\Jurusan;
 use Illuminate\Http\Request;
@@ -54,18 +55,24 @@ class KelasController extends Controller
     public function create(): View
     {
         return view('admin.kelas.create', [
-            'jurusans' => Jurusan::orderBy('name')->get(),
+            'jurusans'       => Jurusan::orderBy('name')->get(),
+            'academicPeriods'=> AcademicPeriod::orderByDesc('academic_year')
+                                    ->orderByRaw("FIELD(semester,'ganjil','genap')")
+                                    ->get(),
+            'activePeriod'   => AcademicPeriod::getActive(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name'          => 'required|string|max:100|unique:classes,name',
-            'grade'         => 'required|in:X,XI,XII',
-            'major_id'      => 'required|exists:jurusans,id',
-            'academic_year' => 'required|string|max:20',
-            'status'        => 'nullable|in:active,inactive',
+            'name'               => 'required|string|max:100|unique:classes,name',
+            'grade'              => 'required|in:X,XI,XII',
+            'major_id'           => 'required|exists:jurusans,id',
+            'academic_year'      => 'required|string|max:20',
+            'semester'           => 'required|in:ganjil,genap',
+            'academic_period_id' => 'nullable|exists:academic_periods,id',
+            'status'             => 'nullable|in:active,inactive',
         ], [
             'name.required'          => 'Nama kelas wajib diisi.',
             'name.unique'            => 'Nama kelas sudah ada.',
@@ -74,17 +81,21 @@ class KelasController extends Controller
             'major_id.required'      => 'Jurusan wajib dipilih.',
             'major_id.exists'        => 'Jurusan tidak ditemukan.',
             'academic_year.required' => 'Tahun ajaran wajib diisi.',
+            'semester.required'      => 'Semester wajib dipilih.',
+            'semester.in'            => 'Semester harus Ganjil atau Genap.',
         ]);
 
         try {
             $jurusan = Jurusan::findOrFail($request->major_id);
 
             Kelas::create([
-                'name'          => $request->name,
-                'grade'         => $request->grade,
-                'jurusan_id'    => $jurusan->id,
-                'academic_year' => $request->academic_year,
-                'status'        => $request->status ?? 'active',
+                'name'               => $request->name,
+                'grade'              => $request->grade,
+                'jurusan_id'         => $jurusan->id,
+                'academic_year'      => $request->academic_year,
+                'semester'           => $request->semester,
+                'academic_period_id' => $request->academic_period_id ?: null,
+                'status'             => $request->status ?? 'active',
             ]);
 
             return redirect()->route('admin.kelas.index')
@@ -117,20 +128,25 @@ class KelasController extends Controller
             ->count();
 
         return view('admin.kelas.edit', [
-            'kelas'      => $kelas->load('jurusan'),
-            'jurusans'   => Jurusan::orderBy('name')->get(),
-            'siswaCount' => $siswaCount,
+            'kelas'          => $kelas->load('jurusan', 'academicPeriod'),
+            'jurusans'       => Jurusan::orderBy('name')->get(),
+            'siswaCount'     => $siswaCount,
+            'academicPeriods'=> AcademicPeriod::orderByDesc('academic_year')
+                                    ->orderByRaw("FIELD(semester,'ganjil','genap')")
+                                    ->get(),
         ]);
     }
 
     public function update(Request $request, Kelas $kelas): RedirectResponse
     {
         $request->validate([
-            'name'          => 'required|string|max:100|unique:classes,name,' . $kelas->id,
-            'grade'         => 'required|in:X,XI,XII',
-            'major_id'      => 'required|exists:jurusans,id',
-            'academic_year' => 'required|string|max:20',
-            'status'        => 'nullable|in:active,inactive',
+            'name'               => 'required|string|max:100|unique:classes,name,' . $kelas->id,
+            'grade'              => 'required|in:X,XI,XII',
+            'major_id'           => 'required|exists:jurusans,id',
+            'academic_year'      => 'required|string|max:20',
+            'semester'           => 'required|in:ganjil,genap',
+            'academic_period_id' => 'nullable|exists:academic_periods,id',
+            'status'             => 'nullable|in:active,inactive',
         ], [
             'name.required'          => 'Nama kelas wajib diisi.',
             'name.unique'            => 'Nama kelas sudah ada.',
@@ -139,17 +155,21 @@ class KelasController extends Controller
             'major_id.required'      => 'Jurusan wajib dipilih.',
             'major_id.exists'        => 'Jurusan tidak ditemukan.',
             'academic_year.required' => 'Tahun ajaran wajib diisi.',
+            'semester.required'      => 'Semester wajib dipilih.',
+            'semester.in'            => 'Semester harus Ganjil atau Genap.',
         ]);
 
         try {
             $jurusan = Jurusan::findOrFail($request->major_id);
 
             $kelas->update([
-                'name'          => $request->name,
-                'grade'         => $request->grade,
-                'jurusan_id'    => $jurusan->id,
-                'academic_year' => $request->academic_year,
-                'status'        => $request->status ?? 'active',
+                'name'               => $request->name,
+                'grade'              => $request->grade,
+                'jurusan_id'         => $jurusan->id,
+                'academic_year'      => $request->academic_year,
+                'semester'           => $request->semester,
+                'academic_period_id' => $request->academic_period_id ?: null,
+                'status'             => $request->status ?? 'active',
             ]);
 
             return redirect()->route('admin.kelas.index')

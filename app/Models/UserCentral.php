@@ -286,6 +286,7 @@ class UserCentral extends Authenticatable
                 $kelasId     = \App\Models\Kelas::first()?->id;
                 $kelas       = $kelasId ? \App\Models\Kelas::find($kelasId) : null;
                 $tahunAjaran = $kelas?->academic_year ?? (date('Y') . '/' . (date('Y') + 1));
+                $semester    = $kelas?->semester ?? \App\Models\AcademicPeriod::getActive()?->semester ?? 'ganjil';
 
                 \App\Models\Siswa::firstOrCreate(['user_id' => $user->id], [
                     'nis'           => 'SIS' . str_pad($user->id, 6, '0', STR_PAD_LEFT),
@@ -293,6 +294,7 @@ class UserCentral extends Authenticatable
                     'jenis_kelamin' => 'L',
                     'kelas_id'      => $kelasId,
                     'tahun_ajaran'  => $tahunAjaran,
+                    'semester'      => $semester,
                     'status'        => 'aktif',
                 ]);
             } elseif ($user->isGuru()) {

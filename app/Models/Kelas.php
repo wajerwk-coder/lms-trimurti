@@ -20,6 +20,8 @@ class Kelas extends Model
         'grade',
         'jurusan_id',
         'academic_year',
+        'semester',
+        'academic_period_id',
         'status',
         'wallpaper',
     ];
@@ -42,6 +44,36 @@ class Kelas extends Model
     public function jurusan(): BelongsTo
     {
         return $this->belongsTo(Jurusan::class, 'jurusan_id');
+    }
+
+    /**
+     * Relasi ke Periode Pembelajaran.
+     */
+    public function academicPeriod(): BelongsTo
+    {
+        return $this->belongsTo(AcademicPeriod::class, 'academic_period_id');
+    }
+
+    /**
+     * Accessor: label semester yang mudah dibaca.
+     */
+    public function getSemesterLabelAttribute(): string
+    {
+        return match ($this->semester) {
+            'ganjil' => 'Semester Ganjil',
+            'genap'  => 'Semester Genap',
+            default  => ucfirst((string) $this->semester),
+        };
+    }
+
+    /**
+     * Accessor: label lengkap periode "Semester Ganjil 2025/2026".
+     */
+    public function getPeriodeLabelAttribute(): string
+    {
+        $sem  = $this->semester_label;
+        $year = $this->academic_year ?? '';
+        return $sem && $year ? "$sem $year" : ($year ?: '—');
     }
 
     /**
@@ -103,6 +135,22 @@ class Kelas extends Model
     public function scopeByMajor($query, $major)
     {
         return $query->where('jurusan_id', $major);
+    }
+
+    /**
+     * Scope untuk kelas berdasarkan semester.
+     */
+    public function scopeBySemester($query, string $semester)
+    {
+        return $query->where('semester', $semester);
+    }
+
+    /**
+     * Scope untuk kelas berdasarkan periode pembelajaran.
+     */
+    public function scopeByPeriod($query, int $periodId)
+    {
+        return $query->where('academic_period_id', $periodId);
     }
 
     /**

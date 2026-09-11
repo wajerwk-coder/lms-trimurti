@@ -89,6 +89,13 @@
                 <span>Kelas</span>
             </a>
 
+            <a href="{{ route('admin.academic-periods.index') }}"
+               class="nav-item {{ request()->routeIs('admin.academic-periods.*') ? 'active' : '' }}"
+               data-tooltip="Periode Pembelajaran">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Periode Pembelajaran</span>
+            </a>
+
             <a href="{{ route('admin.jurusan.index') }}"
                class="nav-item {{ request()->routeIs('admin.jurusan.*') ? 'active' : '' }}"
                data-tooltip="Jurusan">
@@ -113,7 +120,7 @@
             <a href="{{ route('admin.exam-schedules.index') }}"
                class="nav-item {{ request()->routeIs('admin.exam-schedules.*') ? 'active' : '' }}"
                data-tooltip="Jadwal Ujian">
-                <i class="fas fa-calendar-alt"></i>
+                <i class="fas fa-clipboard-list"></i>
                 <span>Jadwal Ujian</span>
             </a>
         </div>
