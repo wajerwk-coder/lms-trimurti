@@ -37,10 +37,10 @@
 
     {{-- Stats --}}
     @php
-        $totalMapel    = $mataPelajarans->total() ?? $mataPelajarans->count();
-        $totalAktif    = $mataPelajarans->getCollection()->where('is_active', true)->count();
-        $totalTeori    = $mataPelajarans->getCollection()->where('type', 'teori')->count();
-        $totalPraktik  = $mataPelajarans->getCollection()->where('type', 'praktikum')->count();
+        $totalMapel    = $mataPelajarans->count();
+        $totalAktif    = $mataPelajaranAktif;
+        $totalTeori    = $mataPelajaranTeori;
+        $totalPraktik  = $mataPelajaranPraktikum;
     @endphp
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
