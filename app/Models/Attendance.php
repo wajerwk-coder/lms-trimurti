@@ -39,21 +39,11 @@ class Attendance extends Model
     }
 
     /**
-     * Relasi via student_id (kolom lama)
-     */
-    public function studentAlt()
-    {
-        return $this->belongsTo(UserCentral::class, 'student_id');
-    }
-
-    /**
-     * Ambil nama siswa dari salah satu kolom yang tersedia
+     * Ambil nama siswa dari kolom siswa_id
      */
     public function getNamaSiswaAttribute(): string
     {
-        return $this->siswa?->name
-            ?? $this->studentAlt?->name
-            ?? '—';
+        return $this->siswa?->name ?? '—';
     }
 
     public function recorder()

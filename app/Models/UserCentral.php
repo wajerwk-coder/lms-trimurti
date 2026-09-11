@@ -219,4 +219,107 @@ class UserCentral extends Authenticatable
         }
         return null;
     }
+
+    // ── Helper methods (compat dengan User model) ─────────────────────────
+
+    public function isTeacher(): bool { return $this->isGuru(); }
+    public function isStudent(): bool { return $this->isSiswa(); }
+
+    public function hasRole(string $role): bool { return $this->role === $role; }
+    public function hasAnyRole(array $roles): bool { return in_array($this->role, $roles); }
+
+    public function hasPermission(string $permission): bool
+    {
+        return in_array($permission, $this->getPermissions());
+    }
+
+    public function getPermissions(): array
+    {
+        return match($this->role) {
+            'admin'  => ['manage_users', 'manage_settings', 'view_reports', 'manage_classes', 'manage_subjects', 'view_dashboard'],
+            'guru'   => ['manage_materials', 'manage_assignments', 'manage_practicals', 'grade_assignments', 'grade_practicals', 'view_siswa_progress'],
+            'siswa'  => ['view_materials', 'submit_assignments', 'submit_practicals', 'view_grades', 'view_attendance', 'view_schedule'],
+            default  => [],
+        };
+    }
+
+    public function updateProfile(array $data): bool { return $this->update($data); }
+
+    public function changePassword(string $newPassword): bool
+    {
+        return $this->update(['password' => bcrypt($newPassword)]);
+    }
+
+    public function canBeDeleted(): bool
+    {
+        return !($this->attendances()->exists()
+            || $this->practicals()->exists()
+            || $this->assignments()->exists());
+    }
+
+    public function deactivate(): bool { return $this->update(['is_active' => false]); }
+    public function activate(): bool   { return $this->update(['is_active' => true]); }
+
+    public function getAvatarUrlAttribute(): string { return $this->photo_url; }
+
+    public function getClassNameAttribute(): ?string
+    {
+        return $this->isSiswa() ? ($this->siswa?->kelas?->name ?? null) : null;
+    }
+
+    // ── Boot hooks ────────────────────────────────────────────────────────
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        // Auto-generate username jika kosong
+        static::creating(function ($user) {
+            if (empty($user->username)) {
+                $user->username = static::generateUsername($user->name);
+            }
+        });
+
+        // Auto-create profil siswa/guru setelah user dibuat
+        static::created(function ($user) {
+            if ($user->isSiswa()) {
+                $kelasId     = \App\Models\Kelas::first()?->id;
+                $kelas       = $kelasId ? \App\Models\Kelas::find($kelasId) : null;
+                $tahunAjaran = $kelas?->academic_year ?? (date('Y') . '/' . (date('Y') + 1));
+
+                \App\Models\Siswa::firstOrCreate(['user_id' => $user->id], [
+                    'nis'           => 'SIS' . str_pad($user->id, 6, '0', STR_PAD_LEFT),
+                    'nisn'          => '000' . str_pad($user->id, 7, '0', STR_PAD_LEFT),
+                    'jenis_kelamin' => 'L',
+                    'kelas_id'      => $kelasId,
+                    'tahun_ajaran'  => $tahunAjaran,
+                    'status'        => 'aktif',
+                ]);
+            } elseif ($user->isGuru()) {
+                \App\Models\Guru::firstOrCreate(['user_id' => $user->id], [
+                    'nip'    => 'GUR' . str_pad($user->id, 6, '0', STR_PAD_LEFT),
+                    'name'   => $user->name,
+                    'email'  => $user->email,
+                    'status' => 'aktif',
+                ]);
+            }
+        });
+
+        // Cascade soft-delete ke profil siswa/guru
+        static::deleting(function ($user) {
+            $user->siswa?->delete();
+            $user->guru?->delete();
+        });
+    }
+
+    public static function generateUsername(string $name): string
+    {
+        $base    = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $name));
+        $username = $base;
+        $counter  = 1;
+        while (static::where('username', $username)->exists()) {
+            $username = $base . $counter++;
+        }
+        return $username;
+    }
 }

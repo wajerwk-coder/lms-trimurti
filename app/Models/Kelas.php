@@ -18,7 +18,6 @@ class Kelas extends Model
     protected $fillable = [
         'name',
         'grade',
-        'major_id',
         'jurusan_id',
         'academic_year',
         'status',
@@ -38,10 +37,7 @@ class Kelas extends Model
     }
 
     /**
-     * Relasi ke Jurusan.
-     * DB classes punya dua kolom: jurusan_id (baru) dan major_id (lama).
-     * Keduanya menyimpan jurusans.id.
-     * Gunakan jurusan_id sebagai FK utama, dengan fallback ke major_id via scope.
+     * Relasi ke Jurusan (single source of truth).
      */
     public function jurusan(): BelongsTo
     {
@@ -49,20 +45,11 @@ class Kelas extends Model
     }
 
     /**
-     * Fallback alias via major_id — untuk backward compat query lama.
-     * Jika jurusan_id null (data sangat lama), coba via major_id.
-     */
-    public function major(): BelongsTo
-    {
-        return $this->belongsTo(Jurusan::class, 'major_id');
-    }
-
-    /**
-     * Accessor: ambil jurusan dari jurusan_id, fallback ke major_id
+     * Accessor: alias agar kode lama yang pakai ->jurusanEager tetap berfungsi.
      */
     public function getJurusanEagerAttribute(): ?Jurusan
     {
-        return $this->jurusan ?? $this->major;
+        return $this->jurusan;
     }
 
     /**
@@ -115,7 +102,7 @@ class Kelas extends Model
      */
     public function scopeByMajor($query, $major)
     {
-        return $query->where('major_id', $major);
+        return $query->where('jurusan_id', $major);
     }
 
     /**

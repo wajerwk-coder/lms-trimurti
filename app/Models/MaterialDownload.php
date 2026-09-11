@@ -4,13 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class MaterialDownload extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    // Disable Laravel timestamps since we only have downloaded_at
-    public $timestamps = false;
+    public $timestamps = true; // aktifkan timestamps agar deleted_at berfungsi
 
     protected $fillable = [
         'material_id',

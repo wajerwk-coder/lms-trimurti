@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\UserCentral;
-use App\Models\User;
 use App\Models\Kelas;
 use App\Models\Jurusan;
 use App\Models\Assignment;
@@ -81,7 +80,7 @@ class UserController extends Controller
             $presentAtt = Attendance::where('siswa_id', $user->id)->where('status', 'hadir')->count();
 
             $stats = [
-                'Tugas Dikumpulkan' => AssignmentSubmission::where('student_id', $user->id)->count(),
+                'Tugas Dikumpulkan' => AssignmentSubmission::where('siswa_id', $user->id)->count(),
                 'Kehadiran (%)'     => $totalAtt > 0 ? round($presentAtt * 100 / $totalAtt) : 0,
                 'Nilai Praktikum'   => NilaiPraktik::where('siswa_id', $user->id)->whereNotNull('score')->count(),
                 'Rata-rata Praktik' => round((float)(NilaiPraktik::where('siswa_id', $user->id)->avg('score') ?? 0), 1),

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Jurusan;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
@@ -58,9 +57,6 @@ class JurusanController extends Controller
                 'is_active'   => $request->boolean('is_active', true),
             ]);
 
-            // Sinkronkan ke tabel majors (FK lama) agar tambah kelas tidak gagal
-            $this->syncToMajors($jurusan);
-
             $returnTo = $request->input('return_to');
             if ($returnTo) {
                 return redirect($returnTo)->with('success', "Jurusan {$jurusan->name} berhasil ditambahkan.");
@@ -109,9 +105,6 @@ class JurusanController extends Controller
                 'is_active'   => $request->boolean('is_active', true),
             ]);
 
-            // Sinkronkan perubahan ke tabel majors
-            $this->syncToMajors($jurusan);
-
             return redirect()->route('admin.jurusan.index')
                 ->with('success', "Jurusan {$jurusan->name} berhasil diperbarui.");
 
@@ -135,36 +128,5 @@ class JurusanController extends Controller
 
         return redirect()->route('admin.jurusan.index')
             ->with('success', "Jurusan '{$nama}' berhasil dihapus.");
-    }
-
-    // ── Private helpers ───────────────────────────────────────────────────────
-
-    /**
-     * Sinkronkan jurusan ke tabel majors (FK lama classes.major_id → majors).
-     * Dipanggil setiap store/update agar tambah kelas tidak kena FK violation.
-     */
-    private function syncToMajors(Jurusan $jurusan): void
-    {
-        $code = $jurusan->code ?? strtoupper(substr($jurusan->name, 0, 4));
-
-        $exists = DB::table('majors')->where('id', $jurusan->id)->exists();
-
-        if ($exists) {
-            DB::table('majors')->where('id', $jurusan->id)->update([
-                'name'        => $jurusan->name,
-                'code'        => $code,
-                'description' => $jurusan->description,
-                'updated_at'  => now(),
-            ]);
-        } else {
-            DB::table('majors')->insert([
-                'id'          => $jurusan->id,
-                'name'        => $jurusan->name,
-                'code'        => $code,
-                'description' => $jurusan->description,
-                'created_at'  => now(),
-                'updated_at'  => now(),
-            ]);
-        }
     }
 }

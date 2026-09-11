@@ -15,7 +15,6 @@ class AssignmentSubmission extends Model
 
     protected $fillable = [
         'assignment_id',
-        'student_id',
         'siswa_id',
         'file_url',
         'file_path',
@@ -46,48 +45,27 @@ class AssignmentSubmission extends Model
     }
 
     /**
-     * Relasi ke siswa (UserCentral).
-     * Kolom siswa_id adalah FK ke users_central.id (prioritas).
-     * Kolom student_id adalah FK lama ke users (legacy, tetap disimpan).
-     * Gunakan siswa_id jika tersedia, fallback ke student_id.
+     * Relasi ke siswa via siswa_id (FK ke users_central.id).
      */
     public function siswa(): BelongsTo
     {
-        // siswa_id ada di DB dan FK ke users_central
         return $this->belongsTo(UserCentral::class, 'siswa_id');
     }
 
     /**
-     * Alias student — backward compat via student_id (kolom lama).
-     * Hanya pakai jika siswa_id tidak tersedia.
-     */
-    public function student(): BelongsTo
-    {
-        return $this->belongsTo(UserCentral::class, 'student_id');
-    }
-
-    /**
-     * Get siswa yang valid: prioritas siswa_id, fallback student_id.
-     * Accessor ini bernama 'submitter' untuk menghindari konflik dengan
-     * relasi Eloquent siswa() yang bernama 'siswa'.
+     * Accessor: alias ke siswa() untuk kode yang masih pakai ->submitter.
      */
     public function getSubmitterAttribute(): ?UserCentral
     {
-        if ($this->relationLoaded('siswa') && $this->getRelation('siswa') !== null) {
-            return $this->getRelation('siswa');
-        }
-        if (!empty($this->attributes['siswa_id'])) {
-            return $this->siswa()->first();
-        }
-        return $this->student()->first();
+        return $this->siswa;
     }
 
     /**
-     * Get nama siswa dari kolom yang tersedia
+     * Get nama siswa
      */
     public function getNamaSiswaAttribute(): string
     {
-        return $this->submitter?->name ?? '—';
+        return $this->siswa?->name ?? '—';
     }
 
     // Scopes
