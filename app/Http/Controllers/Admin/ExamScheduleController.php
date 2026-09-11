@@ -54,7 +54,6 @@ class ExamScheduleController extends Controller
         $request->validate([
             'title'            => 'required|string|max:255',
             'description'      => 'nullable|string',
-            'exam_type'        => 'required|in:uts,uas,quiz,praktikum,lainnya',
             'subject_id'       => 'required|exists:subjects,id',
             'kelas_id'         => 'nullable|exists:classes,id',
             'start_time'       => 'required|date',
@@ -77,7 +76,7 @@ class ExamScheduleController extends Controller
             $schedule = ExamSchedule::create([
                 'title'            => $request->title,
                 'description'      => $request->description,
-                'exam_type'        => $request->exam_type,
+                'exam_type'        => 'praktikum',
                 'subject_id'       => $request->subject_id,
                 'kelas_id'         => $request->kelas_id,
                 'created_by'       => auth()->id(),
@@ -136,7 +135,6 @@ class ExamScheduleController extends Controller
         $request->validate([
             'title'            => 'required|string|max:255',
             'description'      => 'nullable|string',
-            'exam_type'        => 'required|in:uts,uas,quiz,praktikum,lainnya',
             'subject_id'       => 'required|exists:subjects,id',
             'kelas_id'         => 'nullable|exists:classes,id',
             'start_time'       => 'required|date',
@@ -156,7 +154,7 @@ class ExamScheduleController extends Controller
             $examSchedule->update([
                 'title'            => $request->title,
                 'description'      => $request->description,
-                'exam_type'        => $request->exam_type,
+                'exam_type'        => 'praktikum',
                 'subject_id'       => $request->subject_id,
                 'kelas_id'         => $request->kelas_id,
                 'start_time'       => $request->start_time,

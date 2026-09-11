@@ -65,21 +65,8 @@
                                 @enderror
                             </div>
                             
-                            <div class="col-md-6">
-                                <label class="form-label">Tipe <span class="text-danger">*</span></label>
-                                <select name="exam_type" class="form-select @error('exam_type') is-invalid @enderror" required>
-                                    <option value="">Pilih Tipe</option>
-                                    <option value="uts" {{ old('exam_type') == 'uts' ? 'selected' : '' }}>UTS (Ujian Tengah Semester)</option>
-                                    <option value="uas" {{ old('exam_type') == 'uas' ? 'selected' : '' }}>UAS (Ujian Akhir Semester)</option>
-                                    <option value="quiz" {{ old('exam_type') == 'quiz' ? 'selected' : '' }}>Quiz</option>
-                                    <option value="praktikum" {{ old('exam_type') == 'praktikum' ? 'selected' : '' }}>Praktikum</option>
-                                    <option value="lainnya" {{ old('exam_type') == 'lainnya' ? 'selected' : '' }}>Lainnya</option>
-                                </select>
-                                @error('exam_type')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            
+                            <input type="hidden" name="exam_type" value="praktikum">
+
                             <div class="col-md-6">
                                 <label class="form-label">Mata Pelajaran <span class="text-danger">*</span></label>
                                 <select name="subject_id" class="form-select @error('subject_id') is-invalid @enderror" required>
