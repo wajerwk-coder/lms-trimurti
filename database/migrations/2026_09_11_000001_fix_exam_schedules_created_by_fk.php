@@ -34,6 +34,11 @@ return new class extends Migration
                 });
             }
 
+            // Pastikan kolom nullable dulu (required untuk ON DELETE SET NULL)
+            Schema::table('exam_schedules_new', function (Blueprint $table) {
+                $table->unsignedBigInteger('created_by')->nullable()->change();
+            });
+
             // Tambah FK baru ke users_central
             Schema::table('exam_schedules_new', function (Blueprint $table) {
                 $table->foreign('created_by')
