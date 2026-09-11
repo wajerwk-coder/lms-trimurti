@@ -50,10 +50,10 @@
 {{-- ══ STATS CEPAT ════════════════════════════════════════════════ --}}
 <div class="row g-3 mb-4">
     @foreach([
-        ['from'=>'#0891b2','to'=>'#0e7490','icon'=>'fa-users',          'val'=>$stats['total_students']       ?? 0, 'label'=>'Total Siswa',         'sub'=>'Yang kamu ajar'],
-        ['from'=>'#16a34a','to'=>'#15803d','icon'=>'fa-calendar-check', 'val'=>($stats['attendance_rate']     ?? 0).'%','label'=>'Rata-rata Kehadiran','sub'=>'Bulan ini'],
-        ['from'=>'#d97706','to'=>'#b45309','icon'=>'fa-star',           'val'=>$stats['average_score']        ?? 0, 'label'=>'Rata-rata Nilai',      'sub'=>'Semua penilaian'],
-        ['from'=>'#7c3aed','to'=>'#6d28d9','icon'=>'fa-check-circle',   'val'=>$stats['completed_assignments'] ?? 0,'label'=>'Tugas Selesai',        'sub'=>'Sudah dinilai'],
+        ['from'=>'#0891b2','to'=>'#0e7490','icon'=>'fa-book-open',      'val'=>$stats['total_materials']         ?? 0,  'label'=>'Total Materi',         'sub'=>'Semua materi'],
+        ['from'=>'#16a34a','to'=>'#15803d','icon'=>'fa-tasks',          'val'=>$stats['total_assignments']       ?? 0,  'label'=>'Total Tugas',          'sub'=>'Yang dibuat'],
+        ['from'=>'#d97706','to'=>'#b45309','icon'=>'fa-star',           'val'=>$stats['average_practical_score'] ?? 0,  'label'=>'Rata-rata Nilai',      'sub'=>'Penilaian praktik'],
+        ['from'=>'#7c3aed','to'=>'#6d28d9','icon'=>'fa-check-circle',   'val'=>$stats['graded_assignments']      ?? 0,  'label'=>'Tugas Dinilai',        'sub'=>'Sudah diberi nilai'],
     ] as $s)
     <div class="col-6 col-md-3">
         <div class="stat-box d-flex align-items-center gap-3 bg-white shadow-sm">
