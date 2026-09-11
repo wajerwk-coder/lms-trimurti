@@ -157,7 +157,7 @@ class ModernUserController extends BaseController
             'email_pribadi'      => 'nullable|email|max:255',
             'subject_ids'        => 'required|array|min:1',
             'subject_ids.*'      => 'exists:subjects,id',
-            'pendidikan_terakhir'=> 'nullable|in:D3,S1,S2,S3',
+            'pendidikan_terakhir'=> 'nullable|in:D3,S1,S2,S3,APOTEKER,D4',
             'jurusan_pendidikan' => 'nullable|string|max:255',
             'tahun_mulai_kerja'  => 'nullable|integer|min:1970|max:' . date('Y'),
         ], array_merge($this->messages(), [
@@ -214,8 +214,12 @@ class ModernUserController extends BaseController
                 }
             }
 
-            // 3. Simpan profil guru
-            $guru = Guru::create($guruData);
+            // 3. Simpan profil guru — updateOrCreate agar tidak crash jika
+            //    boot hook UserCentral sudah duluan membuat baris kosong
+            $guru = Guru::updateOrCreate(
+                ['user_id' => $user->id],
+                $guruData
+            );
 
             // 4. Sync pivot guru_subjects
             $guru->subjects()->sync($request->subject_ids);
