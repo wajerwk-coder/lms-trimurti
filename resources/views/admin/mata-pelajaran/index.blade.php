@@ -178,7 +178,7 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="badge bg-secondary bg-opacity-15 text-secondary fw-semibold px-2">
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary fw-semibold px-2">
                                     {{ $mapel->code }}
                                 </span>
                             </td>
@@ -190,18 +190,18 @@
                                         default     => ['color' => 'primary', 'label' => 'Campuran'],
                                     };
                                 @endphp
-                                <span class="badge bg-{{ $tc['color'] }} bg-opacity-15 text-{{ $tc['color'] }}">
+                                <span class="badge bg-{{ $tc['color'] }} bg-opacity-10 text-{{ $tc['color'] }}">
                                     {{ $tc['label'] }}
                                 </span>
                             </td>
                             <td class="text-center fw-semibold text-dark">{{ $mapel->sks ?? '—' }}</td>
                             <td class="text-center">
                                 @if($mapel->is_active)
-                                    <span class="badge bg-success bg-opacity-15 text-success">
+                                    <span class="badge bg-success bg-opacity-10 text-success">
                                         <i class="fas fa-circle me-1" style="font-size:7px;vertical-align:middle;"></i>Aktif
                                     </span>
                                 @else
-                                    <span class="badge bg-secondary bg-opacity-15 text-secondary">
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">
                                         <i class="fas fa-circle me-1" style="font-size:7px;vertical-align:middle;"></i>Nonaktif
                                     </span>
                                 @endif
