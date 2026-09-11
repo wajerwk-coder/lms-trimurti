@@ -103,7 +103,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('users/{user}/status', [AdminUserController::class, 'updateStatus'])->name('users.status');
     
     // Kelola Kelas
-    Route::resource('kelas', KelasController::class);
+    Route::resource('kelas', KelasController::class)->parameters(['kelas' => 'kelas']);
     
     // Kelola Jurusan
     Route::resource('jurusan', JurusanController::class);
