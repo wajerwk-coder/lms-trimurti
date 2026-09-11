@@ -301,6 +301,7 @@ class UserCentral extends Authenticatable
                 \App\Models\Guru::firstOrCreate(['user_id' => $user->id], [
                     'nip'    => 'GUR' . str_pad($user->id, 6, '0', STR_PAD_LEFT),
                     'name'   => $user->name,
+                    'email'  => $user->email,
                     'status' => 'aktif',
                 ]);
             }
