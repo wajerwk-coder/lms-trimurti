@@ -35,7 +35,13 @@ class Notification extends Model
     // Relationships
     public function sender(): BelongsTo
     {
+        // pengirim_id adalah kolom utama, created_by adalah alias lama
         return $this->belongsTo(UserCentral::class, 'pengirim_id');
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(UserCentral::class, 'created_by');
     }
 
     public function receiver(): BelongsTo

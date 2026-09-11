@@ -84,6 +84,7 @@ class NotificationAdminController extends Controller
             foreach ($validated['penerima_ids'] as $userId) {
                 Notification::create([
                     'pengirim_id'   => $senderId,
+                    'created_by'    => $senderId,
                     'penerima_id'   => $userId,
                     'tipe_penerima' => 'user',
                     'judul'         => $validated['judul'],
@@ -91,6 +92,10 @@ class NotificationAdminController extends Controller
                     'tipe'          => $validated['tipe'],
                     'prioritas'     => $validated['prioritas'],
                     'url_aksi'      => $validated['url_aksi'] ?? null,
+                    'title'         => $validated['judul'],
+                    'message'       => $validated['pesan'],
+                    'tipe_notifikasi' => $validated['tipe'],
+                    'action_url'    => $validated['url_aksi'] ?? null,
                     'created_at'    => $now,
                     'updated_at'    => $now,
                 ]);
@@ -102,6 +107,7 @@ class NotificationAdminController extends Controller
             foreach ($guruIds as $userId) {
                 Notification::create([
                     'pengirim_id'   => $senderId,
+                    'created_by'    => $senderId,
                     'penerima_id'   => $userId,
                     'tipe_penerima' => 'guru',
                     'judul'         => $validated['judul'],
@@ -109,6 +115,10 @@ class NotificationAdminController extends Controller
                     'tipe'          => $validated['tipe'],
                     'prioritas'     => $validated['prioritas'],
                     'url_aksi'      => $validated['url_aksi'] ?? null,
+                    'title'         => $validated['judul'],
+                    'message'       => $validated['pesan'],
+                    'tipe_notifikasi' => $validated['tipe'],
+                    'action_url'    => $validated['url_aksi'] ?? null,
                     'created_at'    => $now,
                     'updated_at'    => $now,
                 ]);
@@ -120,6 +130,7 @@ class NotificationAdminController extends Controller
             foreach ($siswaIds as $userId) {
                 Notification::create([
                     'pengirim_id'   => $senderId,
+                    'created_by'    => $senderId,
                     'penerima_id'   => $userId,
                     'tipe_penerima' => 'siswa',
                     'judul'         => $validated['judul'],
@@ -127,6 +138,10 @@ class NotificationAdminController extends Controller
                     'tipe'          => $validated['tipe'],
                     'prioritas'     => $validated['prioritas'],
                     'url_aksi'      => $validated['url_aksi'] ?? null,
+                    'title'         => $validated['judul'],
+                    'message'       => $validated['pesan'],
+                    'tipe_notifikasi' => $validated['tipe'],
+                    'action_url'    => $validated['url_aksi'] ?? null,
                     'created_at'    => $now,
                     'updated_at'    => $now,
                 ]);
@@ -136,6 +151,7 @@ class NotificationAdminController extends Controller
             // Kirim ke semua (guru + siswa) — 1 record dengan tipe_penerima='semua'
             Notification::create([
                 'pengirim_id'   => $senderId,
+                'created_by'    => $senderId,
                 'penerima_id'   => null,
                 'tipe_penerima' => 'semua',
                 'judul'         => $validated['judul'],
@@ -143,6 +159,10 @@ class NotificationAdminController extends Controller
                 'tipe'          => $validated['tipe'],
                 'prioritas'     => $validated['prioritas'],
                 'url_aksi'      => $validated['url_aksi'] ?? null,
+                'title'         => $validated['judul'],
+                'message'       => $validated['pesan'],
+                'tipe_notifikasi' => $validated['tipe'],
+                'action_url'    => $validated['url_aksi'] ?? null,
                 'created_at'    => $now,
                 'updated_at'    => $now,
             ]);
