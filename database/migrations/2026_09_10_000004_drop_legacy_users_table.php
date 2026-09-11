@@ -55,8 +55,13 @@ return new class extends Migration
             }
         }
 
-        // Sekarang aman untuk drop
+        // Nonaktifkan FK checks agar drop tidak diblokir constraint dari tabel lain
+        // (misal: class_students_student_id_foreign → users.id)
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         Schema::dropIfExists('users');
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
     }
 
     public function down(): void
