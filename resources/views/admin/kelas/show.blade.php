@@ -79,6 +79,7 @@
                             <td class="text-muted ps-0">Jumlah Siswa</td>
                             <td class="fw-semibold">{{ $kelas->siswa->count() }} siswa</td>
                         </tr>
+
                         @if($kelas->created_at)
                         <tr>
                             <td class="text-muted ps-0 border-0">Dibuat</td>
@@ -111,7 +112,8 @@
             <div class="col-6">
                 <div class="card border-0 shadow-sm text-center p-3">
                     <div class="h3 fw-bold text-success mb-0">
-                        {{ $kelas->siswa->where('is_active', true)->count() }}
+                        {{-- is_active ada di users_central (via relasi user), bukan di tabel siswa --}}
+                        {{ $kelas->siswa->filter(fn($s) => $s->user?->is_active)->count() }}
                     </div>
                     <small class="text-muted">Aktif</small>
                 </div>
@@ -146,17 +148,17 @@
                         </thead>
                         <tbody>
                             @foreach($kelas->siswa as $i => $siswa)
+                            @php $user = $siswa->user; @endphp
                             <tr>
                                 <td class="ps-4 text-muted">{{ $i + 1 }}</td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        {{-- Avatar inisial --}}
                                         @php
-                                            $sName  = $siswa->name ?? 'S';
-                                            $sBg    = ['#0891b2','#7c3aed','#16a34a','#d97706','#dc2626'][abs(crc32($sName)) % 5];
+                                            $sName = $user?->name ?? 'S';
+                                            $sBg   = ['#0891b2','#7c3aed','#16a34a','#d97706','#dc2626'][abs(crc32($sName)) % 5];
                                         @endphp
-                                        @if($siswa->photo)
-                                            <img src="{{ $siswa->photo_url }}"
+                                        @if($user?->photo)
+                                            <img src="{{ $user->photo_url }}"
                                                  class="rounded-circle flex-shrink-0"
                                                  style="width:34px;height:34px;object-fit:cover;" alt=""
                                                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
@@ -173,23 +175,23 @@
                                             </div>
                                         @endif
                                         <div>
-                                            <div class="fw-semibold">{{ $siswa->name }}</div>
-                                            <small class="text-muted">{{ $siswa->phone ?? '' }}</small>
+                                            <div class="fw-semibold">{{ $user?->name ?? '—' }}</div>
+                                            <small class="text-muted">{{ $user?->phone ?? '' }}</small>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    @if($siswa->siswa?->nis)
+                                    @if($siswa->nis)
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary">
-                                            {{ $siswa->siswa->nis }}
+                                            {{ $siswa->nis }}
                                         </span>
                                     @else
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
-                                <td class="text-muted">{{ $siswa->email }}</td>
+                                <td class="text-muted">{{ $user?->email ?? '—' }}</td>
                                 <td class="text-center">
-                                    @if($siswa->is_active)
+                                    @if($user?->is_active)
                                         <span class="badge bg-success">Aktif</span>
                                     @else
                                         <span class="badge bg-secondary">Nonaktif</span>
@@ -197,14 +199,16 @@
                                 </td>
                                 <td class="text-center pe-4">
                                     <div class="d-flex gap-1 justify-content-center">
-                                        <a href="{{ route('admin.users.show', $siswa->id) }}"
+                                        @if($user)
+                                        <a href="{{ route('admin.users.show', $user->id) }}"
                                            class="btn btn-outline-info btn-sm" title="Detail">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="{{ route('admin.users.edit', $siswa->id) }}"
+                                        <a href="{{ route('admin.users.edit', $user->id) }}"
                                            class="btn btn-outline-warning btn-sm" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

@@ -51,8 +51,8 @@
 @endif
 
 @php
-    // Tentukan nilai jurusan yang dipilih — cast ke int agar perbandingan tepat
-    $selectedJurusanId = (int) old('major_id', $kelas->jurusan_id ?? $kelas->major_id ?? 0);
+    // jurusan_id adalah satu-satunya FK setelah drop kolom major_id
+    $selectedJurusanId = (int) old('major_id', $kelas->jurusan_id ?? 0);
 @endphp
 
 <form action="{{ route('admin.kelas.update', $kelas->id) }}" method="POST" id="kelasForm" novalidate>

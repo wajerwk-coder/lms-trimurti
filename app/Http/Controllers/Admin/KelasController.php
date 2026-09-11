@@ -101,6 +101,7 @@ class KelasController extends Controller
 
     public function show(Kelas $kelas): View
     {
+        // Load siswa via tabel siswa, beserta user account-nya
         $kelas->load(['jurusan', 'siswa.user']);
         return view('admin.kelas.show', compact('kelas'));
     }
