@@ -162,7 +162,7 @@
                         <tr class="mata-pelajaran-row"
                             data-type="{{ $mapel->type }}"
                             data-status="{{ $mapel->is_active ? 'active' : 'inactive' }}">
-                            <td class="ps-4 text-muted">{{ $mataPelajarans->firstItem() + $i }}</td>
+                            <td class="ps-4 text-muted">{{ $i + 1 }}</td>
                             <td>
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="rounded-3 bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
