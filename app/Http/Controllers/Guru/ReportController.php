@@ -155,7 +155,17 @@ class ReportController extends Controller
 
         $query = Practical::withCount('scores')
             ->where('guru_id', $guruId)
-            ->whereBetween('due_date', [$filters['start_date'] . ' 00:00:00', $filters['end_date'] . ' 23:59:59']);
+            ->where(function($q) use ($filters) {
+                // tanggal adalah kolom required, due_date opsional
+                $q->whereBetween('tanggal', [$filters['start_date'], $filters['end_date']])
+                  ->orWhere(function($q2) use ($filters) {
+                      $q2->whereNull('tanggal')
+                         ->whereBetween('created_at', [
+                             $filters['start_date'] . ' 00:00:00',
+                             $filters['end_date']   . ' 23:59:59',
+                         ]);
+                  });
+            });
 
         if ($filters['kelas']) {
             $query->where('kelas_id', $filters['kelas']);
@@ -165,7 +175,16 @@ class ReportController extends Controller
 
         $scoreBase = NilaiPraktik::whereHas('practical', function ($q) use ($guruId, $filters) {
             $q->where('guru_id', $guruId)
-              ->whereBetween('due_date', [$filters['start_date'] . ' 00:00:00', $filters['end_date'] . ' 23:59:59']);
+              ->where(function($q2) use ($filters) {
+                  $q2->whereBetween('tanggal', [$filters['start_date'], $filters['end_date']])
+                     ->orWhere(function($q3) use ($filters) {
+                         $q3->whereNull('tanggal')
+                            ->whereBetween('created_at', [
+                                $filters['start_date'] . ' 00:00:00',
+                                $filters['end_date']   . ' 23:59:59',
+                            ]);
+                     });
+              });
             if ($filters['kelas']) $q->where('kelas_id', $filters['kelas']);
         });
 

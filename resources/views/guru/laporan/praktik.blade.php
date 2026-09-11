@@ -148,27 +148,32 @@
                 <tbody>
                     @forelse($practicals as $p)
                     @php
-                        $isPast   = $p->due_date?->isPast();
-                        $avgScore = isset($avgScoresByPk[$p->id]) ? (float) $avgScoresByPk[$p->id] : null;
+                        $tglPraktik = $p->tanggal ?? $p->due_date;
+                        $isPast     = $tglPraktik ? \Carbon\Carbon::parse($tglPraktik)->isPast() : false;
+                        $avgScore   = isset($avgScoresByPk[$p->id]) ? (float) $avgScoresByPk[$p->id] : null;
                         $sc2 = $avgScore !== null
                             ? ($avgScore >= 80 ? '#16a34a' : ($avgScore >= 60 ? '#d97706' : '#dc2626'))
                             : '#94a3b8';
                     @endphp
                     <tr>
                         <td class="ps-4">
-                            <div class="fw-semibold text-dark">{{ $p->title }}</div>
+                            <div class="fw-semibold text-dark">{{ $p->title ?? $p->judul ?? '—' }}</div>
                             <div class="text-muted" style="font-size:.75rem;">
-                                {{ Str::limit($p->description ?? '', 55) }}
+                                {{ Str::limit($p->description ?? $p->deskripsi ?? '', 55) }}
                             </div>
                         </td>
                         <td class="text-muted" style="font-size:.82rem;">{{ $p->subject?->name ?? '—' }}</td>
                         <td class="text-muted" style="font-size:.82rem;">{{ $p->kelas?->name ?? 'Semua' }}</td>
                         <td style="font-size:.82rem;">
+                            @if($tglPraktik)
                             <div class="{{ $isPast ? 'text-danger' : 'text-dark' }}">
-                                {{ $p->due_date?->format('d M Y') ?? '—' }}
+                                {{ \Carbon\Carbon::parse($tglPraktik)->format('d M Y') }}
                             </div>
                             @if($isPast)
-                                <span style="font-size:.68rem;color:#dc2626;font-weight:600;">Lewat deadline</span>
+                                <span style="font-size:.68rem;color:#dc2626;font-weight:600;">Lewat tanggal</span>
+                            @endif
+                            @else
+                                <span class="text-muted">—</span>
                             @endif
                         </td>
                         <td class="text-center fw-semibold">{{ $p->scores_count ?? 0 }}</td>

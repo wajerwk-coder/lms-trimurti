@@ -234,6 +234,23 @@
 
 </div>
 
+{{-- ══ CHART AKTIVITAS BULANAN ════════════════════════════════════ --}}
+@if(isset($monthlyData) && !empty($monthlyData['labels']))
+<div class="card border-0 shadow-sm mb-4" style="border-radius:14px;">
+    <div class="card-header bg-white border-bottom py-3 px-4" style="border-radius:14px 14px 0 0;">
+        <div class="d-flex align-items-center justify-content-between">
+            <h6 class="mb-0 fw-bold">
+                <i class="fas fa-chart-line me-2 text-primary"></i>Aktivitas 6 Bulan Terakhir
+            </h6>
+            <small class="text-muted">{{ $monthlyData['labels'][0] ?? '' }} &ndash; {{ end($monthlyData['labels']) }}</small>
+        </div>
+    </div>
+    <div class="card-body">
+        <canvas id="activityChart" height="90"></canvas>
+    </div>
+</div>
+@endif
+
 {{-- ══ EXPORT PDF ══════════════════════════════════════════════════ --}}
 <div class="card border-0 shadow-sm" style="border-radius:14px;">
     <div class="card-header bg-white border-bottom py-3 px-4" style="border-radius:14px 14px 0 0;">
@@ -286,3 +303,68 @@
 </div>
 
 @endsection
+
+@push('js')
+@if(isset($monthlyData) && !empty($monthlyData['labels']))
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('activityChart');
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: @json($monthlyData['labels']),
+            datasets: [
+                {
+                    label: 'Materi',
+                    data: @json($monthlyData['materials']),
+                    borderColor: '#16a34a',
+                    backgroundColor: 'rgba(22,163,74,.08)',
+                    tension: .4, fill: true, pointRadius: 4,
+                },
+                {
+                    label: 'Tugas',
+                    data: @json($monthlyData['assignments']),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59,130,246,.08)',
+                    tension: .4, fill: true, pointRadius: 4,
+                },
+                {
+                    label: 'Praktikum',
+                    data: @json($monthlyData['practicals']),
+                    borderColor: '#d97706',
+                    backgroundColor: 'rgba(217,119,6,.08)',
+                    tension: .4, fill: true, pointRadius: 4,
+                },
+                {
+                    label: 'Absensi',
+                    data: @json($monthlyData['attendance']),
+                    borderColor: '#0891b2',
+                    backgroundColor: 'rgba(8,145,178,.08)',
+                    tension: .4, fill: true, pointRadius: 4,
+                },
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { font: { size: 12 }, usePointStyle: true } },
+                tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + c.parsed.y } }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, font: { size: 11 } },
+                    grid: { color: '#f1f5f9' }
+                },
+                x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+            }
+        }
+    });
+});
+</script>
+@endif
+@endpush
