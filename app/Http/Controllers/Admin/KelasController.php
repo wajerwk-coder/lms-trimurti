@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AcademicPeriod;
 use App\Models\Kelas;
 use App\Models\Jurusan;
+use App\Models\MataPelajaran;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -54,12 +55,19 @@ class KelasController extends Controller
 
     public function create(): View
     {
+        $allSubjects = MataPelajaran::with('jurusan')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
         return view('admin.kelas.create', [
-            'jurusans'       => Jurusan::orderBy('name')->get(),
-            'academicPeriods'=> AcademicPeriod::orderByDesc('academic_year')
+            'jurusans'        => Jurusan::orderBy('name')->get(),
+            'academicPeriods' => AcademicPeriod::orderByDesc('academic_year')
                                     ->orderByRaw("FIELD(semester,'ganjil','genap')")
                                     ->get(),
-            'activePeriod'   => AcademicPeriod::getActive(),
+            'activePeriod'    => AcademicPeriod::getActive(),
+            'allSubjects'     => $allSubjects,
+            'jurusanMap'      => Jurusan::orderBy('name')->get()->keyBy('id'),
         ]);
     }
 
@@ -89,7 +97,7 @@ class KelasController extends Controller
             $jurusan = Jurusan::findOrFail($request->major_id);
             $period  = AcademicPeriod::findOrFail($request->academic_period_id);
 
-            Kelas::create([
+            $kelas = Kelas::create([
                 'name'               => $request->name,
                 'grade'              => $request->grade,
                 'jurusan_id'         => $jurusan->id,
@@ -98,6 +106,18 @@ class KelasController extends Controller
                 'academic_period_id' => $period->id,
                 'status'             => $request->status ?? 'active',
             ]);
+
+            // Sync mata pelajaran ke class_subjects
+            if ($request->filled('subject_ids')) {
+                $now = now();
+                $rows = array_map(fn($sid) => [
+                    'class_id'   => $kelas->id,
+                    'subject_id' => (int) $sid,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ], $request->subject_ids);
+                DB::table('class_subjects')->insert($rows);
+            }
 
             return redirect()->route('admin.kelas.index')
                 ->with('success', 'Kelas ' . $request->name . ' berhasil ditambahkan.');
@@ -113,28 +133,42 @@ class KelasController extends Controller
 
     public function show(Kelas $kelas): View
     {
-        // Load siswa via tabel siswa, beserta user account-nya
-        $kelas->load(['jurusan', 'siswa.user']);
-        return view('admin.kelas.show', compact('kelas'));
+        $kelas->load(['jurusan', 'siswa.user', 'subjects.jurusan', 'academicPeriod']);
+        $subjectsByJurusan = $kelas->subjects->groupBy(fn($s) => $s->major_id ?? 0);
+        $jurusanMap        = Jurusan::orderBy('name')->get()->keyBy('id');
+        return view('admin.kelas.show', compact('kelas', 'subjectsByJurusan', 'jurusanMap'));
     }
 
     // ── Edit & Update ─────────────────────────────────────────────────────────
 
     public function edit(Kelas $kelas): View
     {
-        // Hitung siswa via query langsung — tidak load semua data
         $siswaCount = DB::table('siswa')
             ->where('kelas_id', $kelas->id)
             ->whereNull('deleted_at')
             ->count();
 
+        $allSubjects = MataPelajaran::with('jurusan')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $selectedSubjectIds = DB::table('class_subjects')
+            ->where('class_id', $kelas->id)
+            ->whereNull('deleted_at')
+            ->pluck('subject_id')
+            ->toArray();
+
         return view('admin.kelas.edit', [
-            'kelas'          => $kelas->load('jurusan', 'academicPeriod'),
-            'jurusans'       => Jurusan::orderBy('name')->get(),
-            'siswaCount'     => $siswaCount,
-            'academicPeriods'=> AcademicPeriod::orderByDesc('academic_year')
-                                    ->orderByRaw("FIELD(semester,'ganjil','genap')")
-                                    ->get(),
+            'kelas'              => $kelas->load('jurusan', 'academicPeriod'),
+            'jurusans'           => Jurusan::orderBy('name')->get(),
+            'siswaCount'         => $siswaCount,
+            'academicPeriods'    => AcademicPeriod::orderByDesc('academic_year')
+                                        ->orderByRaw("FIELD(semester,'ganjil','genap')")
+                                        ->get(),
+            'allSubjects'        => $allSubjects,
+            'selectedSubjectIds' => $selectedSubjectIds,
+            'jurusanMap'         => Jurusan::orderBy('name')->get()->keyBy('id'),
         ]);
     }
 
@@ -173,6 +207,19 @@ class KelasController extends Controller
                 'academic_period_id' => $period->id,
                 'status'             => $request->status ?? 'active',
             ]);
+
+            // Sync mata pelajaran ke class_subjects
+            DB::table('class_subjects')->where('class_id', $kelas->id)->delete();
+            if ($request->filled('subject_ids')) {
+                $now  = now();
+                $rows = array_map(fn($sid) => [
+                    'class_id'   => $kelas->id,
+                    'subject_id' => (int) $sid,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ], $request->subject_ids);
+                DB::table('class_subjects')->insert($rows);
+            }
 
             return redirect()->route('admin.kelas.index')
                 ->with('success', 'Kelas ' . $request->name . ' berhasil diperbarui.');

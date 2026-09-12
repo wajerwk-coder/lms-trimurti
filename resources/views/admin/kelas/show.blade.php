@@ -232,6 +232,104 @@
 
 </div>{{-- /row --}}
 
+{{-- ── Mata Pelajaran per Jurusan ── --}}
+@php
+    $groupColors = ['primary', 'success', 'info', 'warning', 'danger', 'secondary'];
+@endphp
+
+<div class="row g-3 mt-1 mb-4">
+    <div class="col-12">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h6 class="fw-semibold mb-0">
+                <i class="fas fa-book-open me-2 text-primary"></i>
+                Mata Pelajaran Kelas Ini
+                <span class="badge bg-primary bg-opacity-10 text-primary ms-1">
+                    {{ $kelas->subjects->count() }} mapel
+                </span>
+            </h6>
+            <a href="{{ route('admin.kelas.edit', $kelas->id) }}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-edit me-1"></i>Kelola Mapel
+            </a>
+        </div>
+    </div>
+
+    @if($kelas->subjects->isEmpty())
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-book fa-3x text-muted opacity-25 mb-3 d-block"></i>
+                <h6 class="text-muted">Belum ada mata pelajaran</h6>
+                <p class="text-muted small mb-3">Tambahkan mata pelajaran melalui halaman Edit Kelas.</p>
+                <a href="{{ route('admin.kelas.edit', $kelas->id) }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Tambah Mata Pelajaran
+                </a>
+            </div>
+        </div>
+    </div>
+    @else
+        @foreach($subjectsByJurusan as $gJurusanId => $subjects)
+            @php
+                $keys      = array_values($subjectsByJurusan->keys()->toArray());
+                $colorIdx  = array_search($gJurusanId, $keys);
+                $color     = $groupColors[$colorIdx % count($groupColors)];
+                $jur       = $gJurusanId ? $jurusanMap->get($gJurusanId) : null;
+                $jurName   = $jur?->name ?? 'Umum / Tanpa Jurusan';
+                $jurCode   = $jur?->code ?? null;
+            @endphp
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header py-2 bg-{{ $color }} bg-opacity-10 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-graduation-cap text-{{ $color }}"></i>
+                            <div class="fw-semibold small text-{{ $color }}">
+                                {{ $jurName }}
+                                @if($jurCode)
+                                    <span class="fw-normal opacity-75">({{ $jurCode }})</span>
+                                @endif
+                            </div>
+                            <span class="badge bg-{{ $color }} bg-opacity-10 text-{{ $color }} ms-auto"
+                                  style="font-size:.65rem;">
+                                {{ $subjects->count() }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            @foreach($subjects->sortBy('name') as $subj)
+                            <li class="list-group-item px-3 py-2 small d-flex align-items-center gap-2">
+                                <i class="fas fa-book-open text-{{ $color }} fa-xs flex-shrink-0"></i>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="fw-semibold text-truncate">{{ $subj->name }}</div>
+                                    <div class="d-flex gap-1 mt-1 flex-wrap">
+                                        @if($subj->code)
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary"
+                                              style="font-size:.6rem;">{{ $subj->code }}</span>
+                                        @endif
+                                        @php
+                                            $tc = match($subj->type) {
+                                                'teori'     => ['info',    'Teori'],
+                                                'praktikum' => ['warning', 'Praktikum'],
+                                                default     => ['primary', 'Campuran'],
+                                            };
+                                        @endphp
+                                        <span class="badge bg-{{ $tc[0] }} bg-opacity-10 text-{{ $tc[0] }}"
+                                              style="font-size:.6rem;">{{ $tc[1] }}</span>
+                                        @if($subj->sks)
+                                        <span class="badge bg-light text-muted"
+                                              style="font-size:.6rem;">{{ $subj->sks }} SKS</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    @endif
+</div>
+
 {{-- Delete Modal --}}
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">

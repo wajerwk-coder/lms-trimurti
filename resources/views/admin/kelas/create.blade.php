@@ -199,6 +199,14 @@
             </div>
         </div>
 
+        {{-- Mata pelajaran per jurusan --}}
+        @include('admin.kelas.partials.subject-picker', [
+            'allSubjects'        => $allSubjects,
+            'jurusanMap'         => $jurusanMap,
+            'selectedSubjectIds' => old('subject_ids', []),
+            'kelasJurusanId'     => old('major_id'),
+        ])
+
     </div>{{-- /col-lg-8 --}}
 
     {{-- ═══ KANAN: Preview & Aksi ═══ --}}
