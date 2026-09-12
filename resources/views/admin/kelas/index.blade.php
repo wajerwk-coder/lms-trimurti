@@ -155,11 +155,13 @@
                             @endif
                         </td>
                         <td class="text-muted">
-                            <div>{{ $kls->academic_year ?? '—' }}</div>
+                            <div class="fw-semibold text-dark small">{{ $kls->academic_year ?? '—' }}</div>
                             @if($kls->semester)
-                                <small class="badge bg-{{ $kls->semester === 'ganjil' ? 'info' : 'warning' }} bg-opacity-15 text-{{ $kls->semester === 'ganjil' ? 'info' : 'warning' }}">
+                                <span class="badge bg-{{ $kls->semester === 'ganjil' ? 'info' : 'warning' }} bg-opacity-10 text-{{ $kls->semester === 'ganjil' ? 'info' : 'warning' }} mt-1">
                                     Sem. {{ ucfirst($kls->semester) }}
-                                </small>
+                                </span>
+                            @else
+                                <small class="text-muted">—</small>
                             @endif
                         </td>
                         <td class="text-center">
