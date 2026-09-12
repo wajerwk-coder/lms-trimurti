@@ -90,6 +90,24 @@
             </div>
 
             <div class="mb-3">
+                <label for="major_id" class="form-label">
+                    <i class="fas fa-graduation-cap me-1 text-primary"></i>
+                    Jurusan
+                </label>
+                <select id="major_id" name="major_id"
+                        class="form-select @error('major_id') is-invalid @enderror">
+                    <option value="">— Umum / Tanpa Jurusan —</option>
+                    @foreach($jurusans as $j)
+                        <option value="{{ $j->id }}" {{ old('major_id') == $j->id ? 'selected' : '' }}>
+                            {{ $j->name }}{{ $j->code ? ' ('.$j->code.')' : '' }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('major_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <div class="form-text">Pilih jurusan agar mata pelajaran tampil pada kelompok yang tepat.</div>
+            </div>
+
+            <div class="mb-3">
                 <label for="description" class="form-label">
                     <i class="fas fa-align-left me-1 text-primary"></i>
                     Deskripsi

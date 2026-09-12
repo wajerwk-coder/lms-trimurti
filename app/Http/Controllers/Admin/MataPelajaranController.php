@@ -53,7 +53,9 @@ class MataPelajaranController extends Controller
      */
     public function create(): View
     {
-        return view('admin.mata-pelajaran.create');
+        return view('admin.mata-pelajaran.create', [
+            'jurusans' => \App\Models\Jurusan::orderBy('name')->get(),
+        ]);
     }
 
     /**
@@ -67,6 +69,7 @@ class MataPelajaranController extends Controller
             'description' => 'nullable|string',
             'type'        => 'required|in:teori,praktikum,campuran',
             'sks'         => 'required|integer|min:1|max:10',
+            'major_id'    => 'nullable|exists:jurusans,id',
         ], [
             'name.required' => 'Nama mata pelajaran wajib diisi.',
             'name.unique'   => 'Nama mata pelajaran sudah ada.',
@@ -74,6 +77,7 @@ class MataPelajaranController extends Controller
             'code.unique'   => 'Kode sudah digunakan.',
             'type.required' => 'Jenis mata pelajaran wajib dipilih.',
             'sks.required'  => 'SKS wajib diisi.',
+            'major_id.exists' => 'Jurusan tidak ditemukan.',
         ]);
 
         try {
@@ -84,6 +88,7 @@ class MataPelajaranController extends Controller
                 'type'        => $request->type,
                 'sks'         => $request->sks,
                 'is_active'   => $request->boolean('is_active', true),
+                'major_id'    => $request->major_id ?: null,
             ]);
 
             return redirect()->route('admin.mata-pelajaran.index')
@@ -109,7 +114,10 @@ class MataPelajaranController extends Controller
      */
     public function edit(MataPelajaran $mataPelajaran): View
     {
-        return view('admin.mata-pelajaran.edit', compact('mataPelajaran'));
+        return view('admin.mata-pelajaran.edit', [
+            'mataPelajaran' => $mataPelajaran,
+            'jurusans'      => \App\Models\Jurusan::orderBy('name')->get(),
+        ]);
     }
 
     /**
@@ -123,6 +131,7 @@ class MataPelajaranController extends Controller
             'description' => 'nullable|string',
             'type'        => 'required|in:teori,praktikum,campuran',
             'sks'         => 'required|integer|min:1|max:10',
+            'major_id'    => 'nullable|exists:jurusans,id',
         ], [
             'name.required' => 'Nama mata pelajaran wajib diisi.',
             'name.unique'   => 'Nama mata pelajaran sudah ada.',
@@ -130,6 +139,7 @@ class MataPelajaranController extends Controller
             'code.unique'   => 'Kode sudah digunakan.',
             'type.required' => 'Jenis mata pelajaran wajib dipilih.',
             'sks.required'  => 'SKS wajib diisi.',
+            'major_id.exists' => 'Jurusan tidak ditemukan.',
         ]);
 
         try {
@@ -140,6 +150,7 @@ class MataPelajaranController extends Controller
                 'type'        => $request->type,
                 'sks'         => $request->sks,
                 'is_active'   => $request->boolean('is_active'),
+                'major_id'    => $request->major_id ?: null,
             ]);
 
             return redirect()->route('admin.mata-pelajaran.index')
