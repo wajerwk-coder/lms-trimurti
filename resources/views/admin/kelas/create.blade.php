@@ -64,7 +64,7 @@
                     </span>
                     <div>
                         <h6 class="mb-0 fw-semibold">Informasi Kelas</h6>
-                        <small class="text-muted">Nama, tingkat, jurusan, dan tahun ajaran</small>
+                        <small class="text-muted">Nama, tingkat, jurusan, dan periode pembelajaran</small>
                     </div>
                 </div>
             </div>
@@ -137,20 +137,33 @@
                         @endif
                     </div>
 
-                    {{-- Tahun Ajaran --}}
-                    <div class="col-md-6">
+                    {{-- Periode Pembelajaran (wajib, menggantikan tahun ajaran) --}}
+                    <div class="col-12">
                         <label class="form-label small fw-semibold">
-                            Tahun Ajaran <span class="text-danger">*</span>
+                            Periode Pembelajaran <span class="text-danger">*</span>
                         </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0">
-                                <i class="fas fa-calendar-alt text-muted"></i>
-                            </span>
-                            <input type="text" name="academic_year" id="yearInput"
-                                   class="form-control border-start-0 @error('academic_year') is-invalid @enderror"
-                                   value="{{ old('academic_year', date('Y').'/'.(date('Y')+1)) }}"
-                                   placeholder="2024/2025" required>
-                            @error('academic_year')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <select name="academic_period_id" id="periodSelect"
+                                class="form-select @error('academic_period_id') is-invalid @enderror" required>
+                            <option value="">— Pilih Periode Pembelajaran —</option>
+                            @foreach($academicPeriods as $p)
+                                <option value="{{ $p->id }}"
+                                        data-year="{{ $p->academic_year }}"
+                                        data-semester="{{ $p->semester }}"
+                                    {{ old('academic_period_id', $activePeriod?->id) == $p->id ? 'selected' : '' }}>
+                                    {{ $p->full_label }}
+                                    @if($p->is_active) ✓ Aktif @endif
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('academic_period_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Tahun ajaran dan semester akan diisi otomatis dari periode yang dipilih.
+                            @if(!$academicPeriods->count())
+                                <a href="{{ route('admin.academic-periods.create') }}" class="text-warning">
+                                    Buat periode pembelajaran dulu
+                                </a>.
+                            @endif
                         </div>
                     </div>
 
@@ -170,35 +183,7 @@
                             </option>
                         </select>
                         @error('semester')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-
-                    {{-- Periode Pembelajaran --}}
-                    <div class="col-12">
-                        <label class="form-label small fw-semibold">
-                            Periode Pembelajaran
-                            <span class="text-muted fw-normal">(opsional)</span>
-                        </label>
-                        <select name="academic_period_id" id="periodSelect"
-                                class="form-select @error('academic_period_id') is-invalid @enderror">
-                            <option value="">— Tidak terhubung ke periode —</option>
-                            @foreach($academicPeriods as $p)
-                                <option value="{{ $p->id }}"
-                                    {{ old('academic_period_id', $activePeriod?->id) == $p->id ? 'selected' : '' }}>
-                                    {{ $p->full_label }}
-                                    @if($p->is_active) ✓ Aktif @endif
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('academic_period_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        <div class="form-text">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Hubungkan kelas ke periode pembelajaran untuk filter laporan.
-                            @if($activePeriod)
-                                Periode aktif: <strong>{{ $activePeriod->full_label }}</strong>.
-                            @else
-                                <a href="{{ route('admin.academic-periods.create') }}">Buat periode pembelajaran</a>.
-                            @endif
-                        </div>
+                        <div class="form-text">Terisi otomatis dari periode, bisa diubah manual.</div>
                     </div>
 
                     {{-- Status --}}
@@ -324,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function () {
     /* ── Live Preview ───────────────────────────── */
     const nameEl   = document.getElementById('nameInput');
     const majorEl  = document.getElementById('majorSelect');
-    const yearEl   = document.getElementById('yearInput');
+    const periodEl = document.getElementById('periodSelect');
     const statusEl = document.querySelector('select[name="status"]');
 
     const pName   = document.getElementById('previewName');
@@ -337,26 +322,43 @@ document.addEventListener('DOMContentLoaded', function () {
         const name     = nameEl.value.trim();
         const grade    = document.getElementById('gradeInput').value;
         const major    = majorEl.options[majorEl.selectedIndex]?.dataset?.name ?? '';
-        const year     = yearEl.value.trim();
         const status   = statusEl.value;
         const semEl    = document.getElementById('semesterSelect');
-        const semText  = semEl?.options[semEl?.selectedIndex]?.text ?? '';
         const semShort = semEl?.value === 'ganjil' ? 'Ganjil' : (semEl?.value === 'genap' ? 'Genap' : '');
+        const periodOpt = periodEl?.options[periodEl?.selectedIndex];
+        const year     = periodOpt?.dataset?.year ?? '';
 
         pName.textContent  = name  || 'Nama Kelas';
         pMajor.textContent = major || '—';
         pGrade.textContent = grade ? 'Kelas ' + grade : 'Tingkat —';
-        pYear.innerHTML    = '<i class="fas fa-calendar me-1"></i>' + (year || '—') + (semShort ? ' · Sem. ' + semShort : '');
+        pYear.innerHTML    = '<i class="fas fa-calendar me-1"></i>' +
+                             (year || '—') + (semShort ? ' · Sem. ' + semShort : '');
         pStatus.innerHTML  = '<i class="fas fa-circle me-1" style="font-size:.55rem;"></i>' +
                              (status === 'active' ? 'Aktif' : 'Nonaktif');
     };
 
+    // Auto-isi semester dari periode yang dipilih
+    periodEl?.addEventListener('change', function () {
+        const opt = periodEl.options[periodEl.selectedIndex];
+        const semVal = opt?.dataset?.semester ?? '';
+        const semEl  = document.getElementById('semesterSelect');
+        if (semEl && semVal) {
+            semEl.value = semVal;
+        }
+        updatePreview();
+    });
+
     nameEl.addEventListener('input', updatePreview);
     majorEl.addEventListener('change', function () { autoName(); updatePreview(); });
-    yearEl.addEventListener('input', updatePreview);
     statusEl.addEventListener('change', updatePreview);
     document.getElementById('semesterSelect')?.addEventListener('change', updatePreview);
-    updatePreview();
+
+    // Trigger periode change saat load agar semester terisi jika ada nilai lama (old())
+    if (periodEl && periodEl.value) {
+        periodEl.dispatchEvent(new Event('change'));
+    } else {
+        updatePreview();
+    }
 
     /* ── Submit: validasi grade + spinner ───────── */
     document.getElementById('kelasForm').addEventListener('submit', function (e) {

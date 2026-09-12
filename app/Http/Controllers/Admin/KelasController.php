@@ -69,32 +69,33 @@ class KelasController extends Controller
             'name'               => 'required|string|max:100|unique:classes,name',
             'grade'              => 'required|in:X,XI,XII',
             'major_id'           => 'required|exists:jurusans,id',
-            'academic_year'      => 'required|string|max:20',
+            'academic_period_id' => 'required|exists:academic_periods,id',
             'semester'           => 'required|in:ganjil,genap',
-            'academic_period_id' => 'nullable|exists:academic_periods,id',
             'status'             => 'nullable|in:active,inactive',
         ], [
-            'name.required'          => 'Nama kelas wajib diisi.',
-            'name.unique'            => 'Nama kelas sudah ada.',
-            'grade.required'         => 'Tingkat kelas wajib dipilih.',
-            'grade.in'               => 'Tingkat harus X, XI, atau XII.',
-            'major_id.required'      => 'Jurusan wajib dipilih.',
-            'major_id.exists'        => 'Jurusan tidak ditemukan.',
-            'academic_year.required' => 'Tahun ajaran wajib diisi.',
-            'semester.required'      => 'Semester wajib dipilih.',
-            'semester.in'            => 'Semester harus Ganjil atau Genap.',
+            'name.required'               => 'Nama kelas wajib diisi.',
+            'name.unique'                 => 'Nama kelas sudah ada.',
+            'grade.required'              => 'Tingkat kelas wajib dipilih.',
+            'grade.in'                    => 'Tingkat harus X, XI, atau XII.',
+            'major_id.required'           => 'Jurusan wajib dipilih.',
+            'major_id.exists'             => 'Jurusan tidak ditemukan.',
+            'academic_period_id.required' => 'Periode pembelajaran wajib dipilih.',
+            'academic_period_id.exists'   => 'Periode pembelajaran tidak ditemukan.',
+            'semester.required'           => 'Semester wajib dipilih.',
+            'semester.in'                 => 'Semester harus Ganjil atau Genap.',
         ]);
 
         try {
             $jurusan = Jurusan::findOrFail($request->major_id);
+            $period  = AcademicPeriod::findOrFail($request->academic_period_id);
 
             Kelas::create([
                 'name'               => $request->name,
                 'grade'              => $request->grade,
                 'jurusan_id'         => $jurusan->id,
-                'academic_year'      => $request->academic_year,
+                'academic_year'      => $period->academic_year,
                 'semester'           => $request->semester,
-                'academic_period_id' => $request->academic_period_id ?: null,
+                'academic_period_id' => $period->id,
                 'status'             => $request->status ?? 'active',
             ]);
 
@@ -143,32 +144,33 @@ class KelasController extends Controller
             'name'               => 'required|string|max:100|unique:classes,name,' . $kelas->id,
             'grade'              => 'required|in:X,XI,XII',
             'major_id'           => 'required|exists:jurusans,id',
-            'academic_year'      => 'required|string|max:20',
+            'academic_period_id' => 'required|exists:academic_periods,id',
             'semester'           => 'required|in:ganjil,genap',
-            'academic_period_id' => 'nullable|exists:academic_periods,id',
             'status'             => 'nullable|in:active,inactive',
         ], [
-            'name.required'          => 'Nama kelas wajib diisi.',
-            'name.unique'            => 'Nama kelas sudah ada.',
-            'grade.required'         => 'Tingkat kelas wajib dipilih.',
-            'grade.in'               => 'Tingkat harus X, XI, atau XII.',
-            'major_id.required'      => 'Jurusan wajib dipilih.',
-            'major_id.exists'        => 'Jurusan tidak ditemukan.',
-            'academic_year.required' => 'Tahun ajaran wajib diisi.',
-            'semester.required'      => 'Semester wajib dipilih.',
-            'semester.in'            => 'Semester harus Ganjil atau Genap.',
+            'name.required'               => 'Nama kelas wajib diisi.',
+            'name.unique'                 => 'Nama kelas sudah ada.',
+            'grade.required'              => 'Tingkat kelas wajib dipilih.',
+            'grade.in'                    => 'Tingkat harus X, XI, atau XII.',
+            'major_id.required'           => 'Jurusan wajib dipilih.',
+            'major_id.exists'             => 'Jurusan tidak ditemukan.',
+            'academic_period_id.required' => 'Periode pembelajaran wajib dipilih.',
+            'academic_period_id.exists'   => 'Periode pembelajaran tidak ditemukan.',
+            'semester.required'           => 'Semester wajib dipilih.',
+            'semester.in'                 => 'Semester harus Ganjil atau Genap.',
         ]);
 
         try {
             $jurusan = Jurusan::findOrFail($request->major_id);
+            $period  = AcademicPeriod::findOrFail($request->academic_period_id);
 
             $kelas->update([
                 'name'               => $request->name,
                 'grade'              => $request->grade,
                 'jurusan_id'         => $jurusan->id,
-                'academic_year'      => $request->academic_year,
+                'academic_year'      => $period->academic_year,
                 'semester'           => $request->semester,
-                'academic_period_id' => $request->academic_period_id ?: null,
+                'academic_period_id' => $period->id,
                 'status'             => $request->status ?? 'active',
             ]);
 
