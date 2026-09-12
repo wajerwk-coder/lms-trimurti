@@ -30,15 +30,15 @@ class MaterialController extends Controller
     public function index(): View
     {
         $materials = Material::withCount('downloads')
-            ->with(['subject', 'teacher'])
+            ->with(['subject', 'teacher', 'kelas'])
             ->latest()
             ->paginate(15);
 
         $stats = [
-            'total_materials' => Material::count(),
-            'published_materials' => Material::whereNotNull('published_at')->count(),
-            'unpublished_materials' => Material::whereNull('published_at')->count(),
-            'total_downloads' => MaterialDownload::count(),
+            'total_materials'      => Material::count(),
+            'published_materials'  => Material::whereNotNull('published_at')->count(),
+            'unpublished_materials'=> Material::whereNull('published_at')->count(),
+            'total_downloads'      => MaterialDownload::count(),
         ];
 
         return view('admin.materials.index', compact('materials', 'stats'));
