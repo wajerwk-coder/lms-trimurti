@@ -21,14 +21,26 @@ class MataPelajaranController extends Controller
      */
     public function index(): View
     {
-        $mataPelajarans        = MataPelajaran::orderBy('name')->get();
-        $mataPelajaranTeori    = $mataPelajarans->where('type', 'teori')->count();
+        // Ambil semua jurusan beserta mata pelajarannya (via major_id)
+        $jurusans = \App\Models\Jurusan::orderBy('name')->get();
+
+        // Grup mata pelajaran berdasarkan major_id
+        $mataPelajarans = MataPelajaran::with('jurusan')
+            ->orderBy('name')
+            ->get();
+
+        // Group: key = major_id (null = Umum/Tanpa Jurusan)
+        $perJurusan = $mataPelajarans->groupBy(fn($m) => $m->major_id ?? 0);
+
+        $mataPelajaranTeori     = $mataPelajarans->where('type', 'teori')->count();
         $mataPelajaranPraktikum = $mataPelajarans->where('type', 'praktikum')->count();
-        $mataPelajaranCampuran = $mataPelajarans->where('type', 'campuran')->count();
-        $mataPelajaranAktif    = $mataPelajarans->where('is_active', true)->count();
+        $mataPelajaranCampuran  = $mataPelajarans->where('type', 'campuran')->count();
+        $mataPelajaranAktif     = $mataPelajarans->where('is_active', true)->count();
 
         return view('admin.mata-pelajaran.index', compact(
             'mataPelajarans',
+            'jurusans',
+            'perJurusan',
             'mataPelajaranTeori',
             'mataPelajaranPraktikum',
             'mataPelajaranCampuran',
