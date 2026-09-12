@@ -11,7 +11,8 @@ class SopKriteriaPenilaianSeeder extends Seeder
     {
         $data = array_merge(
             self::sopPemasanganInfus(),
-            self::sopPemeriksaanGolonganDarah()
+            self::sopPemeriksaanGolonganDarah(),
+            self::sopPeracikanObatFarmasi()
         );
 
         foreach ($data as $item) {
@@ -204,6 +205,138 @@ class SopKriteriaPenilaianSeeder extends Seeder
                     'Golongan darah AB: adanya aglutinasi pada lingkaran A, B, dan AB',
                     'Rhesus positif: aglutinasi pada lingkaran D',
                     'Rhesus negatif: tidak terjadi aglutinasi pada lingkaran D',
+                ],
+            ],
+        ];
+    }
+
+    // ── SOP Peracikan dan Formulasi Obat (Farmasi) ────────────────────────
+
+    private static function sopPeracikanObatFarmasi(): array
+    {
+        return [
+            // A. Tahap Pra Interaksi (20 item) → kategori: persiapan (bobot 25%)
+            [
+                'name'          => 'Tahap Pra Interaksi – Peracikan dan Formulasi Obat',
+                'kategori'      => KriteriaPenilaian::KATEGORI_PERSIAPAN,
+                'weight'        => 25,
+                'description'   => 'Persiapan sebelum peracikan: pengecekan resep/formula, verifikasi identitas pasien, persiapan alat, bahan, dan tempat kerja.',
+                'mata_praktik'  => 'Peracikan dan Formulasi Obat',
+                'tingkat_kelas' => KriteriaPenilaian::TINGKAT_XI,
+                'sop_checklist' => [
+                    'Mengecek resep atau formula obat yang akan diracik',
+                    'Memeriksa kelengkapan dan kejelasan resep atau formula',
+                    'Memeriksa identitas pasien pada resep apabila tersedia',
+                    'Memeriksa nama obat, bentuk sediaan, kekuatan, jumlah, dan aturan pakai',
+                    'Memahami tujuan dan prosedur peracikan atau formulasi obat',
+                    'Mencuci tangan sesuai prosedur',
+                    'Menggunakan pakaian kerja dan alat pelindung diri sesuai kebutuhan',
+                    'Menyiapkan tempat kerja yang bersih, rapi, dan aman',
+                    'Menyiapkan alat dan bahan yang diperlukan',
+                    'Menyiapkan mortir dan stamper',
+                    'Menyiapkan sudip atau spatula',
+                    'Menyiapkan kertas perkamen atau wadah penampung bahan',
+                    'Menyiapkan timbangan sesuai kebutuhan',
+                    'Menyiapkan gelas ukur, beaker glass, atau alat ukur lain sesuai formula',
+                    'Menyiapkan bahan obat dan bahan tambahan sesuai resep atau formula',
+                    'Memeriksa nama, kualitas, kondisi, dan tanggal kedaluwarsa bahan',
+                    'Memastikan alat yang digunakan bersih dan layak pakai',
+                    'Menyiapkan etiket, wadah obat, dan kemasan yang sesuai',
+                    'Menyiapkan alat pembersih dan tempat pembuangan limbah',
+                    'Memastikan perhitungan dosis dan jumlah bahan telah diperiksa sebelum peracikan',
+                ],
+            ],
+
+            // B. Tahap Orientasi (9 item) → kategori: sikap (bobot 15%)
+            [
+                'name'          => 'Tahap Orientasi – Peracikan dan Formulasi Obat',
+                'kategori'      => KriteriaPenilaian::KATEGORI_SIKAP,
+                'weight'        => 15,
+                'description'   => 'Komunikasi dan orientasi kepada pasien atau penguji sebelum memulai tindakan peracikan dan formulasi obat.',
+                'mata_praktik'  => 'Peracikan dan Formulasi Obat',
+                'tingkat_kelas' => KriteriaPenilaian::TINGKAT_XI,
+                'sop_checklist' => [
+                    'Memberikan salam dan memperkenalkan diri kepada pasien atau penguji sesuai situasi praktik',
+                    'Memastikan identitas pasien sesuai resep apabila simulasi melibatkan pasien',
+                    'Menjelaskan tujuan dan prosedur peracikan atau formulasi obat',
+                    'Menjelaskan jenis sediaan obat yang akan dibuat',
+                    'Menjelaskan aturan penggunaan obat secara umum sesuai resep atau skenario',
+                    'Memberikan kesempatan kepada pasien atau penguji untuk bertanya',
+                    'Menunjukkan sikap sopan, ramah, dan profesional',
+                    'Memastikan resep atau formula telah dipahami sebelum tindakan dimulai',
+                    'Memastikan waktu praktik dan tahapan kerja telah disepakati',
+                ],
+            ],
+
+            // C. Tahap Kerja (32 item) → kategori: pelaksanaan (bobot 45%)
+            [
+                'name'          => 'Tahap Kerja – Peracikan dan Formulasi Obat',
+                'kategori'      => KriteriaPenilaian::KATEGORI_PELAKSANAAN,
+                'weight'        => 45,
+                'description'   => 'Pelaksanaan teknik peracikan dan formulasi obat secara sistematis sesuai SOP meliputi penimbangan, pencampuran, pengemasan, dan pemberian etiket.',
+                'mata_praktik'  => 'Peracikan dan Formulasi Obat',
+                'tingkat_kelas' => KriteriaPenilaian::TINGKAT_XI,
+                'sop_checklist' => [
+                    'Menjaga kebersihan dan kerapian tempat kerja selama proses peracikan',
+                    'Mencuci tangan sebelum memulai proses peracikan',
+                    'Menggunakan alat pelindung diri sesuai jenis bahan dan sediaan',
+                    'Memeriksa kembali resep atau formula sebelum mengambil bahan',
+                    'Menghitung kebutuhan bahan sesuai formula dengan benar',
+                    'Menimbang bahan obat menggunakan timbangan yang sesuai',
+                    'Menimbang bahan tambahan sesuai perhitungan formula',
+                    'Memastikan setiap bahan yang ditimbang sesuai dengan nama dan jumlah yang diperlukan',
+                    'Menggunakan alat peracikan sesuai fungsi dan prosedur',
+                    'Memasukkan bahan ke dalam mortir atau wadah pencampuran sesuai urutan yang tepat',
+                    'Menghaluskan bahan menggunakan mortir dan stamper apabila diperlukan',
+                    'Melakukan pengayakan apabila diperlukan sesuai karakteristik bahan',
+                    'Mencampur bahan secara bertahap dan merata',
+                    'Menerapkan prinsip pengenceran geometris untuk bahan tertentu apabila diperlukan',
+                    'Menghindari kehilangan bahan selama proses peracikan',
+                    'Memastikan tidak terjadi kontaminasi silang antarbahan atau sediaan',
+                    'Melakukan proses formulasi sesuai jenis sediaan yang dibuat',
+                    'Menggunakan pelarut atau bahan pembawa yang sesuai dengan formula',
+                    'Melakukan pengadukan atau pencampuran sesuai prosedur sediaan',
+                    'Memperhatikan homogenitas campuran atau keseragaman sediaan',
+                    'Memeriksa karakteristik fisik sediaan seperti warna, bau, bentuk, dan konsistensi sesuai jenis sediaan',
+                    'Memastikan tidak terdapat benda asing atau kontaminan pada sediaan',
+                    'Menempatkan hasil racikan atau formulasi ke dalam wadah yang sesuai',
+                    'Mengemas sediaan obat dengan benar dan rapi',
+                    'Memasang etiket pada wadah obat sesuai resep atau formula',
+                    'Menuliskan nama obat, aturan pakai, jumlah, dan informasi lain yang diperlukan pada etiket',
+                    'Memeriksa kembali kesesuaian hasil racikan dengan resep atau formula',
+                    'Melakukan pemeriksaan akhir terhadap berat, volume, atau jumlah sediaan sesuai jenis obat',
+                    'Membersihkan alat yang telah digunakan sesuai prosedur',
+                    'Mengembalikan alat dan bahan ke tempat semula',
+                    'Membuang limbah sesuai jenis dan ketentuan keselamatan kerja',
+                    'Mencuci tangan setelah menyelesaikan proses peracikan',
+                ],
+            ],
+
+            // D. Tahap Terminasi/Evaluasi (16 item) → kategori: hasil (bobot 15%)
+            [
+                'name'          => 'Tahap Terminasi (Evaluasi) – Peracikan dan Formulasi Obat',
+                'kategori'      => KriteriaPenilaian::KATEGORI_HASIL,
+                'weight'        => 15,
+                'description'   => 'Evaluasi kesesuaian hasil peracikan, kualitas sediaan, kebersihan tempat kerja, dan dokumentasi hasil praktik.',
+                'mata_praktik'  => 'Peracikan dan Formulasi Obat',
+                'tingkat_kelas' => KriteriaPenilaian::TINGKAT_XI,
+                'sop_checklist' => [
+                    'Memastikan hasil racikan atau formulasi sesuai dengan resep atau formula',
+                    'Memastikan kesesuaian nama dan jumlah bahan yang digunakan',
+                    'Memastikan homogenitas dan kualitas fisik sediaan sesuai jenisnya',
+                    'Memastikan tidak terdapat kontaminasi pada hasil racikan',
+                    'Memastikan wadah obat dalam keadaan baik dan tertutup',
+                    'Memastikan etiket terpasang dengan benar dan mudah dibaca',
+                    'Memastikan informasi aturan pakai sesuai dengan resep atau formula',
+                    'Memastikan hasil racikan dikemas dengan rapi dan aman',
+                    'Memastikan tempat kerja dalam keadaan bersih',
+                    'Memastikan seluruh alat telah dibersihkan dan disimpan dengan benar',
+                    'Memastikan limbah praktik telah dibuang sesuai prosedur',
+                    'Menanyakan atau mengevaluasi kendala yang dialami selama praktik',
+                    'Menjelaskan hasil evaluasi praktik kepada penguji',
+                    'Melakukan refleksi terhadap ketepatan perhitungan dan teknik peracikan',
+                    'Melakukan dokumentasi hasil peracikan atau formulasi obat',
+                    'Mengakhiri praktik dengan mengucapkan salam atau berpamitan kepada penguji',
                 ],
             ],
         ];
