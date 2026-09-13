@@ -8,48 +8,65 @@ use App\Models\Kelas;
 /**
  * Trait ResolvesAcademicPeriod
  *
- * Digunakan di controller untuk mengambil academic_period_id
- * secara otomatis dari:
- *   1. Kelas yang dipilih di form (jika kelas sudah dikaitkan ke periode)
- *   2. Periode aktif global (fallback jika kelas tidak punya periode)
+ * Digunakan di semua controller yang menyimpan aktivitas guru/siswa
+ * agar setiap record otomatis terkait ke periode pembelajaran aktif.
  *
- * Cara pakai di controller:
- *   use \App\Traits\ResolvesAcademicPeriod;
- *   ...
- *   $periodId = $this->resolvePeriodId($request->kelas_id ?? $request->class_id);
+ * Strategi resolve (prioritas):
+ *   1. Dari kelas yang dipilih → kelas.academic_period_id (paling akurat)
+ *   2. Fallback: AcademicPeriod::getActive() (periode aktif global)
+ *   3. Fallback terakhir: null (tidak ada periode)
  */
 trait ResolvesAcademicPeriod
 {
     /**
-     * Ambil academic_period_id dari kelas atau dari periode aktif global.
+     * Resolve academic_period_id dari kelas_id atau periode aktif.
      *
-     * @param  int|string|null $kelasId  ID kelas yang dipilih user (bisa null)
+     * @param int|null $kelasId  FK ke tabel classes
      * @return int|null
      */
-    protected function resolvePeriodId(int|string|null $kelasId = null): ?int
+    protected function resolveAcademicPeriodId(?int $kelasId = null): ?int
     {
-        // Prioritas 1: ambil dari kolom academic_period_id kelas yang dipilih
+        // Prioritas 1: dari kelas yang dipilih
         if ($kelasId) {
-            $periodId = Kelas::where('id', $kelasId)
-                ->value('academic_period_id');
-            if ($periodId) {
-                return (int) $periodId;
+            $period = Kelas::find($kelasId)?->academic_period_id;
+            if ($period) {
+                return $period;
             }
         }
 
-        // Prioritas 2: gunakan periode aktif global
+        // Prioritas 2: periode aktif global
         return AcademicPeriod::getActive()?->id;
     }
 
     /**
-     * Ambil object AcademicPeriod aktif (cached dalam request lifecycle).
+     * Alias pendek yang dipakai banyak controller: resolvePeriodId()
      */
-    protected function getActivePeriod(): ?AcademicPeriod
+    protected function resolvePeriodId(?int $kelasId = null): ?int
     {
-        static $cached = null;
-        if ($cached === null) {
-            $cached = AcademicPeriod::getActive() ?? false;
+        return $this->resolveAcademicPeriodId($kelasId);
+    }
+
+    /**
+     * Shortcut — resolve dari request field kelas_id atau class_id.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param string ...$fields  nama field input kelas_id dalam request
+     * @return int|null
+     */
+    protected function resolveAcademicPeriodFromRequest(
+        \Illuminate\Http\Request $request,
+        string ...$fields
+    ): ?int {
+        // Cari field kelas_id yang terisi
+        $kelasId = null;
+        foreach ($fields as $field) {
+            $val = $request->input($field);
+            if ($val) {
+                $kelasId = (int) $val;
+                break;
+            }
         }
-        return $cached ?: null;
+
+        return $this->resolveAcademicPeriodId($kelasId);
     }
 }

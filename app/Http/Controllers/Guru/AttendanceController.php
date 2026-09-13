@@ -373,6 +373,7 @@ class AttendanceController extends Controller
                             'practical_id' => $request->practical_id,
                         ],
                         [
+                            'academic_period_id' => $this->resolvePeriodId($practical->kelas_id),
                             'status'      => $request->status[$student->id],
                             'note'        => $request->note[$student->id] ?? null,
                             'recorded_by' => Auth::id(),

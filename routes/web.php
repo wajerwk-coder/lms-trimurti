@@ -226,6 +226,8 @@ Route::prefix('guru')->name('guru.')->middleware(['auth', 'guru'])->group(functi
     Route::post('absensi/bulk', [GuruAttendanceController::class, 'bulkStore'])->name('absensi.bulk');
     Route::get('absensi/praktik', [GuruAttendanceController::class, 'praktikAttendance'])->name('absensi.praktik');
     Route::get('absensi/report', function () { abort(404); })->name('absensi.report');
+    // Fallback POST untuk update (handle kasus _method spoofing gagal)
+    Route::post('absensi/{absensi}/update', [GuruAttendanceController::class, 'update'])->name('absensi.update.post');
 
     Route::resource('absensi', GuruAttendanceController::class)->names([
         'index'   => 'absensi.index',
