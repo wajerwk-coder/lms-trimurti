@@ -157,6 +157,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Kelola Jadwal Ujian
     Route::resource('exam-schedules', AdminExamScheduleController::class);
     Route::post('exam-schedules/{examSchedule}/publish', [AdminExamScheduleController::class, 'publish'])->name('exam-schedules.publish');
+
+    // Laporan per Periode Pembelajaran
+    Route::get('period-reports', [\App\Http\Controllers\Admin\PeriodReportController::class, 'index'])->name('period-reports.index');
+    Route::get('period-reports/{period}', [\App\Http\Controllers\Admin\PeriodReportController::class, 'show'])->name('period-reports.show');
     
     // Settings (sementara dikomen sampai controller dibuat)
     // Route::get('settings', [AdminSettingController::class, 'index'])->name('settings.index');

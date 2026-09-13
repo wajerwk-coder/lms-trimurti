@@ -171,7 +171,7 @@
 
         {{-- Komunikasi & Laporan --}}
         <div class="nav-section">
-            <span class="nav-section-label">Komunikasi</span>
+            <span class="nav-section-label">Komunikasi & Laporan</span>
             <a href="{{ route('admin.notifications.index') }}"
                class="nav-item {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}"
                data-tooltip="Notifikasi">
@@ -193,6 +193,12 @@
                data-tooltip="Rekapitulasi Nilai">
                 <i class="fas fa-chart-bar"></i>
                 <span>Rekapitulasi Nilai</span>
+            </a>
+            <a href="{{ route('admin.period-reports.index') }}"
+               class="nav-item {{ request()->routeIs('admin.period-reports.*') ? 'active' : '' }}"
+               data-tooltip="Laporan Per Periode">
+                <i class="fas fa-file-chart-column"></i>
+                <span>Laporan Per Periode</span>
             </a>
         </div>
 
