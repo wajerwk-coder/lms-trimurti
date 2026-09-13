@@ -12,6 +12,7 @@ class ExamSchedule extends Model
     protected $table = 'exam_schedules_new';
 
     protected $fillable = [
+        'academic_period_id',
         'title',
         'description',
         'exam_type',
