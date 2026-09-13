@@ -24,23 +24,41 @@ class KriteriaPenilaianController extends Controller
     {
         if (!Schema::hasTable('assessment_criteria')) {
             return view('admin.kriteria-penilaian.index', [
-                'kriteria' => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20),
-                'error'    => 'Tabel assessment_criteria belum ada. Jalankan: php artisan migrate',
+                'perJudul'     => collect(),
+                'totalKriteria'=> 0,
+                'totalJudul'   => 0,
+                'error'        => 'Tabel assessment_criteria belum ada. Jalankan: php artisan migrate',
             ]);
         }
 
         try {
-            $kriteria = KriteriaPenilaian::orderBy('kategori')
-                                        ->orderBy('weight', 'desc')
-                                        ->paginate(20);
+            // Ambil semua, group per mata_praktik + tingkat_kelas
+            $allKriteria = KriteriaPenilaian::orderBy('mata_praktik')
+                ->orderBy('tingkat_kelas')
+                ->orderByRaw("FIELD(kategori,'persiapan','sikap','pelaksanaan','hasil')")
+                ->get();
 
-            return view('admin.kriteria-penilaian.index', compact('kriteria'));
+            // Group: key = "mata_praktik||tingkat_kelas"
+            $perJudul = $allKriteria->groupBy(function ($item) {
+                return ($item->mata_praktik ?? 'Tanpa Judul') . '||' . ($item->tingkat_kelas ?? '');
+            });
+
+            return view('admin.kriteria-penilaian.index', [
+                'perJudul'      => $perJudul,
+                'totalKriteria' => $allKriteria->count(),
+                'totalJudul'    => $perJudul->count(),
+                // backward-compat untuk pagination check di view lama (tidak dipakai lagi)
+                'kriteria'      => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20),
+            ]);
 
         } catch (\Throwable $e) {
             Log::error('KriteriaPenilaianController::index: ' . $e->getMessage());
             return view('admin.kriteria-penilaian.index', [
-                'kriteria' => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20),
-                'error'    => 'Gagal memuat data: ' . $e->getMessage(),
+                'perJudul'      => collect(),
+                'totalKriteria' => 0,
+                'totalJudul'    => 0,
+                'kriteria'      => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20),
+                'error'         => 'Gagal memuat data: ' . $e->getMessage(),
             ]);
         }
     }
