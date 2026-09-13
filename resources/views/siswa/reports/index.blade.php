@@ -1,4 +1,4 @@
-@extends('layouts.siswa')
+﻿@extends('layouts.siswa')
 
 @section('title', 'Laporan Akademik')
 @section('page-title', 'Laporan Akademik')
@@ -104,7 +104,7 @@
                         </div>
                         <div class="text-center flex-shrink-0" style="min-width:60px;">
                             <div class="fw-bold text-{{ $clr }}" style="font-size:1.1rem;">{{ $sc }}</div>
-                            <span class="badge bg-{{ $clr }} bg-opacity-15 text-{{ $clr }}" style="font-size:.7rem;">
+                            <span class="badge bg-{{ $clr }} bg-opacity-10 text-{{ $clr }}" style="font-size:.7rem;">
                                 Grade {{ $grade }}
                             </span>
                         </div>
@@ -152,7 +152,7 @@
                         </div>
                         <div class="text-center flex-shrink-0" style="min-width:60px;">
                             <div class="fw-bold text-{{ $clr }}" style="font-size:1.1rem;">{{ $val }}</div>
-                            <span class="badge bg-{{ $clr }} bg-opacity-15 text-{{ $clr }}" style="font-size:.7rem;">
+                            <span class="badge bg-{{ $clr }} bg-opacity-10 text-{{ $clr }}" style="font-size:.7rem;">
                                 Grade {{ $grade }}
                             </span>
                         </div>

@@ -1,4 +1,4 @@
-@extends('layouts.siswa')
+﻿@extends('layouts.siswa')
 
 @section('title', 'Rekap Absensi')
 @section('page-title', 'Rekap Absensi')
@@ -170,7 +170,7 @@
                         <td class="text-muted">{{ $d->translatedFormat('l') }}</td>
                         <td class="text-muted">{{ $att->subject?->name ?? '—' }}</td>
                         <td class="text-center">
-                            <span class="badge bg-{{ $color }} bg-opacity-15 text-{{ $color }}
+                            <span class="badge bg-{{ $color }} bg-opacity-10 text-{{ $color }}
                                           border border-{{ $color }} border-opacity-25 px-2 py-1">
                                 <i class="fas {{ $icon }} me-1" style="font-size:.7rem;"></i>{{ $label }}
                             </span>

@@ -1,4 +1,4 @@
-@extends('layouts.guru')
+﻿@extends('layouts.guru')
 
 @section('title', 'Buat Tugas Baru')
 @section('page-title', 'Buat Tugas Baru')
@@ -406,9 +406,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updatePublishHint() {
         if (publishToggle.checked) {
-            publishHint.innerHTML = '<span class="badge bg-success bg-opacity-15 text-success"><i class="fas fa-eye me-1"></i>Akan langsung dipublikasikan</span>';
+            publishHint.innerHTML = '<span class="badge bg-success bg-opacity-10 text-success"><i class="fas fa-eye me-1"></i>Akan langsung dipublikasikan</span>';
         } else {
-            publishHint.innerHTML = '<span class="badge bg-secondary bg-opacity-15 text-secondary"><i class="fas fa-eye-slash me-1"></i>Disimpan sebagai draft</span>';
+            publishHint.innerHTML = '<span class="badge bg-secondary bg-opacity-10 text-secondary"><i class="fas fa-eye-slash me-1"></i>Disimpan sebagai draft</span>';
         }
     }
     publishToggle.addEventListener('change', updatePublishHint);

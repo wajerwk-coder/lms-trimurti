@@ -172,7 +172,7 @@
                                 @endif
                             </td>
                             <td class="text-center">
-                                <span class="badge bg-{{ $stColor }} bg-opacity-15 text-{{ $stColor }}">
+                                <span class="badge bg-{{ $stColor }} bg-opacity-10 text-{{ $stColor }}">
                                     {{ $stLabel }}
                                 </span>
                             </td>

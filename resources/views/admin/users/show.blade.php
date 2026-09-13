@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 
 @section('title', 'Detail Pengguna — ' . $user->name)
 @section('page-title', 'Detail Pengguna')
@@ -110,7 +110,7 @@
                 @if(!empty($stats))
                     @foreach(array_slice($stats, 0, 4, true) as $label => $val)
                     <div class="col-6">
-                        <div class="text-center py-2 rounded-2 bg-white bg-opacity-15">
+                        <div class="text-center py-2 rounded-2 bg-white bg-opacity-10">
                             <div class="fw-bold text-white fs-5 lh-1">{{ $val }}</div>
                             <div class="opacity-75 text-white" style="font-size:.68rem;">{{ $label }}</div>
                         </div>
@@ -118,13 +118,13 @@
                     @endforeach
                 @else
                     <div class="col-6">
-                        <div class="text-center py-2 rounded-2 bg-white bg-opacity-15">
+                        <div class="text-center py-2 rounded-2 bg-white bg-opacity-10">
                             <div class="fw-bold text-white fs-5 lh-1">{{ $user->created_at->format('Y') }}</div>
                             <div class="opacity-75 text-white" style="font-size:.68rem;">Tahun Bergabung</div>
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="text-center py-2 rounded-2 bg-white bg-opacity-15">
+                        <div class="text-center py-2 rounded-2 bg-white bg-opacity-10">
                             <div class="fw-bold text-white fs-5 lh-1">{{ $user->created_at->diffInMonths(now()) }}</div>
                             <div class="opacity-75 text-white" style="font-size:.68rem;">Bulan Aktif</div>
                         </div>

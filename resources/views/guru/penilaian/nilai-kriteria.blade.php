@@ -1,4 +1,4 @@
-@extends('layouts.guru')
+﻿@extends('layouts.guru')
 
 @section('title', 'Penilaian Praktikum — SOP Checklist')
 @section('page-title', 'Penilaian Praktikum')
@@ -214,7 +214,7 @@
                         @endif
                     </div>
                     <div class="text-end flex-shrink-0 ms-3">
-                        <span class="badge bg-{{ $katColor }} bg-opacity-15 text-{{ $katColor }} fw-semibold px-2 py-1">
+                        <span class="badge bg-{{ $katColor }} bg-opacity-10 text-{{ $katColor }} fw-semibold px-2 py-1">
                             Bobot {{ $kriteria->weight }}%
                         </span>
                         <div class="small text-muted mt-1">

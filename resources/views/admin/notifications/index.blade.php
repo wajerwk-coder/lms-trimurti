@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 
 @section('title', 'Manajemen Notifikasi')
 @section('page-title', 'Manajemen Notifikasi')
@@ -183,18 +183,18 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="badge bg-{{ $penerimaLabel['badge'] }} bg-opacity-15 text-{{ $penerimaLabel['badge'] }} border border-{{ $penerimaLabel['badge'] }} border-opacity-25 px-2 py-1">
+                                <span class="badge bg-{{ $penerimaLabel['badge'] }} bg-opacity-10 text-{{ $penerimaLabel['badge'] }} border border-{{ $penerimaLabel['badge'] }} border-opacity-25 px-2 py-1">
                                     <i class="fas {{ $penerimaLabel['icon'] }} me-1"></i>
                                     {{ $penerimaLabel['label'] }}
                                 </span>
                             </td>
                             <td>
-                                <span class="badge bg-{{ $tipeColor }} bg-opacity-15 text-{{ $tipeColor }}">
+                                <span class="badge bg-{{ $tipeColor }} bg-opacity-10 text-{{ $tipeColor }}">
                                     {{ ucfirst($notif->tipe ?? '-') }}
                                 </span>
                             </td>
                             <td>
-                                <span class="badge bg-{{ $prioritasColor }} bg-opacity-15 text-{{ $prioritasColor }}">
+                                <span class="badge bg-{{ $prioritasColor }} bg-opacity-10 text-{{ $prioritasColor }}">
                                     {{ ucfirst($notif->prioritas ?? 'sedang') }}
                                 </span>
                             </td>

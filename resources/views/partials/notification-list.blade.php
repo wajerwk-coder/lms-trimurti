@@ -1,4 +1,4 @@
-@php
+﻿@php
     $items = $notifications instanceof \Illuminate\Pagination\LengthAwarePaginator
         ? $notifications->getCollection()
         : collect($notifications);
@@ -112,7 +112,7 @@
 
                 {{-- Tujuan / Pengirim — menjelaskan notifikasi ini untuk apa --}}
                 <td>
-                    <span class="badge bg-{{ $tujuan['badge'] }} bg-opacity-15 text-{{ $tujuan['badge'] }} border border-{{ $tujuan['badge'] }} border-opacity-25 px-2 py-1 d-inline-flex align-items-center gap-1"
+                    <span class="badge bg-{{ $tujuan['badge'] }} bg-opacity-10 text-{{ $tujuan['badge'] }} border border-{{ $tujuan['badge'] }} border-opacity-25 px-2 py-1 d-inline-flex align-items-center gap-1"
                           style="font-size:11px;">
                         <i class="fas {{ $tujuan['icon'] }}"></i>
                         {{ $tujuan['label'] }}

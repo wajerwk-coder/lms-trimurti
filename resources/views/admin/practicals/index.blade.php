@@ -150,11 +150,11 @@
                             </td>
                             <td class="text-center">
                                 @if($isPublished)
-                                    <span class="badge bg-success bg-opacity-15 text-success">
+                                    <span class="badge bg-success bg-opacity-10 text-success">
                                         <i class="fas fa-eye me-1"></i>Publik
                                     </span>
                                 @else
-                                    <span class="badge bg-warning bg-opacity-15 text-warning">
+                                    <span class="badge bg-warning bg-opacity-10 text-warning">
                                         <i class="fas fa-file me-1"></i>Draft
                                     </span>
                                 @endif

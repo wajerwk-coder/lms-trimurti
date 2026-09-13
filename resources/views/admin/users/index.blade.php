@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 
 @section('title', 'Manajemen Admin')
 @section('page-title', 'Manajemen Admin')
@@ -154,7 +154,7 @@
                                     <div>
                                         <div class="fw-semibold">{{ $user->name }}</div>
                                         @if($user->id === auth()->id())
-                                            <span class="badge bg-primary bg-opacity-15 text-primary"
+                                            <span class="badge bg-primary bg-opacity-10 text-primary"
                                                   style="font-size:10px;">Anda</span>
                                         @endif
                                     </div>

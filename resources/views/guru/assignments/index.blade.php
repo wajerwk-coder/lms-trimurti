@@ -1,4 +1,4 @@
-@extends('layouts.guru')
+﻿@extends('layouts.guru')
 
 @section('title', 'Manajemen Tugas - LMS Trimurti Husada')
 @section('page-title', 'Manajemen Tugas')
@@ -179,32 +179,32 @@
                         <div class="row g-2">
                             @if($tab === 'active')
                             <div class="col-6">
-                                <div class="bg-white bg-opacity-15 rounded-3 p-2 text-center">
+                                <div class="bg-white bg-opacity-10 rounded-3 p-2 text-center">
                                     <div class="h5 mb-0 fw-bold">{{ $totalStats['active_assignments'] ?? 0 }}</div>
                                     <small class="opacity-90">Aktif</small>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <div class="bg-white bg-opacity-15 rounded-3 p-2 text-center">
+                                <div class="bg-white bg-opacity-10 rounded-3 p-2 text-center">
                                     <div class="h5 mb-0 fw-bold">{{ $totalStats['total_submissions'] ?? 0 }}</div>
                                     <small class="opacity-90">Pengumpulan</small>
                                 </div>
                             </div>
                             @else
                             <div class="col-4">
-                                <div class="bg-white bg-opacity-15 rounded-3 p-2 text-center">
+                                <div class="bg-white bg-opacity-10 rounded-3 p-2 text-center">
                                     <div class="h6 mb-0 fw-bold">{{ $totalStats['total_assignments'] ?? 0 }}</div>
                                     <small class="opacity-90 small">Total</small>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="bg-white bg-opacity-15 rounded-3 p-2 text-center">
+                                <div class="bg-white bg-opacity-10 rounded-3 p-2 text-center">
                                     <div class="h6 mb-0 fw-bold">{{ $totalStats['total_submissions'] ?? 0 }}</div>
                                     <small class="opacity-90 small">Submit</small>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="bg-white bg-opacity-15 rounded-3 p-2 text-center">
+                                <div class="bg-white bg-opacity-10 rounded-3 p-2 text-center">
                                     <div class="h6 mb-0 fw-bold">{{ $totalStats['graded_submissions'] ?? 0 }}</div>
                                     <small class="opacity-90 small">Dinilai</small>
                                 </div>

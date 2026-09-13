@@ -1,4 +1,4 @@
-<header class="top-header d-flex align-items-center justify-content-between px-3 px-md-4">
+﻿<header class="top-header d-flex align-items-center justify-content-between px-3 px-md-4">
 
     {{-- KIRI: Toggle + Breadcrumb/Title --}}
     <div class="d-flex align-items-center gap-2">
@@ -50,10 +50,10 @@
                            href="{{ $notif->url_aksi ?? $notif->action_url ?? '#' }}">
                             <div class="notif-icon-wrap rounded-circle d-flex align-items-center justify-content-center flex-shrink-0
                                 @switch($notif->tipe ?? $notif->type ?? 'info')
-                                    @case('exam') bg-warning bg-opacity-15 text-warning @break
-                                    @case('warning') bg-danger bg-opacity-15 text-danger @break
-                                    @case('success') bg-success bg-opacity-15 text-success @break
-                                    @default bg-primary bg-opacity-15 text-primary
+                                    @case('exam') bg-warning bg-opacity-10 text-warning @break
+                                    @case('warning') bg-danger bg-opacity-10 text-danger @break
+                                    @case('success') bg-success bg-opacity-10 text-success @break
+                                    @default bg-primary bg-opacity-10 text-primary
                                 @endswitch"
                                  style="width:36px;height:36px;">
                                 <i class="fas fa-{{ ($notif->tipe ?? '') === 'exam' ? 'calendar-check' : (($notif->tipe ?? '') === 'warning' ? 'exclamation-triangle' : 'bell') }} fa-sm"></i>
