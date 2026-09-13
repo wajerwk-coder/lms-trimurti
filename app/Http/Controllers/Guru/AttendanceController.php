@@ -508,6 +508,8 @@ class AttendanceController extends Controller
             'note'       => 'nullable|string|max:500',
             'kelas_id'   => 'nullable|exists:classes,id',
             'subject_id' => 'nullable|exists:subjects,id',
+            'siswa_id'   => 'nullable',   // dikirim sebagai hidden field dari view edit
+            'date'       => 'nullable|date', // dikirim sebagai hidden field dari view edit
         ]);
 
         try {

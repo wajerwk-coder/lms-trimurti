@@ -25,6 +25,10 @@
 
 <form action="{{ route('guru.absensi.update', $absensi) }}" method="POST">
     @csrf @method('PUT')
+    {{-- Hidden fields: pastikan siswa_id dan date selalu terkirim --}}
+    <input type="hidden" name="siswa_id" value="{{ $absensi->siswa_id }}">
+    <input type="hidden" name="date"     value="{{ $absensi->date instanceof \Carbon\Carbon ? $absensi->date->format('Y-m-d') : $absensi->date }}"
+>
     <div class="row g-4">
         <div class="col-lg-8">
             {{-- Info siswa (readonly) --}}
