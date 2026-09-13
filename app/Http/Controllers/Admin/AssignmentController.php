@@ -25,13 +25,44 @@ class AssignmentController extends Controller
 
     // ── Index ─────────────────────────────────────────────────────────────
 
-    public function index()
+    public function index(Request $request)
     {
-        $assignments = Assignment::with(['guru', 'submissions'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        $query = Assignment::with(['guru', 'subject', 'kelas', 'submissions']);
 
-        return view('admin.assignments.index', compact('assignments'));
+        // Filter pencarian
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter status
+        if ($request->filled('status')) {
+            $query->where('is_published', $request->status === 'published');
+        }
+
+        // Filter guru
+        if ($request->filled('guru_id')) {
+            $query->where('guru_id', $request->guru_id);
+        }
+
+        $assignments = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+
+        // Stats keseluruhan (bukan hanya halaman ini)
+        $statsAll = Assignment::selectRaw('
+            COUNT(*) as total,
+            SUM(is_published = 1) as published,
+            SUM(is_published = 0) as draft
+        ')->first();
+
+        $totalSubs = \App\Models\AssignmentSubmission::count();
+
+        $guruList = UserCentral::where('role', 'guru')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.assignments.index', compact(
+            'assignments', 'statsAll', 'totalSubs', 'guruList'
+        ));
     }
 
     // ── Create ────────────────────────────────────────────────────────────
