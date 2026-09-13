@@ -126,8 +126,6 @@
                             <th>Siswa</th>
                             <th>Tanggal</th>
                             <th class="text-center">Status</th>
-                            <th>Waktu Masuk</th>
-                            <th>Waktu Keluar</th>
                             <th>Keterangan</th>
                             <th class="text-center pe-4">Aksi</th>
                         </tr>
@@ -176,10 +174,8 @@
                                     {{ $stLabel }}
                                 </span>
                             </td>
-                            <td class="text-muted">{{ $attendance->waktu_masuk ?? '—' }}</td>
-                            <td class="text-muted">{{ $attendance->waktu_keluar ?? '—' }}</td>
-                            <td class="text-muted" style="max-width:140px;">
-                                {{ Str::limit($attendance->note ?? $attendance->keterangan ?? '—', 40) }}
+                            <td class="text-muted" style="max-width:160px;">
+                                {{ Str::limit($attendance->note ?? $attendance->keterangan ?? '—', 50) }}
                             </td>
                             <td class="text-center pe-4">
                                 <div class="d-flex gap-1 justify-content-center">
@@ -200,7 +196,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center py-5">
+                            <td colspan="6" class="text-center py-5">
                                 <i class="fas fa-calendar-times fa-3x text-muted opacity-25 mb-3 d-block"></i>
                                 <h6 class="text-muted">Tidak ada data absensi</h6>
                                 <a href="{{ route('admin.attendance.create') }}" class="btn btn-primary btn-sm mt-2">
