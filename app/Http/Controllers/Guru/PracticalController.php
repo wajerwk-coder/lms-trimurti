@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
 use App\Models\Practical;
+use App\Traits\ResolvesAcademicPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 
 class PracticalController extends Controller
 {
+    use ResolvesAcademicPeriod;
     public function __construct()
     {
         $this->middleware('auth');
@@ -134,6 +136,7 @@ class PracticalController extends Controller
             $isPublished = $request->boolean('publish_now');
 
             $praktikum = Practical::create([
+                'academic_period_id' => $this->resolvePeriodId($request->kelas_id),
                 'guru_id'          => Auth::id(),
                 'subject_id'       => $request->subject_id,
                 'kelas_id'         => $request->kelas_id ?? null,

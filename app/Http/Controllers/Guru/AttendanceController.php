@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\Siswa;
 use App\Models\Kelas;
 use App\Models\Subject;
+use App\Traits\ResolvesAcademicPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -16,6 +17,7 @@ use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
+    use ResolvesAcademicPeriod;
     public function __construct()
     {
         $this->middleware('auth');
@@ -253,6 +255,7 @@ class AttendanceController extends Controller
 
         try {
             $attendance = Attendance::create([
+                'academic_period_id' => $this->resolvePeriodId($request->kelas_id),
                 'siswa_id'    => $ucId,
                 'kelas_id'    => $request->kelas_id,
                 'subject_id'  => $request->subject_id,
@@ -374,6 +377,7 @@ class AttendanceController extends Controller
                     continue;
                 }
                 Attendance::create([
+                    'academic_period_id' => $this->resolvePeriodId($request->class),
                     'siswa_id'    => $ucId,
                     'kelas_id'    => $request->class,
                     'subject_id'  => $request->subject_id,

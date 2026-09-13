@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Material;
 use App\Models\MaterialDownload;
 use App\Models\Subject;
+use App\Traits\ResolvesAcademicPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -17,6 +18,7 @@ use Illuminate\Validation\Rule;
 
 class MaterialController extends Controller
 {
+    use ResolvesAcademicPeriod;
     public function __construct()
     {
         $this->middleware('auth');
@@ -92,6 +94,7 @@ class MaterialController extends Controller
             $material->subject_id      = $request->subject_id;
             // Form pakai class_id atau kelas_id — handle keduanya
             $material->kelas_id        = $request->kelas_id ?? $request->class_id ?? null;
+            $material->academic_period_id = $this->resolvePeriodId($material->kelas_id);
             $material->content         = $request->content;
             $material->video_url       = $request->video_url;
             // Default: auto publish kecuali guru uncheck

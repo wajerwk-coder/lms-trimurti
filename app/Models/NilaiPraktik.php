@@ -17,6 +17,7 @@ class NilaiPraktik extends Model
     protected $table = 'practical_scores';
 
     protected $fillable = [
+        'academic_period_id',
         'practical_id',
         'siswa_id',
         'criteria_id',

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Guru;
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
+use App\Traits\ResolvesAcademicPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +15,8 @@ use Carbon\Carbon;
 
 class AssignmentController extends Controller
 {
+    use ResolvesAcademicPeriod;
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -215,6 +218,7 @@ class AssignmentController extends Controller
             $assignment->kelas_id     = $request->class_id;
             $assignment->allow_late   = $request->boolean('allow_late');
             $assignment->is_published = $request->boolean('is_published');
+            $assignment->academic_period_id = $this->resolvePeriodId($request->class_id);
 
             if ($request->hasFile('file')) {
                 $fileData = $this->handleFileUpload($request->file('file'));

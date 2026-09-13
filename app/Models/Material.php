@@ -12,6 +12,7 @@ class Material extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'academic_period_id',
         'guru_id',
         'class_subject_id',
         'subject_id',

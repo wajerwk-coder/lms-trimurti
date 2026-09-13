@@ -11,6 +11,7 @@ class Attendance extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'academic_period_id',
         'siswa_id',
         'class_subject_id',
         'kelas_id',
