@@ -7,12 +7,14 @@ use App\Models\Practical;
 use App\Models\UserCentral;
 use App\Models\Subject;
 use App\Models\Kelas;
+use App\Traits\ResolvesAcademicPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 
 class PracticalController extends Controller
 {
+    use ResolvesAcademicPeriod;
     public function __construct()
     {
         $this->middleware(['auth', 'admin']);
@@ -71,6 +73,7 @@ class PracticalController extends Controller
             $isPublished = $request->boolean('publish_now');
 
             $practical = Practical::create([
+                'academic_period_id' => $this->resolvePeriodId($request->kelas_id),
                 'title'        => $request->title,
                 'description'  => $request->description,
                 'instructions' => $request->instructions,

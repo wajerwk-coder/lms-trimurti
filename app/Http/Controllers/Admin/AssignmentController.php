@@ -7,6 +7,7 @@ use App\Models\Assignment;
 use App\Models\UserCentral;
 use App\Models\Subject;
 use App\Models\Kelas;
+use App\Traits\ResolvesAcademicPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +16,8 @@ use Illuminate\Support\Str;
 
 class AssignmentController extends Controller
 {
+    use ResolvesAcademicPeriod;
+
     public function __construct()
     {
         $this->middleware(['auth', 'admin']);
@@ -69,16 +72,17 @@ class AssignmentController extends Controller
 
         try {
             $data = [
-                'title'        => $request->title,
-                'description'  => $request->description,
-                'instructions' => $request->instructions,
-                'guru_id'      => $request->guru_id,
-                'subject_id'   => $request->subject_id,
-                'kelas_id'     => $request->kelas_id,
-                'due_date'     => $request->due_date,
-                'max_score'    => $request->max_score,
-                'allow_late'   => $request->boolean('allow_late', false),
-                'is_published' => $request->boolean('publish_now'),
+                'title'              => $request->title,
+                'description'        => $request->description,
+                'instructions'       => $request->instructions,
+                'guru_id'            => $request->guru_id,
+                'subject_id'         => $request->subject_id,
+                'kelas_id'           => $request->kelas_id,
+                'due_date'           => $request->due_date,
+                'max_score'          => $request->max_score,
+                'allow_late'         => $request->boolean('allow_late', false),
+                'is_published'       => $request->boolean('publish_now'),
+                'academic_period_id' => $this->resolvePeriodId($request->kelas_id),
             ];
 
             if ($request->hasFile('attachment')) {

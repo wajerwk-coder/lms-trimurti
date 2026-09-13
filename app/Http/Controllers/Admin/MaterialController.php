@@ -8,6 +8,7 @@ use App\Models\MaterialDownload;
 use App\Models\Subject;
 use App\Models\UserCentral;
 use App\Models\Kelas;
+use App\Traits\ResolvesAcademicPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\Log;
 
 class MaterialController extends Controller
 {
+    use ResolvesAcademicPeriod;
+
     public function __construct()
     {
         $this->middleware(['auth', 'admin']);
@@ -82,15 +85,16 @@ class MaterialController extends Controller
 
         try {
             $data = [
-                'guru_id'      => $request->guru_id,
-                'title'        => $request->title,
-                'subject_id'   => $request->subject_id,
-                'kelas_id'     => $request->kelas_id,
-                'content'      => $request->content,
-                'video_url'    => $request->video_url,
-                'published_at' => $request->boolean('publish_now') ? now() : null,
-                'views_count'     => 0,
-                'downloads_count' => 0,
+                'guru_id'            => $request->guru_id,
+                'title'              => $request->title,
+                'subject_id'         => $request->subject_id,
+                'kelas_id'           => $request->kelas_id,
+                'content'            => $request->content,
+                'video_url'          => $request->video_url,
+                'published_at'       => $request->boolean('publish_now') ? now() : null,
+                'academic_period_id' => $this->resolvePeriodId($request->kelas_id),
+                'views_count'        => 0,
+                'downloads_count'    => 0,
             ];
 
             if ($request->hasFile('file')) {

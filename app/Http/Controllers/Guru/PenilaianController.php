@@ -13,6 +13,7 @@ use App\Models\Kelas;
 use App\Models\Assignment;
 use App\Models\Practical;
 use App\Models\Siswa;
+use App\Traits\ResolvesAcademicPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -26,6 +27,7 @@ require_once base_path('app/Traits/PenilaianWithCriteriaTrait.php');
 class PenilaianController extends Controller
 {
     use PenilaianWithCriteriaTrait;
+    use ResolvesAcademicPeriod;
     
     /**
      * ── Halaman Index Penilaian Praktik ──────────────────────────────────────
@@ -270,6 +272,7 @@ class PenilaianController extends Controller
                         'siswa_id'     => $ucId,
                     ],
                     [
+                        'academic_period_id' => $this->resolvePeriodId($practical->kelas_id),
                         'guru_id'    => $guruId,
                         'graded_by'  => $guruId,
                         'score'      => $request->score,
@@ -463,6 +466,10 @@ class PenilaianController extends Controller
         $siswa  = Siswa::findOrFail($request->siswa_id);
         $ucId   = $siswa->user_id;  // users_central.id
 
+        // Resolve periode aktif sekali saja — reuse untuk semua insert
+        $practical     = \App\Models\Practical::find($request->practical_id);
+        $periodId      = $this->resolvePeriodId($practical?->kelas_id);
+
         DB::beginTransaction();
         try {
             $nilaiAkhir   = 0;
@@ -510,6 +517,7 @@ class PenilaianController extends Controller
                         'criteria_id'  => $kriteria->id,
                     ],
                     [
+                        'academic_period_id' => $periodId,
                         'guru_id'    => $guruId,
                         'graded_by'  => $guruId,
                         'score'      => $nilaiKriteria,
@@ -556,6 +564,7 @@ class PenilaianController extends Controller
                     'criteria_id'  => null,
                 ],
                 [
+                    'academic_period_id' => $periodId,
                     'guru_id'   => $guruId,
                     'graded_by' => $guruId,
                     'score'     => $nilaiAkhir,

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ExamSchedule;
 use App\Models\UserCentral;
 use App\Models\Siswa;
+use App\Traits\ResolvesAcademicPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 
 class ExamScheduleController extends Controller
 {
+    use ResolvesAcademicPeriod;
     public function __construct()
     {
         $this->middleware(['auth', 'admin']);
@@ -74,6 +76,7 @@ class ExamScheduleController extends Controller
             $isPublished = $request->boolean('is_published');
 
             $schedule = ExamSchedule::create([
+                'academic_period_id' => $this->resolvePeriodId($request->kelas_id),
                 'title'            => $request->title,
                 'description'      => $request->description,
                 'exam_type'        => 'praktikum',

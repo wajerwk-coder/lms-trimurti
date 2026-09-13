@@ -7,12 +7,14 @@ use App\Models\Attendance;
 use App\Models\Siswa;
 use App\Models\Kelas;
 use App\Models\Subject;
+use App\Traits\ResolvesAcademicPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
+    use ResolvesAcademicPeriod;
     public function __construct()
     {
         $this->middleware(['auth', 'admin']);
@@ -129,6 +131,7 @@ class AttendanceController extends Controller
             $ucId  = $siswa->user_id;
 
             Attendance::create([
+                'academic_period_id' => $this->resolvePeriodId($request->kelas_id),
                 'siswa_id'    => $ucId,
                 'kelas_id'    => $request->kelas_id,
                 'subject_id'  => $request->subject_id,
