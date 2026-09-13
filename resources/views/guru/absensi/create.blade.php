@@ -2,7 +2,7 @@
 
 @section('title', 'Tambah Absensi')
 @section('page-title', 'Tambah Absensi')
-@section('page-subtitle', 'Catat kehadiran satu siswa.')
+@section('page-subtitle', 'Catat kehadiran satu siswa per mata pelajaran.')
 
 @section('page-actions')
     <div class="d-flex gap-2">
@@ -33,7 +33,7 @@
 
     <div class="row g-4">
 
-        {{-- --- KIRI: Form Utama --- --}}
+        {{-- KIRI: Form --}}
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom py-3">
@@ -45,13 +45,13 @@
                 <div class="card-body">
                     <div class="row g-3">
 
-                        {{-- Kelas (AJAX trigger) --}}
+                        {{-- Kelas --}}
                         <div class="col-md-6">
                             <label for="kelas_id" class="form-label fw-semibold">
                                 Kelas <span class="text-danger">*</span>
                             </label>
                             <select class="form-select" id="kelas_id" name="kelas_id" required>
-                                <option value="">� Pilih Kelas �</option>
+                                <option value="">— Pilih Kelas —</option>
                                 @foreach($classes as $k)
                                     <option value="{{ $k->id }}"
                                         {{ old('kelas_id') == $k->id ? 'selected' : '' }}>
@@ -61,7 +61,7 @@
                             </select>
                         </div>
 
-                        {{-- Siswa (diisi via AJAX) --}}
+                        {{-- Siswa (AJAX) --}}
                         <div class="col-md-6">
                             <label for="siswa_id" class="form-label fw-semibold">
                                 Siswa <span class="text-danger">*</span>
@@ -69,9 +69,8 @@
                             <div class="position-relative">
                                 <select class="form-select @error('siswa_id') is-invalid @enderror"
                                         id="siswa_id" name="siswa_id" required>
-                                    <option value="">� Pilih kelas dulu �</option>
+                                    <option value="">— Pilih kelas dulu —</option>
                                 </select>
-                                {{-- Spinner overlay saat loading --}}
                                 <div id="siswaSpinner"
                                      class="position-absolute top-50 end-0 translate-middle-y me-3 d-none">
                                     <span class="spinner-border spinner-border-sm text-primary"></span>
@@ -83,22 +82,25 @@
                             @error('siswa_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         </div>
 
-                        {{-- Mata Pelajaran --}}
+                        {{-- Mata Pelajaran (AJAX — filter by kelas) --}}
                         <div class="col-md-6">
                             <label for="subject_id" class="form-label fw-semibold">
-                                Mata Pelajaran
+                                Mata Pelajaran <span class="text-danger">*</span>
                             </label>
-                            <select class="form-select @error('subject_id') is-invalid @enderror"
-                                    id="subject_id" name="subject_id">
-                                <option value="">� Pilih Mapel �</option>
-                                @foreach($subjects as $subject)
-                                    <option value="{{ $subject->id }}"
-                                        {{ old('subject_id') == $subject->id ? 'selected' : '' }}>
-                                        {{ $subject->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('subject_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <div class="position-relative">
+                                <select class="form-select @error('subject_id') is-invalid @enderror"
+                                        id="subject_id" name="subject_id" required>
+                                    <option value="">— Pilih kelas dulu —</option>
+                                </select>
+                                <div id="subjectSpinner"
+                                     class="position-absolute top-50 end-0 translate-middle-y me-3 d-none">
+                                    <span class="spinner-border spinner-border-sm text-primary"></span>
+                                </div>
+                            </div>
+                            <div id="subjectHint" class="form-text text-muted">
+                                Pilih kelas untuk memuat daftar mata pelajaran.
+                            </div>
+                            @error('subject_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         </div>
 
                         {{-- Tanggal --}}
@@ -121,17 +123,16 @@
                             </label>
                             <div class="row g-2">
                                 @foreach([
-                                    'hadir' => ['success', 'check-circle',  'Hadir'],
-                                    'izin'  => ['info',    'info-circle',   'Izin'],
-                                    'sakit' => ['warning', 'heartbeat',     'Sakit'],
-                                    'alpha' => ['danger',  'times-circle',  'Alpha'],
+                                    'hadir' => ['success', 'check-circle', 'Hadir'],
+                                    'izin'  => ['info',    'info-circle',  'Izin'],
+                                    'sakit' => ['warning', 'heartbeat',    'Sakit'],
+                                    'alpha' => ['danger',  'times-circle', 'Alpha'],
                                 ] as $val => [$color, $icon, $label])
                                     <div class="col-6 col-sm-3">
                                         <input type="radio" class="btn-check"
                                                name="status" id="s_{{ $val }}" value="{{ $val }}"
                                                {{ old('status', 'hadir') === $val ? 'checked' : '' }} required>
-                                        <label class="btn btn-outline-{{ $color }} w-100"
-                                               for="s_{{ $val }}">
+                                        <label class="btn btn-outline-{{ $color }} w-100" for="s_{{ $val }}">
                                             <i class="fas fa-{{ $icon }} me-1"></i>{{ $label }}
                                         </label>
                                     </div>
@@ -151,15 +152,14 @@
                             @error('note')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
-                    </div>{{-- /row --}}
-                </div>{{-- /card-body --}}
-            </div>{{-- /card --}}
-        </div>{{-- /col-lg-8 --}}
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        {{-- --- KANAN: Info & Tombol --- --}}
+        {{-- KANAN: Info & Tombol --}}
         <div class="col-lg-4">
 
-            {{-- Keterangan status --}}
             <div class="card border-0 shadow-sm mb-3">
                 <div class="card-header bg-info bg-opacity-10 border-0 py-2">
                     <h6 class="mb-0 fw-semibold text-info small">
@@ -168,123 +168,142 @@
                 </div>
                 <div class="card-body py-3 small">
                     @foreach([
-                        ['success', 'Hadir',  'Siswa hadir di kelas'],
-                        ['info',    'Izin',   'Tidak hadir, ada izin resmi'],
-                        ['warning', 'Sakit',  'Tidak hadir karena sakit'],
-                        ['danger',  'Alpha',  'Tidak hadir tanpa keterangan'],
+                        ['success', 'Hadir', 'Siswa hadir di kelas'],
+                        ['info',    'Izin',  'Tidak hadir, ada izin resmi'],
+                        ['warning', 'Sakit', 'Tidak hadir karena sakit'],
+                        ['danger',  'Alpha', 'Tidak hadir tanpa keterangan'],
                     ] as [$color, $label, $desc])
                         <div class="d-flex align-items-start gap-2 mb-2">
-                            <span class="badge bg-{{ $color }} mt-1 flex-shrink-0" style="min-width:48px;text-align:center;">
-                                {{ $label }}
-                            </span>
+                            <span class="badge bg-{{ $color }} mt-1 flex-shrink-0"
+                                  style="min-width:48px;text-align:center;">{{ $label }}</span>
                             <span class="text-muted">{{ $desc }}</span>
                         </div>
                     @endforeach
                 </div>
             </div>
 
-            {{-- Info duplikasi --}}
             <div class="card border-0 shadow-sm mb-3">
                 <div class="card-body py-3 small text-muted">
                     <i class="fas fa-shield-alt text-success me-2"></i>
-                    Sistem akan menolak jika absensi siswa pada tanggal yang sama sudah dicatat sebelumnya.
+                    Sistem akan menolak jika absensi siswa pada <strong>mata pelajaran dan tanggal yang sama</strong> sudah dicatat.
                 </div>
             </div>
 
-            {{-- Tombol --}}
             <div class="d-grid gap-2">
                 <button type="submit" class="btn btn-primary fw-semibold" id="submitBtn">
                     <i class="fas fa-save me-1"></i>Simpan Absensi
                 </button>
                 <a href="{{ route('guru.absensi.bulk-create') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-users me-1"></i>Absensi Massal (satu kelas)
+                    <i class="fas fa-users me-1"></i>Absensi Massal
                 </a>
                 <a href="{{ route('guru.absensi.index') }}" class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-times me-1"></i>Batal
                 </a>
             </div>
 
-        </div>{{-- /col-lg-4 --}}
-    </div>{{-- /row --}}
+        </div>
+    </div>
 </form>
 
 @push('js')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    const kelasSelect  = document.getElementById('kelas_id');
-    const siswaSelect  = document.getElementById('siswa_id');
-    const siswaSpinner = document.getElementById('siswaSpinner');
-    const siswaHint    = document.getElementById('siswaHint');
-    const submitBtn    = document.getElementById('submitBtn');
-    const csrfToken    = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const kelasSelect   = document.getElementById('kelas_id');
+    const siswaSelect   = document.getElementById('siswa_id');
+    const subjectSelect = document.getElementById('subject_id');
+    const siswaSpinner  = document.getElementById('siswaSpinner');
+    const subjectSpinner= document.getElementById('subjectSpinner');
+    const siswaHint     = document.getElementById('siswaHint');
+    const subjectHint   = document.getElementById('subjectHint');
+    const submitBtn     = document.getElementById('submitBtn');
+    const csrfToken     = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 
-    // -- Load siswa via AJAX saat kelas berubah -------------------------
+    const oldSiswaId   = '{{ old("siswa_id") }}';
+    const oldSubjectId = '{{ old("subject_id") }}';
+
+    // ── Load siswa & subjects saat kelas berubah ───────────────────────
     kelasSelect.addEventListener('change', function () {
         const kelasId = this.value;
 
-        // Reset dropdown siswa
-        siswaSelect.innerHTML = '<option value="">� Memuat siswa... �</option>';
-        // (disabled removed � field must always submit)
-        siswaHint.textContent = '';
+        siswaSelect.innerHTML   = '<option value="">— Memuat siswa... —</option>';
+        subjectSelect.innerHTML = '<option value="">— Memuat mata pelajaran... —</option>';
+        siswaHint.textContent   = '';
+        subjectHint.textContent = '';
 
         if (!kelasId) {
-            siswaSelect.innerHTML = '<option value="">� Pilih kelas dulu �</option>';
-            siswaHint.textContent = 'Pilih kelas untuk memuat daftar siswa.';
+            siswaSelect.innerHTML   = '<option value="">— Pilih kelas dulu —</option>';
+            subjectSelect.innerHTML = '<option value="">— Pilih kelas dulu —</option>';
+            siswaHint.textContent   = 'Pilih kelas untuk memuat daftar siswa.';
+            subjectHint.textContent = 'Pilih kelas untuk memuat daftar mata pelajaran.';
             return;
         }
 
+        // Load siswa
         siswaSpinner.classList.remove('d-none');
-
         fetch(`{{ route('guru.absensi.siswa-by-kelas') }}?kelas_id=${kelasId}`, {
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json',
-            }
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
         })
-        .then(res => {
-            if (!res.ok) throw new Error('Server error ' + res.status);
-            return res.json();
-        })
+        .then(r => r.json())
         .then(data => {
             siswaSpinner.classList.add('d-none');
-
             if (!data.length) {
                 siswaSelect.innerHTML = '<option value="">Tidak ada siswa di kelas ini</option>';
                 siswaHint.textContent = 'Kelas ini belum memiliki siswa.';
-                siswaHint.className = 'form-text text-warning';
+                siswaHint.className   = 'form-text text-warning';
                 return;
             }
-
-            const oldVal = '{{ old('siswa_id') }}';
-            let html = '<option value="">� Pilih Siswa �</option>';
+            let html = '<option value="">— Pilih Siswa —</option>';
             data.forEach(s => {
                 const label = s.name + (s.nis ? ` (${s.nis})` : '');
-                const sel   = oldVal && String(oldVal) === String(s.id) ? ' selected' : '';
+                const sel   = oldSiswaId && String(oldSiswaId) === String(s.id) ? ' selected' : '';
                 html += `<option value="${s.id}"${sel}>${label}</option>`;
             });
             siswaSelect.innerHTML = html;
-            siswaSelect.disabled  = false;
             siswaHint.textContent = data.length + ' siswa ditemukan.';
             siswaHint.className   = 'form-text text-success';
         })
-        .catch(err => {
+        .catch(() => {
             siswaSpinner.classList.add('d-none');
             siswaSelect.innerHTML = '<option value="">Gagal memuat siswa</option>';
-            siswaHint.textContent = 'Gagal memuat daftar siswa: ' + err.message;
+            siswaHint.textContent = 'Gagal memuat daftar siswa.';
             siswaHint.className   = 'form-text text-danger';
+        });
+
+        // Load mata pelajaran
+        subjectSpinner.classList.remove('d-none');
+        fetch(`{{ route('guru.absensi.subjects-by-kelas') }}?kelas_id=${kelasId}`, {
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            subjectSpinner.classList.add('d-none');
+            const typeLabel = { teori: 'Teori', praktikum: 'Praktikum', campuran: 'Campuran' };
+            let html = '<option value="">— Pilih Mata Pelajaran —</option>';
+            data.forEach(s => {
+                const tipe = s.type ? ` [${typeLabel[s.type] ?? s.type}]` : '';
+                const sel  = oldSubjectId && String(oldSubjectId) === String(s.id) ? ' selected' : '';
+                html += `<option value="${s.id}"${sel}>${s.name}${tipe}</option>`;
+            });
+            subjectSelect.innerHTML = html;
+            subjectHint.textContent = data.length + ' mata pelajaran ditemukan.';
+            subjectHint.className   = 'form-text text-success';
+        })
+        .catch(() => {
+            subjectSpinner.classList.add('d-none');
+            subjectSelect.innerHTML = '<option value="">Gagal memuat mata pelajaran</option>';
+            subjectHint.textContent = 'Gagal memuat daftar mata pelajaran.';
+            subjectHint.className   = 'form-text text-danger';
         });
     });
 
-    // -- Jika ada old('kelas_id') setelah validasi gagal, trigger AJAX --
-    const oldKelas = kelasSelect.value;
-    if (oldKelas) {
+    // Trigger jika ada old('kelas_id')
+    if (kelasSelect.value) {
         kelasSelect.dispatchEvent(new Event('change'));
     }
 
-    // -- Submit spinner -------------------------------------------------
+    // ── Submit guard ───────────────────────────────────────────────────
     document.getElementById('absensiForm').addEventListener('submit', function (e) {
-        // Cegah submit jika siswa belum dipilih
         if (!siswaSelect.value) {
             e.preventDefault();
             siswaSelect.classList.add('is-invalid');
@@ -292,18 +311,23 @@ document.addEventListener('DOMContentLoaded', function () {
             siswaHint.className   = 'form-text text-danger';
             return;
         }
-        submitBtn.disabled   = true;
-        submitBtn.innerHTML  = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
+        if (!subjectSelect.value) {
+            e.preventDefault();
+            subjectSelect.classList.add('is-invalid');
+            subjectHint.textContent = 'Mata pelajaran wajib dipilih.';
+            subjectHint.className   = 'form-text text-danger';
+            return;
+        }
+        submitBtn.disabled  = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
     });
 
-    // Restore on bfcache
     window.addEventListener('pageshow', function (e) {
         if (e.persisted) {
             submitBtn.disabled  = false;
             submitBtn.innerHTML = '<i class="fas fa-save me-1"></i>Simpan Absensi';
         }
     });
-
 });
 </script>
 @endpush

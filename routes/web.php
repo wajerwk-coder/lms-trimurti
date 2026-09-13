@@ -222,6 +222,7 @@ Route::prefix('guru')->name('guru.')->middleware(['auth', 'guru'])->group(functi
     // Absensi Management — CUSTOM ROUTES SEBELUM RESOURCE
     Route::get('absensi/bulk-create', [GuruAttendanceController::class, 'bulkCreate'])->name('absensi.bulk-create');
     Route::get('absensi/siswa-by-kelas', [GuruAttendanceController::class, 'siswaByKelas'])->name('absensi.siswa-by-kelas');
+    Route::get('absensi/subjects-by-kelas', [GuruAttendanceController::class, 'subjectsByKelas'])->name('absensi.subjects-by-kelas');
     Route::post('absensi/bulk', [GuruAttendanceController::class, 'bulkStore'])->name('absensi.bulk');
     Route::get('absensi/praktik', [GuruAttendanceController::class, 'praktikAttendance'])->name('absensi.praktik');
     Route::get('absensi/report', function () { abort(404); })->name('absensi.report');

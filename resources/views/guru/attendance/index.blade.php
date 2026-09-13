@@ -66,6 +66,18 @@
                 </select>
             </div>
             <div class="col-md-3">
+                <label class="form-label small fw-semibold mb-1">Mata Pelajaran</label>
+                <select name="subject_id" class="form-select form-select-sm">
+                    <option value="">Semua Mapel</option>
+                    @foreach($subjects ?? [] as $subject)
+                        <option value="{{ $subject->id }}"
+                            {{ ($subjectId ?? '') == $subject->id ? 'selected' : '' }}>
+                            {{ $subject->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
                 <label class="form-label small fw-semibold mb-1">Status</label>
                 <select name="type" class="form-select form-select-sm">
                     <option value="">Semua Status</option>
