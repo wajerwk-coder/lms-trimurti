@@ -281,8 +281,12 @@ class ModernUserController extends BaseController
 
             // 2. Ambil tahun ajaran & semester dari kelas yang dipilih
             $kelas       = Kelas::findOrFail($request->kelas_id);
-            $tahunAjaran = $kelas->academic_year ?? $request->tahun_ajaran ?? (date('Y') . '/' . (date('Y') + 1));
-            $semester    = $kelas->semester ?? \App\Models\AcademicPeriod::getActive()?->semester ?? 'ganjil';
+            $tahunAjaran = $kelas->academic_year
+                        ?? $request->tahun_ajaran
+                        ?? (date('Y') . '/' . (date('Y') + 1));
+            $semester    = $kelas->semester
+                        ?? \App\Models\AcademicPeriod::getActive()?->semester
+                        ?? 'ganjil';
 
             // 3. Buat profil di tabel siswa
             Siswa::updateOrCreate(
@@ -290,9 +294,9 @@ class ModernUserController extends BaseController
                 [
                     'nis'              => $request->nis,
                     'nisn'             => $request->nisn,
-                    'jenis_kelamin'    => $request->jenis_kelamin    ?? 'L',
-                    'tempat_lahir'     => $request->tempat_lahir     ?? '-',
-                    'tanggal_lahir'    => $request->tanggal_lahir    ?? now()->format('Y-m-d'),
+                    'jenis_kelamin'    => $request->jenis_kelamin    ?: null,
+                    'tempat_lahir'     => $request->tempat_lahir     ?: null,
+                    'tanggal_lahir'    => $request->tanggal_lahir    ?: null,
                     'alamat'           => $request->alamat           ?: null,
                     'no_telepon'       => $request->phone            ?: null,
                     'kelas_id'         => $request->kelas_id,

@@ -291,9 +291,9 @@ class UserCentral extends Authenticatable
                 \App\Models\Siswa::firstOrCreate(['user_id' => $user->id], [
                     'nis'           => 'SIS' . str_pad($user->id, 6, '0', STR_PAD_LEFT),
                     'nisn'          => '000' . str_pad($user->id, 7, '0', STR_PAD_LEFT),
-                    'jenis_kelamin' => 'L',
+                    'jenis_kelamin' => null,
                     'tempat_lahir'  => null,
-                    'tanggal_lahir' => now()->format('Y-m-d'),
+                    'tanggal_lahir' => null,
                     'alamat'        => null,
                     'no_telepon'    => null,
                     'kelas_id'      => $kelasId,
