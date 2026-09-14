@@ -249,11 +249,52 @@
         </div>
     </div>
     @if($siswas->hasPages())
-    <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center">
+    <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-2 flex-wrap gap-2">
         <small class="text-muted">
             Menampilkan {{ $siswas->firstItem() }}–{{ $siswas->lastItem() }} dari {{ $siswas->total() }}
         </small>
-        {{ $siswas->links() }}
+        <nav aria-label="Navigasi halaman siswa">
+            <ul class="pagination pagination-sm mb-0">
+                {{-- Previous --}}
+                @if($siswas->onFirstPage())
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                    </li>
+                @else
+                    <li class="page-item">
+                        <a class="page-link" href="{{ $siswas->previousPageUrl() }}" rel="prev">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                @endif
+
+                {{-- Nomor halaman --}}
+                @foreach($siswas->getUrlRange(1, $siswas->lastPage()) as $page => $url)
+                    @if($page == $siswas->currentPage())
+                        <li class="page-item active">
+                            <span class="page-link">{{ $page }}</span>
+                        </li>
+                    @else
+                        <li class="page-item">
+                            <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                        </li>
+                    @endif
+                @endforeach
+
+                {{-- Next --}}
+                @if($siswas->hasMorePages())
+                    <li class="page-item">
+                        <a class="page-link" href="{{ $siswas->nextPageUrl() }}" rel="next">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                @else
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                    </li>
+                @endif
+            </ul>
+        </nav>
     </div>
     @endif
 </div>
