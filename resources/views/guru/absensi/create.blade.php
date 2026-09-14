@@ -30,6 +30,9 @@
 
 <form action="{{ route('guru.absensi.store') }}" method="POST" id="absensiForm" novalidate>
     @csrf
+    {{-- Fallback hidden inputs agar siswa_id & date selalu terkirim ke server --}}
+    {{-- Akan di-override oleh JS jika AJAX berhasil --}}
+    <input type="hidden" name="_siswa_backup" id="siswaBackup" value="{{ old('siswa_id') }}">
 
     <div class="row g-4">
 
@@ -111,9 +114,10 @@
                             <input type="date"
                                    class="form-control @error('date') is-invalid @enderror"
                                    id="date" name="date"
-                                   value="{{ old('date', date('Y-m-d')) }}"
+                                   value="{{ old('date') ?: date('Y-m-d') }}"
                                    max="{{ date('Y-m-d') }}" required>
                             @error('date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <div class="form-text">Format: YYYY-MM-DD, tidak boleh melebihi hari ini.</div>
                         </div>
 
                         {{-- Status Kehadiran --}}
@@ -301,8 +305,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (kelasSelect.value) {
         kelasSelect.dispatchEvent(new Event('change'));
     }
-
-    // ── Submit guard ───────────────────────────────────────────────────
     document.getElementById('absensiForm').addEventListener('submit', function (e) {
         if (!siswaSelect.value) {
             e.preventDefault();
@@ -311,13 +313,7 @@ document.addEventListener('DOMContentLoaded', function () {
             siswaHint.className   = 'form-text text-danger';
             return;
         }
-        if (!subjectSelect.value) {
-            e.preventDefault();
-            subjectSelect.classList.add('is-invalid');
-            subjectHint.textContent = 'Mata pelajaran wajib dipilih.';
-            subjectHint.className   = 'form-text text-danger';
-            return;
-        }
+        // Subject adalah nullable — tidak perlu blokir submit jika kosong
         submitBtn.disabled  = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
     });

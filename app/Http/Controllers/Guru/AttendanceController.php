@@ -275,11 +275,13 @@ class AttendanceController extends Controller
             'siswa_id'   => 'required|exists:siswa,id',
             'kelas_id'   => 'nullable|exists:classes,id',
             'subject_id' => 'nullable|exists:subjects,id',
-            'date'       => 'required|date|before_or_equal:today',
+            'date'       => 'required|date|before_or_equal:' . now()->format('Y-m-d'),
             'status'     => 'required|in:hadir,izin,sakit,alpha',
             'note'       => 'nullable|string|max:500',
         ], [
             'siswa_id.required'       => 'Siswa wajib dipilih.',
+            'siswa_id.exists'         => 'Siswa tidak ditemukan di database.',
+            'date.required'           => 'Tanggal wajib diisi.',
             'date.before_or_equal'    => 'Tanggal tidak boleh melebihi hari ini.',
             'status.required'         => 'Status kehadiran wajib dipilih.',
         ]);
