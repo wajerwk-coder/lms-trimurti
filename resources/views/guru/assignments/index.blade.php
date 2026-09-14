@@ -248,7 +248,7 @@
                             <i class="fas fa-book me-1"></i>Mata Pelajaran
                         </label>
                         <select name="subject_id" class="form-select form-select-sm">
-                            <option value="">ðŸ” Semua Mata Pelajaran</option>
+                            <option value="">Semua Mata Pelajaran</option>
                             @foreach($subjects as $subject)
                             <option value="{{ $subject->id }}" {{ request('subject_id') == $subject->id ? 'selected' : '' }}>
                                 {{ $subject->name }}
@@ -262,7 +262,7 @@
                             <i class="fas fa-users me-1"></i>Kelas
                         </label>
                         <select name="class_id" class="form-select form-select-sm">
-                            <option value="">ðŸ” Semua Kelas</option>
+                            <option value="">Semua Kelas</option>
                             @if(isset($classes))
                                 @foreach($classes as $class)
                                 <option value="{{ $class->id }}" {{ request('class_id') == $class->id ? 'selected' : '' }}>
@@ -270,7 +270,7 @@
                                 </option>
                                 @endforeach
                             @else
-                                <option value="1" {{ request('class_id') == '1' ? 'selected' : '' }}>ðŸ“š Kelas X Keperawatan</option>
+                                
                             @endif
                         </select>
                     </div>
@@ -280,10 +280,10 @@
                             <i class="fas fa-flag me-1"></i>Status
                         </label>
                         <select name="status" class="form-select form-select-sm">
-                            <option value="">ðŸ” Semua Status</option>
-                            <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>âœ… Aktif</option>
-                            <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>âœ”ï¸ Selesai</option>
-                            <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>ðŸ“ Draft</option>
+                            <option value="">Semua Status</option>
+                            <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Aktif</option>
+                            <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Selesai</option>
+                            <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
                         </select>
                     </div>
                     
@@ -293,10 +293,10 @@
                             <i class="fas fa-calendar me-1"></i>Periode
                         </label>
                         <select name="period" class="form-select form-select-sm">
-                            <option value="">ðŸ” Semua Waktu</option>
-                            <option value="week" {{ request('period') == 'week' ? 'selected' : '' }}>ðŸ“… Minggu Ini</option>
-                            <option value="month" {{ request('period') == 'month' ? 'selected' : '' }}>ðŸ“Š Bulan Ini</option>
-                            <option value="semester" {{ request('period') == 'semester' ? 'selected' : '' }}>ðŸ“ˆ Semester Ini</option>
+                            <option value="">Semua Waktu</option>
+                            <option value="week" {{ request('period') == 'week' ? 'selected' : '' }}>Minggu Ini</option>
+                            <option value="month" {{ request('period') == 'month' ? 'selected' : '' }}>Bulan Ini</option>
+                            <option value="semester" {{ request('period') == 'semester' ? 'selected' : '' }}>Semester Ini</option>
                         </select>
                     </div>
                     @endif
@@ -311,7 +311,7 @@
                                 <i class="fas fa-refresh me-1"></i>Reset
                             </a>
                             @if($tab === 'active')
-                            <button type="button" class="btn btn-outline-warning btn-sm px-3" id="showDeadlineAlert">
+                            <button type="button" class="btn btn-outline-warning btn-sm px-3" id="filterDeadlineBtn">
                                 <i class="fas fa-exclamation-triangle me-1"></i>Deadline Dekat
                             </button>
                             @endif

@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Pagination\Paginator;
 use App\Http\ViewComposers\NotificationComposer;
 use App\Http\ViewComposers\GuruStatsComposer;
 use App\Http\ViewComposers\GuruDashboardComposer;
@@ -25,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ── Gunakan Bootstrap 5 pagination di seluruh aplikasi ────────────────
+        // Ini memperbaiki tombol panah SVG besar pada semua ->links()
+        Paginator::useBootstrapFive();
+
         // Force HTTPS ketika aplikasi berjalan di production (Railway)
         if (app()->environment('production')) {
             URL::forceScheme('https');

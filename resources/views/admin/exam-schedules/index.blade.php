@@ -28,12 +28,7 @@
 
     {{-- Stats --}}
     @php
-        $totalJadwal    = $schedules->total();
-        $totalPublished = $schedules->getCollection()->where('is_published', true)->count();
-        $totalDraft     = $schedules->getCollection()->where('is_published', false)->count();
-        $upcoming       = $schedules->getCollection()->filter(
-            fn($s) => $s->start_time && \Carbon\Carbon::parse($s->start_time)->isFuture()
-        )->count();
+        // Stats dikirim dari controller (total database, bukan hanya halaman aktif)
     @endphp
     <div class="row g-3 mb-4">
         @foreach([

@@ -230,11 +230,31 @@
         </div>
     </div>
     @if($gurus->hasPages())
-        <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center">
+        <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-2 flex-wrap gap-2">
             <small class="text-muted">
                 Menampilkan {{ $gurus->firstItem() }}–{{ $gurus->lastItem() }} dari {{ $gurus->total() }}
             </small>
-            {{ $gurus->links() }}
+            <nav aria-label="Navigasi halaman guru">
+                <ul class="pagination pagination-sm mb-0">
+                    @if($gurus->onFirstPage())
+                        <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-left"></i></span></li>
+                    @else
+                        <li class="page-item"><a class="page-link" href="{{ $gurus->previousPageUrl() }}"><i class="fas fa-chevron-left"></i></a></li>
+                    @endif
+                    @foreach($gurus->getUrlRange(1, $gurus->lastPage()) as $page => $url)
+                        @if($page == $gurus->currentPage())
+                            <li class="page-item active"><span class="page-link">{{ $page }}</span></li>
+                        @else
+                            <li class="page-item"><a class="page-link" href="{{ $url }}">{{ $page }}</a></li>
+                        @endif
+                    @endforeach
+                    @if($gurus->hasMorePages())
+                        <li class="page-item"><a class="page-link" href="{{ $gurus->nextPageUrl() }}"><i class="fas fa-chevron-right"></i></a></li>
+                    @else
+                        <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-right"></i></span></li>
+                    @endif
+                </ul>
+            </nav>
         </div>
     @endif
 </div>

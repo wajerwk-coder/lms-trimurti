@@ -36,7 +36,17 @@ class ExamScheduleController extends Controller
 
         $kelas = \App\Models\Kelas::orderBy('name')->get();
 
-        return view('admin.exam-schedules.index', compact('schedules', 'kelas'));
+        // Stats dari seluruh database, bukan hanya halaman aktif
+        $totalJadwal    = ExamSchedule::count();
+        $totalPublished = ExamSchedule::where('is_published', true)->count();
+        $totalDraft     = ExamSchedule::where('is_published', false)->count();
+        $upcoming       = ExamSchedule::where('is_published', true)
+                            ->where('start_time', '>', now())->count();
+
+        return view('admin.exam-schedules.index', compact(
+            'schedules', 'kelas',
+            'totalJadwal', 'totalPublished', 'totalDraft', 'upcoming'
+        ));
     }
 
     // ── Create ────────────────────────────────────────────────────────────
