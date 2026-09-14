@@ -379,216 +379,213 @@ class PenilaianController extends Controller
 
     /**
      * ── SISTEM BARU: Penilaian berbasis Kriteria Admin ────────────────────────
-     * Guru pilih praktikum → pilih siswa → centang SOP checklist per kriteria
-     * → nilai dihitung otomatis dari bobot masing-masing kriteria.
+     * Guru pilih praktikum → kelas otomatis dari praktikum →
+     * semua siswa di kelas muncul → nilai per siswa dengan SOP checklist.
      */
     public function nilaiKriteria(): View
     {
         $guruId = Auth::id();
 
-        // Semua praktikum yang tersedia (milik guru + fallback semua)
-        $practicals = Practical::where('guru_id', $guruId)->with('subject')->latest()->get();
+        // Semua praktikum milik guru (dengan relasi kelas untuk ambil siswa)
+        $practicals = Practical::where('guru_id', $guruId)
+            ->with(['subject', 'kelas.siswa.user'])
+            ->latest()
+            ->get();
+
         if ($practicals->isEmpty()) {
-            $practicals = Practical::with('subject')->latest()->get();
+            $practicals = Practical::with(['subject', 'kelas.siswa.user'])
+                ->latest()
+                ->get();
         }
-
-        // Siswa dengan kelas
-        $students = Siswa::with(['user', 'kelas'])
-            ->whereNull('deleted_at')
-            ->get()
-            ->sortBy(fn($s) => $s->user?->name);
-
-        // Semua mata praktik yang punya kriteria
-        $mataPraktikList = KriteriaPenilaian::active()
-            ->select('mata_praktik')
-            ->distinct()
-            ->orderBy('mata_praktik')
-            ->pluck('mata_praktik');
 
         // Pre-select dari query string
         $selectedPractical = request('practical_id');
-        $selectedSiswa     = request('siswa_id');
 
-        // Ambil kriteria jika praktikum sudah dipilih
-        $kriteriaByCat = collect();
         $practical     = null;
-        if ($selectedPractical) {
-            $practical   = Practical::with('subject')->find($selectedPractical);
-            $mataPraktik = $practical?->subject?->name ?? '';
-            $kriteriaByCat = KriteriaPenilaian::active()
-                ->where('mata_praktik', $mataPraktik)
-                ->orderBy('kategori')
-                ->orderBy('name')
-                ->get()
-                ->groupBy('kategori');
-        }
+        $siswaList     = collect();
+        $kriteriaByCat = collect();
+        $existingNilai = collect(); // key: siswa_id (users_central.id)
 
-        // Nilai yang sudah ada (jika sudah pernah dinilai)
-        $existingScores = collect();
-        if ($selectedPractical && $selectedSiswa) {
-            $siswa = Siswa::find($selectedSiswa);
-            if ($siswa) {
-                $existingScores = NilaiPraktik::where('practical_id', $selectedPractical)
-                    ->where('siswa_id', $siswa->user_id)
+        if ($selectedPractical) {
+            $practical = Practical::with(['subject', 'kelas.siswa.user'])
+                ->find($selectedPractical);
+
+            if ($practical) {
+                // Ambil semua siswa di kelas praktikum ini
+                $siswaList = $practical->kelas
+                    ? Siswa::with('user')
+                        ->where('kelas_id', $practical->kelas_id)
+                        ->whereNull('deleted_at')
+                        ->orderBy('id')
+                        ->get()
+                    : collect();
+
+                // Ambil kriteria berdasarkan mata pelajaran praktikum
+                $mataPraktik   = $practical->subject?->name ?? '';
+                $kriteriaByCat = KriteriaPenilaian::active()
+                    ->where('mata_praktik', $mataPraktik)
+                    ->orderBy('kategori')
+                    ->orderBy('name')
                     ->get()
-                    ->keyBy('criteria_id');
+                    ->groupBy('kategori');
+
+                // Preload nilai yang sudah ada untuk semua siswa di praktikum ini
+                // key: "{practical_id}_{siswa_id(uc)}_{criteria_id|null}"
+                $ucIds = $siswaList->pluck('user_id');
+                $existingNilai = NilaiPraktik::where('practical_id', $selectedPractical)
+                    ->whereIn('siswa_id', $ucIds)
+                    ->get()
+                    ->groupBy(fn($n) => $n->siswa_id . '_' . ($n->criteria_id ?? 'null'));
             }
         }
 
         return view('guru.penilaian.nilai-kriteria', compact(
-            'practicals', 'students', 'mataPraktikList',
-            'selectedPractical', 'selectedSiswa',
-            'practical', 'kriteriaByCat', 'existingScores'
+            'practicals',
+            'selectedPractical',
+            'practical',
+            'siswaList',
+            'kriteriaByCat',
+            'existingNilai',
         ));
     }
 
     /**
-     * Store penilaian berbasis kriteria — satu record per kriteria per siswa.
-     * Nilai per kriteria = (checklist_terpenuhi / total_checklist) × 100
-     * Nilai akhir = Σ (nilai_kriteria × weight / 100)
+     * Store penilaian batch berbasis kriteria — satu record per kriteria per siswa.
+     * Menerima array siswa_ids + checklist per kriteria per siswa.
      */
     public function storeNilaiKriteria(Request $request): RedirectResponse
     {
         $request->validate([
-            'practical_id' => 'required|exists:practicals,id',
-            'siswa_id'     => 'required|exists:siswa,id',
-            'feedback'     => 'nullable|string|max:2000',
-            'kriteria'     => 'required|array|min:1',
-            'kriteria.*.id'       => 'required|exists:assessment_criteria,id',
-            'kriteria.*.checklist'=> 'nullable|array',
+            'practical_id'          => 'required|exists:practicals,id',
+            'siswa_ids'             => 'required|array|min:1',
+            'siswa_ids.*'           => 'exists:siswa,id',
+            'kriteria'              => 'required|array|min:1',
+            'kriteria.*.id'         => 'required|exists:assessment_criteria,id',
         ], [
-            'praktikum wajib dipilih'  => 'practical_id.required',
-            'siswa wajib dipilih'      => 'siswa_id.required',
-            'minimal satu kriteria'    => 'kriteria.required',
+            'practical_id.required' => 'Praktikum wajib dipilih.',
+            'siswa_ids.required'    => 'Minimal satu siswa harus dinilai.',
+            'kriteria.required'     => 'Minimal satu kriteria wajib ada.',
         ]);
 
-        $guruId = Auth::id();
-        $siswa  = Siswa::findOrFail($request->siswa_id);
-        $ucId   = $siswa->user_id;  // users_central.id
+        $guruId    = Auth::id();
+        $practical = Practical::findOrFail($request->practical_id);
 
-        // Resolve periode aktif sekali saja — reuse untuk semua insert
-        $practical     = \App\Models\Practical::find($request->practical_id);
-        $periodId      = $this->resolvePeriodId($practical?->kelas_id);
+        // Resolve periode aktif sekali saja
+        if (method_exists($this, 'resolvePeriodId')) {
+            $periodId = $this->resolvePeriodId($practical->kelas_id);
+        } else {
+            $kelas    = $practical->kelas_id ? Kelas::find($practical->kelas_id) : null;
+            $periodId = $kelas?->academic_period_id
+                ?? \App\Models\AcademicPeriod::getActive()?->id;
+        }
+
+        // Kumpulkan semua KriteriaPenilaian sekaligus (1 query)
+        $kriteriaIds  = collect($request->kriteria)->pluck('id');
+        $kriteriaMap  = KriteriaPenilaian::whereIn('id', $kriteriaIds)
+            ->get()
+            ->keyBy('id');
 
         DB::beginTransaction();
         try {
-            $nilaiAkhir   = 0;
-            $detailScores = [];
-            $totalBobot   = 0; // akumulasi bobot aktual semua kriteria yang dinilai
+            $savedCount = 0;
 
-            // Pass 1: hitung nilai per kriteria dan akumulasi total bobot
-            $kriteriaResults = [];
-            foreach ($request->kriteria as $kriteriaData) {
-                $kriteria    = KriteriaPenilaian::findOrFail($kriteriaData['id']);
-                $sopList     = is_array($kriteria->sop_checklist) ? $kriteria->sop_checklist : [];
-                $totalSop    = count($sopList);
-                $checkedSop  = $kriteriaData['checklist'] ?? [];
-                $checkedSop  = is_array($checkedSop) ? $checkedSop : [];
+            foreach ($request->siswa_ids as $siswaId) {
+                $siswa = Siswa::find($siswaId);
+                if (!$siswa) continue;
+                $ucId = $siswa->user_id;
 
-                // Nilai per kriteria: persentase SOP terpenuhi × 100
-                $nilaiKriteria = $totalSop > 0
-                    ? round((count($checkedSop) / $totalSop) * 100, 2)
-                    : 100; // jika tidak ada SOP, anggap penuh
+                // Ambil feedback per siswa
+                $feedbackSiswa = $request->input("feedback.{$siswaId}", '');
 
-                $totalBobot += $kriteria->weight;
+                $nilaiAkhir  = 0;
+                $totalBobot  = 0;
+                $kriteriaResults = [];
 
-                $kriteriaResults[] = compact('kriteria', 'sopList', 'totalSop', 'checkedSop', 'nilaiKriteria');
-            }
+                // Pass 1: hitung nilai per kriteria
+                foreach ($request->kriteria as $ki => $kriteriaData) {
+                    $kriteria   = $kriteriaMap->get($kriteriaData['id']);
+                    if (!$kriteria) continue;
 
-            // Pass 2: hitung nilai akhir dengan normalisasi bobot
-            // Jika total bobot = 100, hasil normal. Jika < 100, dinormalisasi agar tidak merugikan siswa.
-            $totalBobot = $totalBobot > 0 ? $totalBobot : 100;
+                    $sopList    = is_array($kriteria->sop_checklist) ? $kriteria->sop_checklist : [];
+                    $totalSop   = count($sopList);
 
-            foreach ($kriteriaResults as $item) {
-                $kriteria      = $item['kriteria'];
-                $nilaiKriteria = $item['nilaiKriteria'];
-                $sopList       = $item['sopList'];
-                $totalSop      = $item['totalSop'];
-                $checkedSop    = $item['checkedSop'];
+                    // Checklist diambil per siswa: kriteria[ki][checklist][siswa_id][]
+                    $checkedSop = $request->input("kriteria.{$ki}.checklist.{$siswaId}", []);
+                    $checkedSop = is_array($checkedSop) ? $checkedSop : [];
 
-                // Kontribusi ke nilai akhir — dinormalisasi dengan total bobot aktual
-                $nilaiAkhir += ($nilaiKriteria * $kriteria->weight / $totalBobot);
+                    $nilaiKriteria = $totalSop > 0
+                        ? round((count($checkedSop) / $totalSop) * 100, 2)
+                        : 100;
 
-                // Simpan per kriteria
+                    $totalBobot    += $kriteria->weight;
+                    $kriteriaResults[] = compact('kriteria', 'sopList', 'totalSop', 'checkedSop', 'nilaiKriteria', 'ki');
+                }
+
+                // Pass 2: nilai akhir ternormalisasi
+                $bobotDivisor = $totalBobot > 0 ? $totalBobot : 100;
+                foreach ($kriteriaResults as $item) {
+                    $nilaiAkhir += ($item['nilaiKriteria'] * $item['kriteria']->weight / $bobotDivisor);
+
+                    // Simpan per kriteria per siswa
+                    NilaiPraktik::updateOrCreate(
+                        [
+                            'practical_id' => $practical->id,
+                            'siswa_id'     => $ucId,
+                            'criteria_id'  => $item['kriteria']->id,
+                        ],
+                        [
+                            'academic_period_id' => $periodId,
+                            'guru_id'   => $guruId,
+                            'graded_by' => $guruId,
+                            'score'     => $item['nilaiKriteria'],
+                            'feedback'  => json_encode([
+                                'checked_sop'   => $item['checkedSop'],
+                                'total_sop'     => $item['totalSop'],
+                                'kriteria_name' => $item['kriteria']->name,
+                                'general_note'  => $feedbackSiswa,
+                            ]),
+                            'graded_at' => now(),
+                        ]
+                    );
+                }
+
+                $nilaiAkhir = min(100, round($nilaiAkhir, 2));
+
+                // Simpan nilai akhir (summary, criteria_id = null)
                 NilaiPraktik::updateOrCreate(
                     [
-                        'practical_id' => $request->practical_id,
+                        'practical_id' => $practical->id,
                         'siswa_id'     => $ucId,
-                        'criteria_id'  => $kriteria->id,
+                        'criteria_id'  => null,
                     ],
                     [
                         'academic_period_id' => $periodId,
-                        'guru_id'    => $guruId,
-                        'graded_by'  => $guruId,
-                        'score'      => $nilaiKriteria,
-                        'feedback'   => json_encode([
-                            'checked_sop'   => $checkedSop,
-                            'total_sop'     => $totalSop,
-                            'kriteria_name' => $kriteria->name,
-                            'general_note'  => $request->feedback,
-                        ]),
-                        'graded_at'  => now(),
+                        'guru_id'   => $guruId,
+                        'graded_by' => $guruId,
+                        'score'     => $nilaiAkhir,
+                        'feedback'  => $feedbackSiswa,
+                        'graded_at' => now(),
                     ]
                 );
 
-                $detailScores[] = [
-                    'kriteria' => $kriteria->name,
-                    'kategori' => $kriteria->kategori,
-                    'weight'   => $kriteria->weight,
-                    'checked'  => count($checkedSop),
-                    'total'    => $totalSop,
-                    'score'    => $nilaiKriteria,
-                ];
+                $savedCount++;
             }
-
-            $nilaiAkhir = round($nilaiAkhir, 2);
-
-            // Safety cap: nilai akhir tidak boleh melebihi 100
-            // (bisa terjadi jika bobot kriteria di DB tidak valid)
-            if ($nilaiAkhir > 100) {
-                Log::warning('Nilai akhir melebihi 100, dinormalisasi ulang', [
-                    'nilai_sebelum' => $nilaiAkhir,
-                    'total_bobot'   => $totalBobot,
-                    'practical_id'  => $request->practical_id,
-                    'siswa_id'      => $ucId,
-                ]);
-                // Normalisasi ulang: hitung ulang dari kontribusi maksimum
-                $nilaiAkhir = min(100, $nilaiAkhir);
-            }
-
-            // Simpan juga nilai akhir tanpa criteria_id (summary record)
-            NilaiPraktik::updateOrCreate(
-                [
-                    'practical_id' => $request->practical_id,
-                    'siswa_id'     => $ucId,
-                    'criteria_id'  => null,
-                ],
-                [
-                    'academic_period_id' => $periodId,
-                    'guru_id'   => $guruId,
-                    'graded_by' => $guruId,
-                    'score'     => $nilaiAkhir,
-                    'feedback'  => $request->feedback,
-                    'graded_at' => now(),
-                ]
-            );
 
             DB::commit();
 
-            Log::info('Penilaian kriteria saved', [
-                'practical_id' => $request->practical_id,
-                'siswa_id'     => $ucId,
-                'nilai_akhir'  => $nilaiAkhir,
+            Log::info('Penilaian kriteria batch saved', [
+                'practical_id' => $practical->id,
                 'guru_id'      => $guruId,
+                'siswa_count'  => $savedCount,
             ]);
 
             return redirect()
                 ->route('guru.penilaian.index')
-                ->with('success', "Penilaian berhasil disimpan. Nilai akhir: {$nilaiAkhir}");
+                ->with('success', "Penilaian berhasil disimpan untuk {$savedCount} siswa.");
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('storeNilaiKriteria failed: ' . $e->getMessage());
+            Log::error('storeNilaiKriteria batch failed: ' . $e->getMessage());
             return back()->withInput()
                 ->with('error', 'Gagal menyimpan penilaian: ' . $e->getMessage());
         }
