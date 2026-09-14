@@ -293,8 +293,8 @@ class ModernUserController extends BaseController
                     'jenis_kelamin'    => $request->jenis_kelamin    ?? 'L',
                     'tempat_lahir'     => $request->tempat_lahir     ?? '-',
                     'tanggal_lahir'    => $request->tanggal_lahir    ?? now()->format('Y-m-d'),
-                    'alamat'           => $request->alamat           ?: '-',
-                    'no_telepon'       => $request->phone            ?: '-',
+                    'alamat'           => $request->alamat           ?: null,
+                    'no_telepon'       => $request->phone            ?: null,
                     'kelas_id'         => $request->kelas_id,
                     'major'            => $request->major,
                     'tahun_ajaran'     => $tahunAjaran,
@@ -554,8 +554,8 @@ class ModernUserController extends BaseController
                     'jenis_kelamin' => $request->jenis_kelamin    ?? 'L',
                     'tempat_lahir'  => $request->tempat_lahir     ?? '-',
                     'tanggal_lahir' => $request->tanggal_lahir    ?? now()->format('Y-m-d'),
-                    'alamat'        => $request->alamat           ?: '-',
-                    'no_telepon'    => $request->phone            ?: '-',
+                    'alamat'        => $request->alamat           ?: null,
+                    'no_telepon'    => $request->phone            ?: null,
                 ], $siswaData));
             }
 
