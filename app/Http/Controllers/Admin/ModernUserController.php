@@ -98,7 +98,7 @@ class ModernUserController extends BaseController
 
     public function createSiswa(): View
     {
-        $kelas    = Kelas::with('jurusan')->orderBy('name')->get();
+        $kelas    = Kelas::with('jurusan', 'academicPeriod')->orderBy('name')->get();
         $jurusans = Jurusan::orderBy('name')->get();
         return view('admin.users.create-siswa', compact('kelas', 'jurusans'));
     }
@@ -253,7 +253,7 @@ class ModernUserController extends BaseController
             'alamat'          => 'nullable|string|max:500',
             'kelas_id'        => 'required|exists:classes,id',
             'major'           => 'required|string|max:100',
-            'tahun_ajaran'    => 'required|string|max:20',
+            'tahun_ajaran'    => 'nullable|string|max:20',
             'nama_ortu'       => 'nullable|string|max:100',
             'no_telepon_ortu' => 'nullable|string|max:20',
             'golongan_darah'  => 'nullable|in:A,B,AB,O',
@@ -279,7 +279,12 @@ class ModernUserController extends BaseController
                 'is_active' => true,
             ]);
 
-            // 2. Buat profil di tabel siswa (updateOrCreate agar tidak crash jika user_id sudah ada)
+            // 2. Ambil tahun ajaran & semester dari kelas yang dipilih
+            $kelas       = Kelas::findOrFail($request->kelas_id);
+            $tahunAjaran = $kelas->academic_year ?? $request->tahun_ajaran ?? (date('Y') . '/' . (date('Y') + 1));
+            $semester    = $kelas->semester ?? \App\Models\AcademicPeriod::getActive()?->semester ?? 'ganjil';
+
+            // 3. Buat profil di tabel siswa
             Siswa::updateOrCreate(
                 ['user_id' => $user->id],
                 [
@@ -292,7 +297,8 @@ class ModernUserController extends BaseController
                     'no_telepon'       => $request->phone            ?: '-',
                     'kelas_id'         => $request->kelas_id,
                     'major'            => $request->major,
-                    'tahun_ajaran'     => $request->tahun_ajaran,
+                    'tahun_ajaran'     => $tahunAjaran,
+                    'semester'         => $semester,
                     'nama_ortu'        => $request->nama_ortu        ?: null,
                     'no_telepon_ortu'  => $request->no_telepon_ortu  ?: null,
                     'golongan_darah'   => $request->golongan_darah   ?: null,
@@ -512,8 +518,12 @@ class ModernUserController extends BaseController
             }
             $user->update($userData);
 
-            // Update atau buat profil siswa — JANGAN pakai array_filter
-            // agar field yang dikosongkan (misal: tanggal_lahir) tetap di-update ke null
+            // Update atau buat profil siswa
+            // Ambil tahun ajaran & semester dari kelas yang dipilih
+            $kelasUpdate  = Kelas::findOrFail($request->kelas_id);
+            $tahunAjaran  = $kelasUpdate->academic_year ?? $request->tahun_ajaran ?? null;
+            $semester     = $kelasUpdate->semester ?? \App\Models\AcademicPeriod::getActive()?->semester ?? null;
+
             $siswaData = [
                 'nis'              => $request->nis,
                 'nisn'             => $request->nisn,
@@ -524,7 +534,8 @@ class ModernUserController extends BaseController
                 'no_telepon'       => $request->phone            ?: null,
                 'kelas_id'         => $request->kelas_id,
                 'major'            => $request->major,
-                'tahun_ajaran'     => $request->tahun_ajaran     ?: null,
+                'tahun_ajaran'     => $tahunAjaran,
+                'semester'         => $semester,
                 'nama_ortu'        => $request->nama_ortu        ?: null,
                 'no_telepon_ortu'  => $request->no_telepon_ortu  ?: null,
                 'golongan_darah'   => $request->golongan_darah   ?: null,

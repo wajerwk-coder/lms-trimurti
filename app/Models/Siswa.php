@@ -34,6 +34,7 @@ class Siswa extends Model
         'kelas_id',
         'major',
         'tahun_ajaran',
+        'semester',
         'nama_ortu',
         'no_telepon_ortu',
         'golongan_darah',

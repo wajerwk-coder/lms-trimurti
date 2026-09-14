@@ -205,8 +205,12 @@
                             @foreach($kelas as $k)
                                 <option value="{{ $k->id }}"
                                         data-jurusan="{{ $k->jurusan?->name ?? $k->major ?? '' }}"
+                                        data-tahun="{{ $k->academic_year ?? '' }}"
+                                        data-semester="{{ $k->semester ?? '' }}"
+                                        data-periode="{{ $k->academicPeriod?->full_label ?? '' }}"
                                         {{ old('kelas_id') == $k->id ? 'selected' : '' }}>
                                     {{ $k->name }}
+                                    @if($k->academic_year) ({{ $k->academic_year }}) @endif
                                 </option>
                             @endforeach
                         </select>
@@ -233,13 +237,19 @@
                         @error('major')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
+                    {{-- Tahun Ajaran & Semester: auto-fill dari kelas --}}
                     <div class="col-md-4">
-                        <label class="form-label small fw-semibold">Tahun Ajaran <span class="text-danger">*</span></label>
-                        <input type="text" name="tahun_ajaran"
-                               class="form-control @error('tahun_ajaran') is-invalid @enderror"
-                               value="{{ old('tahun_ajaran', date('Y').'/'.(date('Y')+1)) }}"
-                               placeholder="2024/2025" required>
-                        @error('tahun_ajaran')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <label class="form-label small fw-semibold">Periode Pembelajaran</label>
+                        <div class="form-control bg-light text-muted small" id="periodeInfo" style="min-height:38px;line-height:1.8;">
+                            <span id="periodeText">— pilih kelas dulu —</span>
+                        </div>
+                        {{-- Hidden fields untuk dikirim ke server --}}
+                        <input type="hidden" name="tahun_ajaran" id="tahunAjaranInput"
+                               value="{{ old('tahun_ajaran') }}">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Terisi otomatis dari kelas yang dipilih.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -558,8 +568,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* -- Auto-sync jurusan dari kelas ---------------- */
     kelasEl.addEventListener('change', function () {
-        const opt = this.options[this.selectedIndex];
+        const opt     = this.options[this.selectedIndex];
         const jurusan = opt?.dataset?.jurusan ?? '';
+        const tahun   = opt?.dataset?.tahun   ?? '';
+        const semester = opt?.dataset?.semester ?? '';
+        const periode  = opt?.dataset?.periode  ?? '';
+
+        // Sync jurusan
         if (jurusan && majorEl) {
             for (let i = 0; i < majorEl.options.length; i++) {
                 if (majorEl.options[i].value === jurusan) {
@@ -568,7 +583,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         }
+
+        // Isi hidden tahun ajaran
+        const tahunInput = document.getElementById('tahunAjaranInput');
+        if (tahunInput) tahunInput.value = tahun;
+
+        // Tampilkan info periode
+        const periodeText = document.getElementById('periodeText');
+        if (periodeText) {
+            if (tahun || semester || periode) {
+                const semLabel = semester === 'ganjil' ? 'Sem. Ganjil' :
+                                 semester === 'genap'  ? 'Sem. Genap'  : '';
+                const parts = [];
+                if (tahun)    parts.push('<strong>' + tahun + '</strong>');
+                if (semLabel) parts.push(semLabel);
+                if (periode && periode !== (tahun + ' ' + semLabel)) parts.push('<em>' + periode + '</em>');
+                periodeText.innerHTML = parts.join(' · ') || '—';
+            } else {
+                periodeText.textContent = '— belum ada data periode —';
+            }
+        }
     });
+
+    // Trigger sekali jika ada nilai old()
+    if (kelasEl.value) kelasEl.dispatchEvent(new Event('change'));
 
     /* -- Auto-generate username dari NIS -------------- */
     nisEl.addEventListener('blur', function () {
