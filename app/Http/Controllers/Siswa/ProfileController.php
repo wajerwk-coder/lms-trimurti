@@ -140,6 +140,11 @@ class ProfileController extends Controller
                 'email' => $request->email,
             ];
 
+            // Handle foto URL dari Cloudinary SEBELUM user->update() dipanggil
+            if ($request->filled('photo_url') && str_starts_with($request->photo_url, 'http')) {
+                $userData['photo'] = $request->photo_url;
+            }
+
             if ($request->filled('password')) {
                 if (!Hash::check($request->current_password, $user->password)) {
                     return redirect()->back()
@@ -166,11 +171,6 @@ class ProfileController extends Controller
                 $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9.\-_]/', '_', $foto->getClientOriginalName());
                 $path = $foto->storeAs('student_photos', $filename, 'public');
                 $studentData['foto'] = 'student_photos/' . $filename;
-            }
-
-            // Handle URL foto dari Cloudinary (di users_central.photo)
-            if ($request->filled('photo_url') && str_starts_with($request->photo_url, 'http')) {
-                $userData['photo'] = $request->photo_url;
             }
 
             if ($request->filled('jenis_kelamin')) {
@@ -239,7 +239,11 @@ class ProfileController extends Controller
 
         $validator = Validator::make($request->all(), [
             'current_password' => 'required',
-            'new_password' => 'required|min:8|confirmed',
+            'new_password'     => 'required|min:8|confirmed',
+        ], [
+            'new_password.required'  => 'Password baru wajib diisi.',
+            'new_password.min'       => 'Password baru minimal 8 karakter.',
+            'new_password.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
 
         if ($validator->fails()) {

@@ -125,7 +125,8 @@ class AttendanceController extends Controller
      */
     public function show($id): View
     {
-        $attendance = Attendance::where('siswa_id', Auth::id())
+        $attendance = Attendance::with(['subject', 'recorder'])
+            ->where('siswa_id', Auth::id())
             ->findOrFail($id);
 
         return view('siswa.absensi.show', compact('attendance'));

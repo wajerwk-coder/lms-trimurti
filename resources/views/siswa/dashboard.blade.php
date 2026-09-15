@@ -356,7 +356,7 @@
                 ['NIS',          $siswaProfile->nis          ?? '—'],
                 ['NISN',         $siswaProfile->nisn         ?? '—'],
                 ['Kelas',        $siswaProfile->kelas?->name ?? '—'],
-                ['Jurusan',      $siswaProfile->major        ?? '—'],
+                ['Jurusan',      $siswaProfile->kelas?->jurusan?->name ?? $siswaProfile->major ?? '—'],
                 ['Tahun Ajaran', $siswaProfile->tahun_ajaran ?? '—'],
                 ['Status',       ucfirst($siswaProfile->status ?? 'aktif')],
             ] as [$label, $val])

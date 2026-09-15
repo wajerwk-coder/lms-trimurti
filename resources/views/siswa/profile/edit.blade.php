@@ -296,8 +296,9 @@
                 </h6>
             </div>
             <div class="card-body p-4">
-                <form action="{{ route('siswa.profile.update') }}" method="POST" id="passwordForm">
-                    @csrf @method('PUT')
+                {{-- Form password terpisah → POST ke siswa.profile.password --}}
+                <form action="{{ route('siswa.profile.password') }}" method="POST" id="passwordForm">
+                    @csrf
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold">Password Saat Ini</label>
@@ -308,14 +309,14 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold">Password Baru</label>
-                            <input type="password" name="password"
-                                   class="form-control @error('password') is-invalid @enderror"
+                            <input type="password" name="new_password"
+                                   class="form-control @error('new_password') is-invalid @enderror"
                                    placeholder="Password baru" style="border-radius:8px;">
-                            @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            @error('new_password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-semibold">Konfirmasi Password</label>
-                            <input type="password" name="password_confirmation"
+                            <input type="password" name="new_password_confirmation"
                                    class="form-control"
                                    placeholder="Ulangi password baru" style="border-radius:8px;">
                         </div>
@@ -323,7 +324,7 @@
                     <div class="mt-3 pt-3 border-top d-flex align-items-center justify-content-between">
                         <div class="text-muted small">
                             <i class="fas fa-info-circle me-1"></i>
-                            Minimal 6 karakter. Kosongkan jika tidak ingin mengubah password.
+                            Minimal 8 karakter.
                         </div>
                         <button type="submit" class="btn btn-warning fw-semibold"
                                 style="border-radius:9px;" id="pwBtn">

@@ -160,6 +160,28 @@ class ScoreController extends Controller
         return response()->streamDownload($callback, $filename, $headers);
     }
 
+    /**
+     * Tampilkan detail satu nilai praktikum milik siswa.
+     */
+    public function show(int $id): View
+    {
+        [$siswaId] = $this->getSiswaContext();
+
+        $score = NilaiPraktik::with(['practical.subject', 'criteria'])
+            ->where('siswa_id', $siswaId)
+            ->findOrFail($id);
+
+        // Rata-rata kelas untuk praktikum yang sama (hanya nilai summary, bukan per-kriteria)
+        $averageScore = round(
+            NilaiPraktik::where('practical_id', $score->practical_id)
+                ->whereNull('criteria_id')
+                ->avg('score') ?? 0,
+            2
+        );
+
+        return view('siswa.nilai.show', compact('score', 'averageScore'));
+    }
+
     public function getChartData(): JsonResponse
     {
         [$siswaId, $kelasId] = $this->getSiswaContext();

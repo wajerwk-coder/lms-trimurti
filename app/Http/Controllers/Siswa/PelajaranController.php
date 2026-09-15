@@ -57,25 +57,21 @@ class PelajaranController extends Controller
         if (!empty($subjectIds)) {
             $subjectsQuery->whereIn('id', $subjectIds);
         }
-        $subjects = $subjectsQuery->get();
+        // Enrich: hitung materi, tugas, praktikum per subject — 1 query via selectRaw subquery
+        $kIdParam = $kelasId; // capture untuk closure
+        $subjects = $subjectsQuery
+            ->withCount([
+                'materials as material_count' => fn($q) => $q->whereNotNull('published_at')
+                    ->when($kIdParam, fn($s) => $s->where(fn($x) => $x->where('kelas_id', $kIdParam)->orWhereNull('kelas_id'))),
+                'assignments as assignment_count' => fn($q) => $q->where('is_published', true)
+                    ->when($kIdParam, fn($s) => $s->where(fn($x) => $x->where('kelas_id', $kIdParam)->orWhereNull('kelas_id'))),
+                'practicals as practical_count' => fn($q) => $q->where('is_published', true)
+                    ->when($kIdParam, fn($s) => $s->where(fn($x) => $x->where('kelas_id', $kIdParam)->orWhereNull('kelas_id'))),
+            ])
+            ->get();
 
-        // Enrich: hitung materi, tugas, praktikum per subject
-        $subjects->each(function ($subject) use ($kelasId) {
-            $baseM = Material::where('subject_id', $subject->id)->whereNotNull('published_at');
-            $baseA = Assignment::where('subject_id', $subject->id)->where('is_published', true);
-            $baseP = Practical::where('subject_id', $subject->id)->where('is_published', true);
-
-            if ($kelasId) {
-                $baseM->where(fn($q) => $q->where('kelas_id', $kelasId)->orWhereNull('kelas_id'));
-                $baseA->where(fn($q) => $q->where('kelas_id', $kelasId)->orWhereNull('kelas_id'));
-                $baseP->where(fn($q) => $q->where('kelas_id', $kelasId)->orWhereNull('kelas_id'));
-            }
-
-            $subject->material_count    = (clone $baseM)->count();
-            $subject->assignment_count  = (clone $baseA)->count();
-            $subject->practical_count   = (clone $baseP)->count();
-            $subject->total_activities  = $subject->material_count + $subject->assignment_count + $subject->practical_count;
-        });
+        // Hitung total_activities dari count yang sudah di-load
+        $subjects->each(fn($s) => $s->total_activities = $s->material_count + $s->assignment_count + $s->practical_count);
 
         $siswaData = [
             'name'    => Auth::user()->name,

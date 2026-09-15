@@ -35,7 +35,7 @@ class DashboardController extends Controller
         
         // Load profil siswa (tabel siswa) → kelas_id ada di sini
         $siswaProfile = \App\Models\Siswa::where('user_id', $siswa->id)
-            ->with('kelas')
+            ->with(['kelas.jurusan'])
             ->first();
         $kelasId = $siswaProfile?->kelas_id ?? null;
 
@@ -81,9 +81,9 @@ class DashboardController extends Controller
         // Upcoming deadlines
         $upcomingDeadlines = $this->getUpcomingDeadlines($siswaId, $kelasId);
 
-        // Variables for backward compatibility
-        $newMaterialsCount = $stats['total_materials'];
-        $pendingAssignmentsCount = $this->getPendingAssignmentsCount($siswaId, $kelasId);
+        // Variables for backward compatibility — reuse nilai dari $stats agar tidak double-query
+        $newMaterialsCount       = $stats['total_materials'];
+        $pendingAssignmentsCount = $stats['pending_assignments'];
         $upcomingPracticalsCount = Practical::whereNotNull('published_at')
             ->where(function($query) use ($kelasId) {
                 $query->where('kelas_id', $kelasId)

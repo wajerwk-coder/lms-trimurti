@@ -55,7 +55,7 @@
                 </div>
             </div>
             <div class="card-footer bg-white border-top py-3">
-                <a href="{{ route('siswa.reports.practical') }}" class="btn btn-outline-secondary btn-sm">
+                <a href="{{ route('siswa.nilai.index') }}" class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-arrow-left me-1"></i>Kembali
                 </a>
             </div>

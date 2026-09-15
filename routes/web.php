@@ -410,6 +410,7 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'siswa'])->group(fun
     Route::get('nilai',            [SiswaScoreController::class, 'index'])->name('nilai.index');
     Route::get('nilai/export',     [SiswaScoreController::class, 'exportScores'])->name('nilai.export');
     Route::get('nilai/chart-data', [SiswaScoreController::class, 'getChartData'])->name('nilai.chart-data');
+    Route::get('nilai/{id}',       [SiswaScoreController::class, 'show'])->name('nilai.show');
 
     // Jadwal Ujian (read-only, filtered by kelas siswa)
     Route::get('jadwal-ujian', [\App\Http\Controllers\Siswa\JadwalUjianController::class, 'index'])->name('jadwal-ujian.index');

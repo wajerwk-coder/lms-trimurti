@@ -141,13 +141,8 @@ class AssignmentController extends Controller
                 $submission = new AssignmentSubmission();
                 $submission->assignment_id = $id;
                 $submission->siswa_id      = $ucId;
-                // student_id: setelah migration fix, FK ke users_central — isi dengan ucId
-                // Sebelum migration fix, FK ke users (lama) — tapi karena NOT NULL, isi ucId juga
-                // Migration akan membetulkan FK-nya ke users_central
-                $submission->student_id    = $ucId;
             } else {
                 $submission->siswa_id = $ucId;
-                $submission->student_id = $ucId;
             }
 
             $submission->submission_text = $request->submission_text;
@@ -170,14 +165,8 @@ class AssignmentController extends Controller
                 $file->storeAs('assignment_submissions', $filename, 'public');
 
                 $submission->file_path = $filename;
-                // file_size hanya simpan jika kolom ada di DB
-                if (\Illuminate\Support\Facades\Schema::hasColumn('assignment_submissions', 'file_size')) {
-                    $submission->file_size = $file->getSize();
-                }
-                // file_url hanya simpan jika kolom ada di DB
-                if (\Illuminate\Support\Facades\Schema::hasColumn('assignment_submissions', 'file_url')) {
-                    $submission->file_url = 'assignment_submissions/' . $filename;
-                }
+                $submission->file_size = $file->getSize();
+                $submission->file_url  = 'assignment_submissions/' . $filename;
             }
 
             $submission->save();
@@ -212,7 +201,7 @@ class AssignmentController extends Controller
      */
     public function history(): View
     {
-        $submissions = AssignmentSubmission::with(['assignment', 'assignment.guru'])
+        $submissions = AssignmentSubmission::with(['assignment', 'assignment.subject', 'assignment.guru'])
             ->where('siswa_id', Auth::id())
             ->orderBy('submitted_at', 'desc')
             ->paginate(10);

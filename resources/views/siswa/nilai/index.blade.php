@@ -199,6 +199,7 @@
                                 <th class="text-center" style="width:80px;">Grade</th>
                                 <th style="width:110px;">Tanggal</th>
                                 <th class="pe-4" style="width:130px;">Progress</th>
+                                <th class="text-center pe-4" style="width:70px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -231,10 +232,19 @@
                                     </div>
                                     <div class="text-muted text-end" style="font-size:.68rem;">{{ number_format($pct, 0) }}%</div>
                                 </td>
+                                <td class="text-center pe-4">
+                                    <a href="{{ route('siswa.nilai.show', $score->id) }}"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       style="border-radius:7px;width:30px;height:30px;padding:0;
+                                              display:inline-flex;align-items:center;justify-content:center;"
+                                       title="Lihat Detail">
+                                        <i class="fas fa-eye" style="font-size:.65rem;"></i>
+                                    </a>
+                                </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5">
+                                <td colspan="7" class="text-center py-5">
                                     <i class="fas fa-flask fa-2x text-muted opacity-25 mb-3 d-block"></i>
                                     <p class="text-muted mb-0">Belum ada nilai praktikum.</p>
                                 </td>
