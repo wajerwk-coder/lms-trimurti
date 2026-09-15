@@ -47,7 +47,7 @@
                 <div class="notif-list" id="adminNotifList" style="max-height: 320px; overflow-y: auto;">
                     @forelse($notifications ?? [] as $notif)
                         <a class="dropdown-item notif-item d-flex align-items-start gap-2 py-2 px-3 {{ is_null($notif->read_at) ? 'notif-unread' : '' }}"
-                           href="{{ $notif->url_aksi ?? $notif->action_url ?? '#' }}">
+                           href="{{ route('notifications.show', $notif->id) }}">
                             <div class="notif-icon-wrap rounded-circle d-flex align-items-center justify-content-center flex-shrink-0
                                 @switch($notif->tipe ?? $notif->type ?? 'info')
                                     @case('exam') bg-warning bg-opacity-10 text-warning @break

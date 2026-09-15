@@ -96,16 +96,25 @@
                         </div>
                         <div class="flex-grow-1">
                             <div class="fw-semibold {{ $isRead ? 'text-muted' : 'text-dark' }}">
-                                {{ $judul }}
+                                <a href="{{ route('notifications.show', $notification->id) }}"
+                                   class="text-decoration-none {{ $isRead ? 'text-muted' : 'text-dark' }}">
+                                    {{ $judul }}
+                                </a>
                             </div>
                             <div class="text-muted small mt-1" style="max-width:380px;white-space:pre-line;">
                                 {{ Str::limit($pesan, 120) }}
                             </div>
-                            @if($urlAksi)
-                                <a href="{{ $urlAksi }}" class="btn btn-sm btn-outline-primary mt-1 py-0 px-2" style="font-size:11px;">
-                                    <i class="fas fa-external-link-alt me-1"></i>Lihat Detail
+                            <div class="d-flex gap-1 mt-2 flex-wrap">
+                                <a href="{{ route('notifications.show', $notification->id) }}"
+                                   class="btn btn-sm btn-{{ $bsColor }} py-0 px-2" style="font-size:11px;">
+                                    <i class="fas fa-eye me-1"></i>Baca Selengkapnya
                                 </a>
-                            @endif
+                                @if($urlAksi)
+                                    <a href="{{ $urlAksi }}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:11px;">
+                                        <i class="fas fa-external-link-alt me-1"></i>Lihat Detail
+                                    </a>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </td>

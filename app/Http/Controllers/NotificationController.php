@@ -42,6 +42,30 @@ class NotificationController extends Controller
     }
 
     /**
+     * Tampilkan detail satu notifikasi dan tandai sudah dibaca.
+     */
+    public function show(Notification $notification): View
+    {
+        $userId   = auth()->id();
+        $userRole = auth()->user()->role ?? '';
+
+        $allowed = $notification->penerima_id === $userId
+            || in_array($notification->tipe_penerima, ['semua', 'all'])
+            || $notification->tipe_penerima === $userRole;
+
+        if (!$allowed) {
+            abort(403, 'Anda tidak berhak melihat notifikasi ini.');
+        }
+
+        // Auto mark as read
+        if (is_null($notification->read_at)) {
+            $notification->update(['read_at' => now()]);
+        }
+
+        return view('notifications.show', compact('notification'));
+    }
+
+    /**
      * Tampilkan semua notifikasi user yang sedang login.
      */
     public function index(Request $request): View
