@@ -102,16 +102,17 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Pilih Siswa <span class="text-danger">*</span></label>
-                                <select class="form-select"
+                                <select class="form-select @error('siswa_id_practical') is-invalid @enderror"
                                         id="siswa_id_practical" name="siswa_id_practical">
                                     <option value="">— Pilih Siswa —</option>
                                     @foreach($students as $student)
-                                        <option value="{{ $student->id }}">
+                                        <option value="{{ $student->id }}" {{ old('siswa_id_practical') == $student->id ? 'selected' : '' }}>
                                             {{ $student->user?->name ?? "Siswa #$student->id" }}
                                             @if($student->nis) ({{ $student->nis }}) @endif
                                         </option>
                                     @endforeach
                                 </select>
+                                @error('siswa_id_practical')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
                     </div>

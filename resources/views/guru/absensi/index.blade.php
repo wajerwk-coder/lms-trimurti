@@ -108,7 +108,12 @@
                         <tr>
                             <td class="ps-4">
                                 <div class="fw-semibold">{{ $attendance->siswa?->name ?? '—' }}</div>
-                                <small class="text-muted">{{ $attendance->siswa?->siswaProfile?->nis ?? '' }}</small>
+                                @php
+                                    $siswaRec = $attendance->siswa
+                                        ? \App\Models\Siswa::where('user_id', $attendance->siswa->id)->first()
+                                        : null;
+                                @endphp
+                                <small class="text-muted">{{ $siswaRec?->nis ?? '' }}</small>
                             </td>
                             <td class="text-muted">{{ $attendance->kelas?->name ?? '—' }}</td>
                             <td class="text-muted">

@@ -492,8 +492,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const targetId = btn.getAttribute('data-bs-target').replace('#ppk-', '');
         const chevron  = document.getElementById('chv-' + targetId);
         btn.addEventListener('click', function () {
-            const expanded = btn.getAttribute('aria-expanded') === 'true';
-            if (chevron) chevron.style.transform = expanded ? 'rotate(0deg)' : 'rotate(180deg)';
+            // aria-expanded SEBELUM klik: 'false' = sedang tertutup, klik = akan dibuka
+            const willOpen = btn.getAttribute('aria-expanded') === 'false';
+            if (chevron) chevron.style.transform = willOpen ? 'rotate(180deg)' : 'rotate(0deg)';
         });
     });
 });

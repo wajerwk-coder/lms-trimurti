@@ -309,12 +309,14 @@ class AssignmentController extends Controller
             'description'  => 'required|string',
             'instructions' => 'nullable|string',
             'subject_id'   => 'required|exists:subjects,id',
+            'class_id'     => 'nullable|exists:classes,id',
             'file'         => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt,zip,rar|max:20480',
             'deadline'     => 'required|date',
             'max_score'    => 'required|numeric|min:1|max:1000',
         ], [
             'subject_id.required' => 'Mata pelajaran wajib dipilih.',
             'subject_id.exists'   => 'Mata pelajaran tidak valid.',
+            'class_id.exists'     => 'Kelas tidak valid.',
             'deadline.required'   => 'Batas waktu wajib diisi.',
             'file.max'            => 'Ukuran file maksimal 20 MB.',
         ]);

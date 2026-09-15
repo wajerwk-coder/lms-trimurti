@@ -305,7 +305,34 @@ class MaterialController extends Controller
 
         try {
             if ($material->file_url) {
-                Storage::disk('public')->delete('materials/' . $material->file_url);
+                // Jika URL Cloudinary (http/https), hapus via Cloudinary API
+                if (str_starts_with($material->file_url, 'http')) {
+                    try {
+                        $cloudName = config('cloudinary.cloud_name');
+                        $apiKey    = config('cloudinary.api_key');
+                        $apiSecret = config('cloudinary.api_secret');
+                        if ($cloudName && $apiKey && $apiSecret && $cloudName !== 'aw9h9icb_placeholder') {
+                            $cloudinary = new \Cloudinary\Cloudinary([
+                                'cloud' => [
+                                    'cloud_name' => $cloudName,
+                                    'api_key'    => $apiKey,
+                                    'api_secret' => $apiSecret,
+                                ],
+                                'url' => ['secure' => true],
+                            ]);
+                            // Ekstrak public_id dari URL Cloudinary
+                            preg_match('/\/upload\/(?:v\d+\/)?(.+)\.[a-z0-9]+$/i', $material->file_url, $m);
+                            if (!empty($m[1])) {
+                                $cloudinary->adminApi()->deleteAssets([$m[1]]);
+                            }
+                        }
+                    } catch (\Exception $ce) {
+                        Log::warning('Cloudinary delete failed (non-fatal): ' . $ce->getMessage(), ['material_id' => $material->id]);
+                    }
+                } else {
+                    // File lokal
+                    Storage::disk('public')->delete('materials/' . $material->file_url);
+                }
             }
             MaterialDownload::where('material_id', $material->id)->delete();
             $nama = $material->title;

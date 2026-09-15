@@ -194,6 +194,7 @@ Route::prefix('guru')->name('guru.')->middleware(['auth', 'guru'])->group(functi
     Route::post('materials/{material}/toggle-publish',[GuruMaterialController::class, 'togglePublish'])->name('materials.toggle-publish');
     
     // Assignments Management
+    Route::post('assignments/{assignment}/toggle-publish', [GuruAssignmentController::class, 'togglePublish'])->name('assignments.toggle-publish');
     Route::resource('assignments', GuruAssignmentController::class);
     Route::get('assignments/{assignment}/submissions', [GuruAssignmentController::class, 'submissions'])->name('assignments.submissions');
     Route::post('assignments/{assignment}/submissions/{submission}/grade', [GuruAssignmentController::class, 'grade'])->name('assignments.grade');
@@ -265,23 +266,20 @@ Route::prefix('guru')->name('guru.')->middleware(['auth', 'guru'])->group(functi
     // ── Halaman khusus Penilaian Praktik ────────────────────────────────────
     Route::get('penilaian-praktik', [GuruPenilaianController::class, 'penilaianPraktik'])->name('penilaian-praktik.index');
 
-    Route::get('penilaian', [GuruPenilaianController::class, 'index'])->name('penilaian.index');
-    Route::get('penilaian/create', [GuruPenilaianController::class, 'create'])->name('penilaian.create');
-    Route::post('penilaian', [GuruPenilaianController::class, 'store'])->name('penilaian.store');
-    Route::get('penilaian/{submission}/edit', [GuruPenilaianController::class, 'edit'])->name('penilaian.edit');
-    Route::put('penilaian/{submission}', [GuruPenilaianController::class, 'update'])->name('penilaian.update');
-    Route::delete('penilaian/{submission}', [GuruPenilaianController::class, 'destroy'])->name('penilaian.destroy');
-    
-    // Auto Assessment for Practical
-    Route::get('penilaian/auto', [GuruPenilaianController::class, 'autoAssessment'])->name('penilaian.auto');
-    Route::post('penilaian/auto/save', [GuruPenilaianController::class, 'saveAutoAssessment'])->name('penilaian.auto.save');
-    
-    // Auto Assessment with Criteria
-    Route::get('penilaian/auto-criteria', [GuruPenilaianController::class, 'autoWithCriteria'])->name('penilaian.auto.criteria');
-    Route::post('penilaian/auto-criteria/save', [GuruPenilaianController::class, 'saveAutoAssessmentWithCriteria'])->name('penilaian.auto.criteria.save');
-    
-    // Penilaian Export
-    Route::get('penilaian/export', [GuruPenilaianController::class, 'export'])->name('penilaian.export');
+    // ── Static penilaian routes HARUS sebelum wildcard {submission} ──────────
+    Route::get('penilaian',                        [GuruPenilaianController::class, 'index'])->name('penilaian.index');
+    Route::get('penilaian/create',                 [GuruPenilaianController::class, 'create'])->name('penilaian.create');
+    Route::post('penilaian',                       [GuruPenilaianController::class, 'store'])->name('penilaian.store');
+    Route::get('penilaian/auto',                   [GuruPenilaianController::class, 'autoAssessment'])->name('penilaian.auto');
+    Route::post('penilaian/auto/save',             [GuruPenilaianController::class, 'saveAutoAssessment'])->name('penilaian.auto.save');
+    Route::get('penilaian/auto-criteria',          [GuruPenilaianController::class, 'autoWithCriteria'])->name('penilaian.auto.criteria');
+    Route::post('penilaian/auto-criteria/save',    [GuruPenilaianController::class, 'saveAutoAssessmentWithCriteria'])->name('penilaian.auto.criteria.save');
+    Route::get('penilaian/export',                 [GuruPenilaianController::class, 'export'])->name('penilaian.export');
+
+    // ── Wildcard routes HARUS paling akhir ───────────────────────────────────
+    Route::get('penilaian/{submission}/edit',      [GuruPenilaianController::class, 'edit'])->name('penilaian.edit');
+    Route::put('penilaian/{submission}',           [GuruPenilaianController::class, 'update'])->name('penilaian.update');
+    Route::delete('penilaian/{submission}',        [GuruPenilaianController::class, 'destroy'])->name('penilaian.destroy');
     
     // Scoring Management (commented until controller is created)
     // Route::resource('scoring', GuruScoringController::class);

@@ -14,15 +14,13 @@ use App\Models\Assignment;
 use App\Models\Practical;
 use App\Models\Siswa;
 use App\Traits\ResolvesAcademicPeriod;
+use App\Traits\PenilaianWithCriteriaTrait;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-
-// Include the trait
-require_once base_path('app/Traits/PenilaianWithCriteriaTrait.php');
 
 class PenilaianController extends Controller
 {
@@ -234,8 +232,16 @@ class PenilaianController extends Controller
             ? ($request->siswa_id_practical ?? $request->siswa_id)
             : $request->siswa_id;
 
+        if (!$siswaIdRaw) {
+            return back()->withInput()->with('error', 'Siswa wajib dipilih untuk tipe penilaian ini.');
+        }
+
         $siswa = Siswa::findOrFail($siswaIdRaw);
         $ucId  = $siswa->user_id;
+
+        if (!$ucId) {
+            return back()->withInput()->with('error', 'Siswa ini belum memiliki akun pengguna. Hubungi administrator.');
+        }
 
         try {
             if ($request->assessment_type === 'assignment') {
@@ -643,7 +649,8 @@ class PenilaianController extends Controller
         
         // Verify ownership
         if ($assessment instanceof AssignmentSubmission) {
-            if ($assessment->assignment->guru_id !== $guruId) {
+            // assignment bisa null jika assignment sudah dihapus — tolak 403 agar aman
+            if (!$assessment->assignment || $assessment->assignment->guru_id !== $guruId) {
                 abort(403);
             }
         } elseif ($assessment instanceof NilaiPraktik) {
