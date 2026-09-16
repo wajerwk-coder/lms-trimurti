@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Notification;
+use App\Models\NotificationRead;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\DB;
 
 class NotificationController extends Controller
 {
@@ -14,12 +16,26 @@ class NotificationController extends Controller
         $this->middleware('auth');
     }
 
+    // ── Helper: apakah user ini sudah membaca notifikasi ini ────────────────
+    private function isRead(int $userId, int $notificationId): bool
+    {
+        return NotificationRead::where('user_id', $userId)
+            ->where('notification_id', $notificationId)
+            ->exists();
+    }
+
+    // ── Helper: tandai satu notifikasi sudah dibaca oleh user ini ───────────
+    private function markRead(int $userId, int $notificationId): void
+    {
+        NotificationRead::firstOrCreate(
+            ['user_id' => $userId, 'notification_id' => $notificationId],
+            ['read_at' => now()]
+        );
+    }
+
     /**
-     * Query builder notifikasi untuk user yang sedang login.
-     * Mencakup:
-     *   - notifikasi khusus untuk user ini (penerima_id = userId)
-     *   - notifikasi untuk semua (tipe_penerima = 'semua')
-     *   - notifikasi untuk role user ini (tipe_penerima = 'guru' / 'siswa')
+     * Query builder notifikasi yang relevan untuk user yang sedang login.
+     * Mencakup: notifikasi personal + broadcast ke semua/role.
      */
     private function baseQuery()
     {
@@ -27,22 +43,35 @@ class NotificationController extends Controller
         $userRole = auth()->user()->role ?? '';
 
         return Notification::where(function ($q) use ($userId, $userRole) {
-            // 1. Notifikasi ditujukan langsung ke user ini
-            $q->where('penerima_id', $userId);
+            $q->where('penerima_id', $userId)
+              ->orWhere('tipe_penerima', 'semua')
+              ->orWhere('tipe_penerima', 'all');
 
-            // 2. Notifikasi untuk semua pengguna
-            $q->orWhere('tipe_penerima', 'semua');
-            $q->orWhere('tipe_penerima', 'all');   // nilai English
-
-            // 3. Notifikasi untuk role user ini
-            if (in_array($userRole, ['guru', 'siswa'])) {
+            if (in_array($userRole, ['guru', 'siswa', 'admin'])) {
                 $q->orWhere('tipe_penerima', $userRole);
             }
         });
     }
 
     /**
-     * Tampilkan detail satu notifikasi dan tandai sudah dibaca.
+     * Hanya notifikasi yang BELUM dibaca oleh user ini.
+     * Gunakan LEFT JOIN ke notification_reads untuk filter.
+     */
+    private function unreadQuery()
+    {
+        $userId = auth()->id();
+
+        return $this->baseQuery()
+            ->whereNotExists(function ($q) use ($userId) {
+                $q->select(DB::raw(1))
+                  ->from('notification_reads')
+                  ->whereColumn('notification_reads.notification_id', 'notifications.id')
+                  ->where('notification_reads.user_id', $userId);
+            });
+    }
+
+    /**
+     * Tampilkan detail satu notifikasi + auto mark-as-read.
      */
     public function show(Notification $notification): View
     {
@@ -57,35 +86,42 @@ class NotificationController extends Controller
             abort(403, 'Anda tidak berhak melihat notifikasi ini.');
         }
 
-        // Auto mark as read
-        if (is_null($notification->read_at)) {
-            $notification->update(['read_at' => now()]);
-        }
+        // Auto mark as read — hanya untuk user ini
+        $this->markRead($userId, $notification->id);
+
+        // Tambahkan helper property agar view bisa cek status baca
+        $notification->is_read_by_me = true;
 
         return view('notifications.show', compact('notification'));
     }
 
     /**
-     * Tampilkan semua notifikasi user yang sedang login.
+     * Tampilkan daftar semua notifikasi user.
      */
     public function index(Request $request): View
     {
+        $userId = auth()->id();
+
+        // Ambil semua notifikasi + info sudah dibaca atau belum oleh user ini
         $notifications = $this->baseQuery()
             ->with('sender')
-            ->latest()
+            ->leftJoin('notification_reads as nr', function ($join) use ($userId) {
+                $join->on('nr.notification_id', '=', 'notifications.id')
+                     ->where('nr.user_id', '=', $userId);
+            })
+            ->select('notifications.*', DB::raw('nr.read_at as my_read_at'))
+            ->latest('notifications.created_at')
             ->paginate(20);
 
         return view('notifications.index', compact('notifications'));
     }
 
     /**
-     * Jumlah notifikasi yang belum dibaca (AJAX).
+     * Jumlah notifikasi belum dibaca user ini (AJAX).
      */
     public function unreadCount(): JsonResponse
     {
-        $count = $this->baseQuery()
-            ->whereNull('read_at')
-            ->count();
+        $count = $this->unreadQuery()->count();
 
         return response()->json(['count' => $count]);
     }
@@ -95,28 +131,28 @@ class NotificationController extends Controller
      */
     public function recent(): JsonResponse
     {
-        $notifications = $this->baseQuery()
-            ->whereNull('read_at')
+        $notifications = $this->unreadQuery()
             ->latest()
             ->take(5)
             ->get();
 
         return response()->json([
             'notifications' => $notifications->map(fn ($n) => [
-                'id'         => $n->id,
-                'title'      => $n->judul ?? $n->title ?? 'Notifikasi',
-                'message'    => $n->pesan ?? $n->message ?? '',
-                'type'       => $n->tipe ?? $n->type ?? 'info',
-                'action_url' => $n->url_aksi ?? $n->action_url ?? '#',
-                'time_ago'   => $n->created_at ? \Carbon\Carbon::parse($n->created_at)->diffForHumans() : '',
+                'id'            => $n->id,
+                'title'         => $n->judul ?? $n->title ?? 'Notifikasi',
+                'message'       => $n->pesan ?? $n->message ?? '',
+                'type'          => $n->tipe ?? $n->type ?? 'info',
+                'action_url'    => $n->url_aksi ?? $n->action_url ?? '#',
+                'time_ago'      => $n->created_at
+                                   ? \Carbon\Carbon::parse($n->created_at)->diffForHumans()
+                                   : '',
                 'tipe_penerima' => $n->tipe_penerima ?? '',
             ])
         ]);
     }
 
     /**
-     * Tandai notifikasi tertentu sudah dibaca.
-     * Notifikasi "semua"/"guru"/"siswa" boleh ditandai oleh siapapun yang berhak melihatnya.
+     * Tandai satu notifikasi sudah dibaca (AJAX).
      */
     public function markAsRead(Notification $notification): JsonResponse
     {
@@ -131,35 +167,39 @@ class NotificationController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Untuk notifikasi broadcast (semua/role), buat salinan personal dengan read_at
-        // agar tidak menandai "sudah dibaca" untuk semua orang lain
-        if (in_array($notification->tipe_penerima, ['semua', 'all', 'guru', 'siswa'])
-            && $notification->penerima_id !== $userId) {
-            // Buat record personal read — simpan sebagai notif baru dengan penerima_id spesifik
-            // tapi flagnya read_at = now agar tampak sudah dibaca di UI user ini
-            // Pendekatan sederhana: tandai langsung di record asli (acceptable untuk LMS kecil)
-            $notification->update(['read_at' => now()]);
-        } else {
-            $notification->markAsRead();
+        $this->markRead($userId, $notification->id);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Tandai SEMUA notifikasi sudah dibaca oleh user ini.
+     */
+    public function markAllAsRead(): JsonResponse
+    {
+        $userId = auth()->id();
+
+        // Ambil semua ID notifikasi yang belum dibaca oleh user ini
+        $unreadIds = $this->unreadQuery()->pluck('notifications.id');
+
+        if ($unreadIds->isNotEmpty()) {
+            $rows = $unreadIds->map(fn ($id) => [
+                'user_id'         => $userId,
+                'notification_id' => $id,
+                'read_at'         => now(),
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ])->toArray();
+
+            // insertOrIgnore: abaikan duplikat (user mungkin sudah baca sebagian)
+            NotificationRead::insertOrIgnore($rows);
         }
 
         return response()->json(['success' => true]);
     }
 
     /**
-     * Tandai semua notifikasi sudah dibaca (untuk user ini).
-     */
-    public function markAllAsRead(): JsonResponse
-    {
-        $this->baseQuery()
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
-
-        return response()->json(['success' => true]);
-    }
-
-    /**
-     * Hapus notifikasi.
+     * Hapus notifikasi (hanya yang personal milik user ini, atau admin).
      */
     public function delete(Notification $notification): JsonResponse
     {
@@ -175,7 +215,14 @@ class NotificationController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $notification->delete();
+        // Non-admin hanya bisa "sembunyikan" dengan menandai baca — bukan hapus permanen
+        // Admin bisa hapus record asli
+        if ($userRole === 'admin' && $notification->penerima_id === $userId) {
+            $notification->delete();
+        } else {
+            // Untuk user biasa atau notifikasi broadcast: cukup tandai sudah baca
+            $this->markRead($userId, $notification->id);
+        }
 
         return response()->json(['success' => true]);
     }
