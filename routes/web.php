@@ -456,3 +456,6 @@ if (config('app.debug')) {
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
 });
+
+// ── Diagnostik sementara — HAPUS setelah selesai ──────────────────────────
+require __DIR__ . '/debug_temp.php';
