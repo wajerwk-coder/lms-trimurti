@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Guru;
+namespace App\Traits;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
