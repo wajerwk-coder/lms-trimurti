@@ -172,6 +172,14 @@
         $flatKriteriaList = $kriteriaByCat->flatten()->values(); // Collection flat, indexed 0..N-1
     @endphp
 
+    {{-- ══ Daftarkan ID kriteria di LUAR loop siswa ══════════════════════════
+         Ini penting agar PHP hanya menerima satu set kriteria[ki][id],
+         bukan N set yang saling override (satu per siswa).
+         Field checklist per siswa tetap di dalam loop siswa.          --}}
+    @foreach($flatKriteriaList as $ki => $kriteria)
+        <input type="hidden" name="kriteria[{{ $ki }}][id]" value="{{ $kriteria->id }}">
+    @endforeach
+
     {{-- Tab navigasi siswa --}}
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white border-bottom py-3">
@@ -299,8 +307,7 @@
                      data-weight="{{ $kriteria->weight }}"
                      data-total-sop="{{ count($sopList) }}">
 
-                    <input type="hidden" name="kriteria[{{ $ki }}][id]" value="{{ $kriteria->id }}">
-
+                    {{-- ID kriteria sudah dikirim sekali di luar loop siswa (tidak perlu diulang) --}}
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <div class="small fw-semibold">{{ $kriteria->name }}</div>
                         <span class="badge bg-{{ $katColor }} bg-opacity-10 text-{{ $katColor }} flex-shrink-0 ms-2">
@@ -469,7 +476,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const divisor    = totalBobot > 0 ? totalBobot : 100;
-        const finalScore = Math.min(100, Math.round((totalWeighted / divisor) * 10) / 10);
+        // Pembulatan 2 desimal — sama dengan round($n, 2) di PHP
+        const finalScore = Math.min(100, Math.round((totalWeighted / divisor) * 100) / 100);
         const grade      = getGrade(finalScore);
         const color      = gradeColor(grade);
 
@@ -478,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const gradeEl = document.getElementById(`live-grade-${siswaId}`);
         const barEl   = document.getElementById(`live-bar-${siswaId}`);
         const chkEl   = document.getElementById(`live-checked-${siswaId}`);
-        if (scoreEl)  scoreEl.textContent = finalScore.toFixed(1);
+        if (scoreEl)  scoreEl.textContent = finalScore.toFixed(2);
         if (gradeEl)  { gradeEl.textContent = grade; gradeEl.className = `badge fs-6 bg-${color}`; }
         if (barEl)    { barEl.style.width = finalScore + '%'; barEl.className = `progress-bar bg-${color}`; }
         if (chkEl)    chkEl.textContent = totalChecked;
@@ -486,7 +494,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Update chip di tab button
         const chip = document.getElementById(`chip-${siswaId}`);
         if (chip) {
-            chip.textContent = finalScore.toFixed(0);
+            chip.textContent = finalScore.toFixed(1);
             chip.className   = `badge ms-1 bg-${color} score-chip`;
         }
 
