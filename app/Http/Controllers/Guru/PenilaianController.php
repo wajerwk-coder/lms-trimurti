@@ -427,9 +427,10 @@ class PenilaianController extends Controller
                         ->get()
                     : collect();
 
-                // Ambil kriteria berdasarkan mata pelajaran praktikum
-                // $mataPraktik harus non-empty agar tidak query semua kriteria
-                $mataPraktik   = trim($practical->subject?->name ?? '');
+                // Ambil kriteria berdasarkan judul praktikum (bukan nama subject)
+                // Judul praktikum harus cocok persis dengan kolom mata_praktik
+                // di assessment_criteria — misalnya 'Pemeriksaan Golongan Darah'
+                $mataPraktik   = trim($practical->title ?? $practical->judul ?? '');
                 $kriteriaByCat = collect();
 
                 if ($mataPraktik !== '') {
@@ -441,14 +442,36 @@ class PenilaianController extends Controller
                         ->groupBy('kategori');
                 }
 
-                // Jika tidak ada kriteria cocok, coba match via subject_id sebagai fallback
-                if ($kriteriaByCat->isEmpty() && $practical->subject_id) {
+                // Fallback 1: coba nama subject jika judul praktikum tidak match
+                if ($kriteriaByCat->isEmpty() && $practical->subject?->name) {
+                    $subjectName   = trim($practical->subject->name);
                     $kriteriaByCat = KriteriaPenilaian::active()
-                        ->where('subject_id', $practical->subject_id)
+                        ->where('mata_praktik', $subjectName)
                         ->orderBy('kategori')
                         ->orderBy('name')
                         ->get()
                         ->groupBy('kategori');
+
+                    if ($kriteriaByCat->isNotEmpty()) {
+                        $mataPraktik = $subjectName;
+                    }
+                }
+
+                // Fallback 2: subject_id — HANYA jika match tunggal (satu jenis mata_praktik)
+                // agar tidak mengambil semua kriteria dari subject yang punya banyak mata_praktik
+                if ($kriteriaByCat->isEmpty() && $practical->subject_id) {
+                    $kandidat = KriteriaPenilaian::active()
+                        ->where('subject_id', $practical->subject_id)
+                        ->orderBy('kategori')
+                        ->orderBy('name')
+                        ->get();
+
+                    // Hanya pakai jika semua kriteria punya mata_praktik yang sama
+                    $mataPraktikUnik = $kandidat->pluck('mata_praktik')->unique()->filter()->values();
+                    if ($mataPraktikUnik->count() === 1) {
+                        $kriteriaByCat = $kandidat->groupBy('kategori');
+                        $mataPraktik   = $mataPraktikUnik->first();
+                    }
                 }
 
                 // Preload nilai yang sudah ada untuk semua siswa di praktikum ini
