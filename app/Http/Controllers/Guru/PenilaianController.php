@@ -459,6 +459,9 @@ class PenilaianController extends Controller
                 // 3. Partial match — cari mata_praktik di DB yang judulnya mirip
                 // Contoh: judul 'Dasar-Dasar Pemeriksaan Golongan Darah'
                 //         cocok ke mata_praktik 'Pemeriksaan Golongan Darah'
+                // Untuk mencegah cross-contamination antar praktikum/jurusan (mis. 'Golongan'
+                // vs 'Peracikan dan Formulasi Obat'), partial match HANYA diterima jika
+                // string yang cocok setidaknya 70% dari panjang string yang lebih panjang.
                 if ($kriteriaByCat->isEmpty() && $mataPraktik !== '') {
                     $allMp = KriteriaPenilaian::active()
                         ->whereNotNull('mata_praktik')
@@ -466,20 +469,37 @@ class PenilaianController extends Controller
                         ->distinct()
                         ->pluck('mata_praktik');
 
-                    // Urutkan: mata_praktik dengan kata paling banyak cocok duluan
+                    $minRatio   = 0.7;
                     $titleLo    = mb_strtolower($mataPraktik);
                     $bestMatch  = null;
                     $bestScore  = 0;
 
                     foreach ($allMp as $mp) {
                         $mpLo = mb_strtolower($mp);
-                        if (str_contains($titleLo, $mpLo) || str_contains($mpLo, $titleLo)) {
-                            // Hitung skor: panjang string yang cocok (lebih panjang = lebih spesifik)
-                            $score = strlen($mpLo);
-                            if ($score > $bestScore) {
-                                $bestScore = $score;
-                                $bestMatch = $mp;
-                            }
+                        if ($mpLo === '' || $titleLo === '') {
+                            continue;
+                        }
+
+                        $isSubstring = str_contains($titleLo, $mpLo) || str_contains($mpLo, $titleLo);
+                        if (!$isSubstring) {
+                            continue;
+                        }
+
+                        // Panjang string yang cocok (string yang lebih pendek dari keduanya,
+                        // karena itulah bagian yang benar-benar overlap)
+                        $matchedLength = min(mb_strlen($mpLo), mb_strlen($titleLo));
+                        $longerLength  = max(mb_strlen($mpLo), mb_strlen($titleLo));
+                        $ratio         = $longerLength > 0 ? ($matchedLength / $longerLength) : 0;
+
+                        // Validasi minimal 70% panjang kata cocok agar tidak salah tangkap
+                        // kriteria dari mata_praktik/jurusan lain.
+                        if ($ratio < $minRatio) {
+                            continue;
+                        }
+
+                        if ($matchedLength > $bestScore) {
+                            $bestScore = $matchedLength;
+                            $bestMatch = $mp;
                         }
                     }
 
