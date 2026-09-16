@@ -503,8 +503,7 @@ class PenilaianController extends Controller
                 // Ambil feedback per siswa
                 $feedbackSiswa = $request->input("feedback.{$siswaId}", '');
 
-                $nilaiAkhir  = 0;
-                $totalBobot  = 0;
+                $nilaiAkhir      = 0;
                 $kriteriaResults = [];
 
                 // Pass 1: hitung nilai per kriteria
@@ -519,48 +518,67 @@ class PenilaianController extends Controller
                     $checkedSop = $request->input("kriteria.{$ki}.checklist.{$siswaId}", []);
                     $checkedSop = is_array($checkedSop) ? $checkedSop : [];
 
-                    // Pastikan nilai checklist valid: hanya ambil index yang ada di sopList
-                    // dan batasi maksimal $totalSop item agar score tidak overflow
-                    $checkedSop = array_filter($checkedSop, fn($v) => is_numeric($v) && (int)$v < $totalSop);
-                    $checkedSop = array_values(array_unique($checkedSop));
+                    // Hanya ambil index yang valid (< jumlah SOP item) dan hapus duplikat
+                    if ($totalSop > 0) {
+                        $checkedSop = array_filter(
+                            $checkedSop,
+                            fn($v) => is_numeric($v) && (int)$v >= 0 && (int)$v < $totalSop
+                        );
+                        $checkedSop = array_values(array_unique($checkedSop));
 
-                    $nilaiKriteria = $totalSop > 0
-                        ? round(min(count($checkedSop), $totalSop) / $totalSop * 100, 2)
-                        : 100;
+                        // Hitung nilai: (jumlah item dicentang / total item) * 100
+                        $nilaiKriteria = round(count($checkedSop) / $totalSop * 100, 2);
+                    } else {
+                        // Kriteria tidak punya SOP checklist di DB → skip dari perhitungan
+                        // (jangan fallback ke 100 karena akan mendistorsi nilai akhir)
+                        $checkedSop    = [];
+                        $nilaiKriteria = null; // ditandai skip
+                    }
 
-                    // Pastikan nilaiKriteria tidak pernah melebihi 100
-                    $nilaiKriteria = min(100.0, max(0.0, $nilaiKriteria));
+                    // Pastikan nilaiKriteria tidak pernah keluar rentang 0–100
+                    if ($nilaiKriteria !== null) {
+                        $nilaiKriteria = min(100.0, max(0.0, $nilaiKriteria));
+                    }
 
-                    $totalBobot    += $kriteria->weight;
                     $kriteriaResults[] = compact('kriteria', 'sopList', 'totalSop', 'checkedSop', 'nilaiKriteria', 'ki');
                 }
 
-                // Pass 2: nilai akhir ternormalisasi
-                $bobotDivisor = $totalBobot > 0 ? $totalBobot : 100;
-                foreach ($kriteriaResults as $item) {
-                    $nilaiAkhir += ($item['nilaiKriteria'] * $item['kriteria']->weight / $bobotDivisor);
+                // Pass 2: nilai akhir ternormalisasi — hanya hitung kriteria yang punya SOP
+                // Hitung ulang totalBobot hanya dari kriteria yang punya SOP (nilaiKriteria != null)
+                $bobotAktif   = collect($kriteriaResults)
+                    ->filter(fn($item) => $item['nilaiKriteria'] !== null)
+                    ->sum(fn($item) => $item['kriteria']->weight);
+                $bobotDivisor = $bobotAktif > 0 ? $bobotAktif : 100;
 
-                    // Simpan per kriteria per siswa
-                    NilaiPraktik::updateOrCreate(
-                        [
-                            'practical_id' => $practical->id,
-                            'siswa_id'     => $ucId,
-                            'criteria_id'  => $item['kriteria']->id,
-                        ],
-                        [
-                            'academic_period_id' => $periodId,
-                            'guru_id'   => $guruId,
-                            'graded_by' => $guruId,
-                            'score'     => $item['nilaiKriteria'],
-                            'feedback'  => json_encode([
-                                'checked_sop'   => $item['checkedSop'],
-                                'total_sop'     => $item['totalSop'],
-                                'kriteria_name' => $item['kriteria']->name,
-                                'general_note'  => $feedbackSiswa,
-                            ]),
-                            'graded_at' => now(),
-                        ]
-                    );
+                foreach ($kriteriaResults as $item) {
+                    // Skip kriteria tanpa SOP (nilaiKriteria = null) dari nilai akhir
+                    if ($item['nilaiKriteria'] !== null) {
+                        $nilaiAkhir += ($item['nilaiKriteria'] * $item['kriteria']->weight / $bobotDivisor);
+                    }
+
+                    // Simpan per-kriteria — hanya jika kriteria punya SOP (ada nilai nyata)
+                    if ($item['nilaiKriteria'] !== null) {
+                        NilaiPraktik::updateOrCreate(
+                            [
+                                'practical_id' => $practical->id,
+                                'siswa_id'     => $ucId,
+                                'criteria_id'  => $item['kriteria']->id,
+                            ],
+                            [
+                                'academic_period_id' => $periodId,
+                                'guru_id'   => $guruId,
+                                'graded_by' => $guruId,
+                                'score'     => $item['nilaiKriteria'],
+                                'feedback'  => json_encode([
+                                    'checked_sop'   => $item['checkedSop'],
+                                    'total_sop'     => $item['totalSop'],
+                                    'kriteria_name' => $item['kriteria']->name,
+                                    'general_note'  => $feedbackSiswa,
+                                ]),
+                                'graded_at' => now(),
+                            ]
+                        );
+                    }
                 }
 
                 $nilaiAkhir = min(100, round($nilaiAkhir, 2));
