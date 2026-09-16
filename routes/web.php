@@ -452,10 +452,10 @@ if (config('app.debug')) {
     require __DIR__ . '/test.php';
 }
 
+// ── DEBUG SEMENTARA — hapus setelah masalah teridentifikasi ─────────────────
+Route::middleware('auth')->get('/debug-penilaian', [\App\Http\Controllers\DebugPenilaianController::class, 'index']);
+
 // Fallback Route
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
 });
-
-// ── Diagnostik sementara — HAPUS setelah selesai ──────────────────────────
-require __DIR__ . '/debug_temp.php';
