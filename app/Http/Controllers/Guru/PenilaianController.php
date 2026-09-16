@@ -519,9 +519,17 @@ class PenilaianController extends Controller
                     $checkedSop = $request->input("kriteria.{$ki}.checklist.{$siswaId}", []);
                     $checkedSop = is_array($checkedSop) ? $checkedSop : [];
 
+                    // Pastikan nilai checklist valid: hanya ambil index yang ada di sopList
+                    // dan batasi maksimal $totalSop item agar score tidak overflow
+                    $checkedSop = array_filter($checkedSop, fn($v) => is_numeric($v) && (int)$v < $totalSop);
+                    $checkedSop = array_values(array_unique($checkedSop));
+
                     $nilaiKriteria = $totalSop > 0
-                        ? round((count($checkedSop) / $totalSop) * 100, 2)
+                        ? round(min(count($checkedSop), $totalSop) / $totalSop * 100, 2)
                         : 100;
+
+                    // Pastikan nilaiKriteria tidak pernah melebihi 100
+                    $nilaiKriteria = min(100.0, max(0.0, $nilaiKriteria));
 
                     $totalBobot    += $kriteria->weight;
                     $kriteriaResults[] = compact('kriteria', 'sopList', 'totalSop', 'checkedSop', 'nilaiKriteria', 'ki');
