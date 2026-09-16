@@ -141,11 +141,14 @@
                 lalu admin dapat menambahkan kriteria penilaian SOP yang sesuai.
             </div>
             @else
-            <div class="alert alert-info small text-start d-inline-block" style="max-width:480px;">
+            <div class="alert alert-info small text-start d-inline-block" style="max-width:520px;">
                 <i class="fas fa-info-circle me-1"></i>
-                Nama kriteria yang terdaftar di sistem mungkin berbeda dari nama mata pelajaran praktikum.
-                Hubungi admin untuk menambahkan kriteria SOP dengan
-                <strong>Mata Praktik = "{{ $mataPraktik }}"</strong>.
+                <strong>Untuk admin:</strong> Buka halaman <em>Kriteria Penilaian</em> dan pastikan
+                ada kriteria dengan nilai <strong>Mata Praktik</strong> yang sama persis dengan
+                judul praktikum ini:<br>
+                <code class="d-block mt-1 p-2 bg-white rounded border">{{ $mataPraktik }}</code>
+                Atau edit judul praktikum agar sama persis dengan nilai Mata Praktik yang sudah ada
+                di sistem.
             </div>
             @endif
         </div>

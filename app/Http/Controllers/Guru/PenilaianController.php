@@ -428,12 +428,17 @@ class PenilaianController extends Controller
                     : collect();
 
                 // ── Cari kriteria SOP yang sesuai dengan praktikum ini ──────────
-                // Prioritas: exact judul → exact subject name → LIKE partial → subject_id
+                // Hanya pakai EXACT match — tidak ada substring/partial matching
+                // agar kriteria dari jurusan lain tidak ikut muncul.
+                //
+                // Jika tidak ada exact match, admin perlu menyesuaikan nilai
+                // mata_praktik di assessment_criteria agar sama persis dengan
+                // judul praktikum yang dibuat guru.
                 $mataPraktik   = trim($practical->title ?? $practical->judul ?? '');
                 $subjectName   = trim($practical->subject?->name ?? '');
                 $kriteriaByCat = collect();
 
-                // Helper: ambil kriteria untuk satu nilai mata_praktik
+                // Helper: ambil kriteria untuk satu nilai mata_praktik (exact)
                 $kriteriaQuery = fn(string $mp) => KriteriaPenilaian::active()
                     ->where('mata_praktik', $mp)
                     ->orderBy('kategori')
@@ -447,7 +452,7 @@ class PenilaianController extends Controller
                     }
                 }
 
-                // 2. Exact match nama subject
+                // 2. Exact match nama subject (jika judul tidak match)
                 if ($kriteriaByCat->isEmpty() && $subjectName !== '' && $subjectName !== $mataPraktik) {
                     $res = $kriteriaQuery($subjectName)->get();
                     if ($res->isNotEmpty()) {
@@ -456,53 +461,19 @@ class PenilaianController extends Controller
                     }
                 }
 
-                // 3. Partial match — cari mata_praktik di DB yang judulnya mirip
-                // Contoh: judul 'Dasar-Dasar Pemeriksaan Golongan Darah'
-                //         cocok ke mata_praktik 'Pemeriksaan Golongan Darah'
-                if ($kriteriaByCat->isEmpty() && $mataPraktik !== '') {
-                    $allMp = KriteriaPenilaian::active()
-                        ->whereNotNull('mata_praktik')
-                        ->where('mata_praktik', '!=', '')
-                        ->distinct()
-                        ->pluck('mata_praktik');
-
-                    // Urutkan: mata_praktik dengan kata paling banyak cocok duluan
-                    $titleLo    = mb_strtolower($mataPraktik);
-                    $bestMatch  = null;
-                    $bestScore  = 0;
-
-                    foreach ($allMp as $mp) {
-                        $mpLo = mb_strtolower($mp);
-                        if (str_contains($titleLo, $mpLo) || str_contains($mpLo, $titleLo)) {
-                            // Hitung skor: panjang string yang cocok (lebih panjang = lebih spesifik)
-                            $score = strlen($mpLo);
-                            if ($score > $bestScore) {
-                                $bestScore = $score;
-                                $bestMatch = $mp;
-                            }
-                        }
-                    }
-
-                    if ($bestMatch !== null) {
-                        $res = $kriteriaQuery($bestMatch)->get();
-                        if ($res->isNotEmpty()) {
-                            $kriteriaByCat = $res->groupBy('kategori');
-                            $mataPraktik   = $bestMatch;
-                        }
-                    }
-                }
-
-                // 4. Fallback subject_id — hanya jika semua kriteria punya mata_praktik sama
-                if ($kriteriaByCat->isEmpty() && $practical->subject_id) {
-                    $kandidat        = KriteriaPenilaian::active()
-                        ->where('subject_id', $practical->subject_id)
-                        ->orderBy('kategori')->orderBy('name')->get();
-                    $mataPraktikUnik = $kandidat->pluck('mata_praktik')->unique()->filter()->values();
-                    if ($mataPraktikUnik->count() === 1) {
-                        $kriteriaByCat = $kandidat->groupBy('kategori');
-                        $mataPraktik   = $mataPraktikUnik->first();
-                    }
-                }
+                // 3. TIDAK ada partial/substring matching — terlalu rawan false positive.
+                // Contoh: 'Dasar' di judul TLM bisa match 'Farmasi Dasar' atau 'Keperawatan Dasar'.
+                // Jika praktikum tidak match, tampilkan pesan ke guru agar admin
+                // menyesuaikan mata_praktik di halaman Kriteria Penilaian.
+                //
+                // Log untuk diagnostik Railway
+                Log::info('nilaiKriteria: hasil pencarian kriteria', [
+                    'practical_id'    => $practical->id,
+                    'practical_title' => $practical->title ?? $practical->judul,
+                    'subject_name'    => $subjectName,
+                    'mata_praktik'    => $mataPraktik,
+                    'kriteria_count'  => $kriteriaByCat->flatten()->count(),
+                ]);
 
                 // Preload nilai yang sudah ada untuk semua siswa di praktikum ini
                 // key: "{practical_id}_{siswa_id(uc)}_{criteria_id|null}"

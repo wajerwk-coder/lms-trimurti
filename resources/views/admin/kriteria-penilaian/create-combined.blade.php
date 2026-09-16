@@ -51,14 +51,27 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Mata Praktik <span class="text-danger">*</span></label>
+                                <label class="form-label">Mata Praktik <span class="text-danger">*</span>
+                                    <small class="text-muted fw-normal">— harus sama persis dengan judul praktikum</small>
+                                </label>
                                 <select name="mata_praktik" class="form-control @error('mata_praktik') is-invalid @enderror" required>
-                                    <option value="">Pilih Mata Pelajaran</option>
-                                    @foreach($subjects as $subject)
-                                        <option value="{{ $subject->name }}" {{ old('mata_praktik')==$subject->name ? 'selected' : '' }}>
-                                            {{ $subject->name }} ({{ $subject->code }})
-                                        </option>
-                                    @endforeach
+                                    <option value="">Pilih Mata Praktik</option>
+                                    @if(isset($praktikumTitles) && $praktikumTitles->isNotEmpty())
+                                    <optgroup label="── Dari Judul Praktikum (disarankan) ──">
+                                        @foreach($praktikumTitles as $title)
+                                            <option value="{{ $title }}" {{ old('mata_praktik') === $title ? 'selected' : '' }}>
+                                                {{ $title }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                    @endif
+                                    <optgroup label="── Dari Nama Mata Pelajaran ──">
+                                        @foreach($subjects as $subject)
+                                            <option value="{{ $subject->name }}" {{ old('mata_praktik')==$subject->name ? 'selected' : '' }}>
+                                                {{ $subject->name }} ({{ $subject->code }})
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
                                 </select>
                                 @error('mata_praktik') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>

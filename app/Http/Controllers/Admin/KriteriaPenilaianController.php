@@ -71,6 +71,7 @@ class KriteriaPenilaianController extends Controller
             'kategoriList'     => KriteriaPenilaian::getKategoriList(),
             'tingkatKelasList' => KriteriaPenilaian::getTingkatKelasList(),
             'subjects'         => MataPelajaran::where('is_active', true)->orderBy('name')->get(),
+            'praktikumTitles'  => $this->getPraktikumTitles(),
         ]);
     }
 
@@ -82,6 +83,7 @@ class KriteriaPenilaianController extends Controller
             'kategoriList'     => KriteriaPenilaian::getKategoriList(),
             'tingkatKelasList' => KriteriaPenilaian::getTingkatKelasList(),
             'subjects'         => MataPelajaran::where('is_active', true)->orderBy('name')->get(),
+            'praktikumTitles'  => $this->getPraktikumTitles(),
         ]);
     }
 
@@ -198,6 +200,7 @@ class KriteriaPenilaianController extends Controller
             'kategoriList'      => KriteriaPenilaian::getKategoriList(),
             'tingkatKelasList'  => KriteriaPenilaian::getTingkatKelasList(),
             'subjects'          => MataPelajaran::where('is_active', true)->orderBy('name')->get(),
+            'praktikumTitles'   => $this->getPraktikumTitles(),
         ]);
     }
 
@@ -362,5 +365,21 @@ class KriteriaPenilaianController extends Controller
 
         return response()->json($kriteria->toArray())
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+
+    /**
+     * Daftar judul praktikum yang ada di DB — dipakai sebagai hint di form
+     * admin agar mata_praktik diisi sama persis dengan judul praktikum.
+     * Pencarian kriteria menggunakan EXACT match, jadi nama harus identik.
+     */
+    private function getPraktikumTitles(): \Illuminate\Support\Collection
+    {
+        return \DB::table('practicals')
+            ->whereNull('deleted_at')
+            ->whereNotNull('title')
+            ->where('title', '!=', '')
+            ->orderBy('title')
+            ->distinct()
+            ->pluck('title');
     }
 }
