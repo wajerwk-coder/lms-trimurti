@@ -429,30 +429,22 @@ class PenilaianController extends Controller
 
                 // ── Cari kriteria SOP yang sesuai dengan praktikum ini ──────────
                 // Prioritas: exact judul → exact subject name → LIKE partial → subject_id
-                // Filter jurusan aktif agar kriteria dari jurusan lain tidak ikut muncul.
                 $mataPraktik   = trim($practical->title ?? $practical->judul ?? '');
                 $subjectName   = trim($practical->subject?->name ?? '');
-                $kelasJurusan  = $practical->kelas?->jurusan?->name ?? '';
                 $kriteriaByCat = collect();
 
-                // Helper: query kriteria dengan filter jurusan opsional
-                $kriteriaQuery = function (string $mp) use ($kelasJurusan) {
-                    $q = KriteriaPenilaian::active()
-                        ->where('mata_praktik', $mp);
-                    // Jika kelas punya jurusan, exclude kriteria dari jurusan lain
-                    if ($kelasJurusan !== '') {
-                        $q->where(function ($sq) use ($kelasJurusan) {
-                            $sq->whereNull('subject_id')
-                               ->orWhereDoesntHave('subject.jurusan')
-                               ->orWhereHas('subject.jurusan', fn($jq) => $jq->where('name', $kelasJurusan));
-                        });
-                    }
-                    return $q->orderBy('kategori')->orderBy('name');
-                };
+                // Helper: ambil kriteria untuk satu nilai mata_praktik
+                $kriteriaQuery = fn(string $mp) => KriteriaPenilaian::active()
+                    ->where('mata_praktik', $mp)
+                    ->orderBy('kategori')
+                    ->orderBy('name');
 
                 // 1. Exact match judul praktikum
                 if ($mataPraktik !== '') {
-                    $kriteriaByCat = $kriteriaQuery($mataPraktik)->get()->groupBy('kategori');
+                    $res = $kriteriaQuery($mataPraktik)->get();
+                    if ($res->isNotEmpty()) {
+                        $kriteriaByCat = $res->groupBy('kategori');
+                    }
                 }
 
                 // 2. Exact match nama subject
@@ -464,22 +456,38 @@ class PenilaianController extends Controller
                     }
                 }
 
-                // 3. Partial match — judul mengandung kata kunci mata_praktik di DB
+                // 3. Partial match — cari mata_praktik di DB yang judulnya mirip
+                // Contoh: judul 'Dasar-Dasar Pemeriksaan Golongan Darah'
+                //         cocok ke mata_praktik 'Pemeriksaan Golongan Darah'
                 if ($kriteriaByCat->isEmpty() && $mataPraktik !== '') {
                     $allMp = KriteriaPenilaian::active()
-                        ->whereNotNull('mata_praktik')->where('mata_praktik', '!=', '')
-                        ->distinct()->pluck('mata_praktik');
+                        ->whereNotNull('mata_praktik')
+                        ->where('mata_praktik', '!=', '')
+                        ->distinct()
+                        ->pluck('mata_praktik');
+
+                    // Urutkan: mata_praktik dengan kata paling banyak cocok duluan
+                    $titleLo    = mb_strtolower($mataPraktik);
+                    $bestMatch  = null;
+                    $bestScore  = 0;
 
                     foreach ($allMp as $mp) {
-                        $mpLo    = mb_strtolower($mp);
-                        $titleLo = mb_strtolower($mataPraktik);
+                        $mpLo = mb_strtolower($mp);
                         if (str_contains($titleLo, $mpLo) || str_contains($mpLo, $titleLo)) {
-                            $res = $kriteriaQuery($mp)->get();
-                            if ($res->isNotEmpty()) {
-                                $kriteriaByCat = $res->groupBy('kategori');
-                                $mataPraktik   = $mp;
-                                break;
+                            // Hitung skor: panjang string yang cocok (lebih panjang = lebih spesifik)
+                            $score = strlen($mpLo);
+                            if ($score > $bestScore) {
+                                $bestScore = $score;
+                                $bestMatch = $mp;
                             }
+                        }
+                    }
+
+                    if ($bestMatch !== null) {
+                        $res = $kriteriaQuery($bestMatch)->get();
+                        if ($res->isNotEmpty()) {
+                            $kriteriaByCat = $res->groupBy('kategori');
+                            $mataPraktik   = $bestMatch;
                         }
                     }
                 }
