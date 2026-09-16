@@ -469,7 +469,7 @@
             </div>
             <div class="card-body p-0" style="max-height:300px;overflow-y:auto;">
                 @php
-                    {{-- Bangun aktivitas dari data nyata (materi + tugas terbaru) --}}
+                    // Bangun aktivitas dari data nyata (materi + tugas terbaru)
                     $activities = collect();
                     foreach (($recentMaterials ?? collect())->take(3) as $m) {
                         $activities->push([
