@@ -533,6 +533,185 @@ class ReportController extends Controller
     }
 
     /**
+     * Export laporan nilai siswa ke PDF.
+     */
+    public function exportNilaiPdf(Request $request)
+    {
+        $guruId  = Auth::id();
+        $guru    = Auth::user();
+
+        $filters = [
+            'start_date' => $request->start_date ?? Carbon::now()->subMonths(6)->format('Y-m-d'),
+            'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
+            'kelas_id'   => $request->kelas_id,
+        ];
+
+        // Ambil data sama seperti method nilai()
+        [$nilaiTugas, $nilaiPraktik] = $this->getNilaiData($guruId, $filters);
+
+        $kelasNama = $filters['kelas_id']
+            ? (\App\Models\Kelas::find($filters['kelas_id'])?->name ?? 'Semua Kelas')
+            : 'Semua Kelas';
+
+        $filename = 'laporan-nilai-'
+            . $filters['start_date'] . '-to-' . $filters['end_date']
+            . ($filters['kelas_id'] ? '-kelas-' . $filters['kelas_id'] : '')
+            . '.pdf';
+
+        $pdf = Pdf::loadView('guru.laporan.pdf.nilai', compact(
+            'nilaiTugas', 'nilaiPraktik', 'filters', 'guru', 'kelasNama'
+        ))->setPaper('a4', 'landscape');
+
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Export laporan nilai siswa ke CSV.
+     */
+    public function exportNilaiCsv(Request $request)
+    {
+        $guruId = Auth::id();
+
+        $filters = [
+            'start_date' => $request->start_date ?? Carbon::now()->subMonths(6)->format('Y-m-d'),
+            'end_date'   => $request->end_date   ?? Carbon::now()->format('Y-m-d'),
+            'kelas_id'   => $request->kelas_id,
+        ];
+
+        [$nilaiTugas, $nilaiPraktik] = $this->getNilaiData($guruId, $filters);
+
+        $filename = 'laporan-nilai-'
+            . $filters['start_date'] . '-to-' . $filters['end_date'] . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($nilaiTugas, $nilaiPraktik) {
+            $out = fopen('php://output', 'w');
+            fputs($out, "\xEF\xBB\xBF"); // BOM UTF-8 agar Excel baca benar
+
+            // ── Sheet 1: Nilai Tugas ──────────────────────────────────────
+            fputcsv($out, ['=== NILAI TUGAS ===']);
+            fputcsv($out, ['No', 'Nama Siswa', 'Judul Tugas', 'Mata Pelajaran', 'Dikumpulkan', 'Nilai', 'Grade']);
+
+            foreach ($nilaiTugas as $i => $n) {
+                $s = (float)($n->score ?? 0);
+                $g = $s >= 90 ? 'A' : ($s >= 80 ? 'B' : ($s >= 70 ? 'C' : ($s >= 60 ? 'D' : 'E')));
+                fputcsv($out, [
+                    $i + 1,
+                    $n->siswa?->name ?? '—',
+                    $n->assignment?->title ?? '—',
+                    $n->assignment?->subject?->name ?? '—',
+                    $n->submitted_at?->format('d/m/Y') ?? '—',
+                    number_format($s, 0),
+                    $g,
+                ]);
+            }
+
+            fputcsv($out, []); // baris kosong pemisah
+
+            // ── Sheet 2: Nilai Praktikum ──────────────────────────────────
+            fputcsv($out, ['=== NILAI PRAKTIKUM ===']);
+            fputcsv($out, ['No', 'Nama Siswa', 'Judul Praktikum', 'Mata Pelajaran', 'Dinilai', 'Nilai', 'Grade']);
+
+            foreach ($nilaiPraktik as $i => $np) {
+                $s = (float)($np->score ?? 0);
+                $g = $s >= 90 ? 'A' : ($s >= 80 ? 'B' : ($s >= 70 ? 'C' : ($s >= 60 ? 'D' : 'E')));
+                fputcsv($out, [
+                    $i + 1,
+                    $np->siswa?->name ?? '—',
+                    $np->practical?->title ?? '—',
+                    $np->practical?->subject?->name ?? '—',
+                    $np->graded_at?->format('d/m/Y') ?? '—',
+                    number_format($s, 0),
+                    $g,
+                ]);
+            }
+
+            fclose($out);
+        };
+
+        return response()->streamDownload($callback, $filename, $headers);
+    }
+
+    /**
+     * Helper: ambil data nilai tugas + praktikum berdasarkan filter.
+     * Dipakai oleh nilai(), exportNilaiPdf(), exportNilaiCsv().
+     */
+    private function getNilaiData(int $guruId, array $filters): array
+    {
+        // Siswa ids jika filter kelas aktif
+        $siswaUcIds = null;
+        if ($filters['kelas_id']) {
+            $siswaUcIds = Siswa::where('kelas_id', $filters['kelas_id'])->pluck('user_id');
+        }
+
+        // Nilai Tugas
+        $nilaiTugasQuery = AssignmentSubmission::with(['siswa', 'assignment.subject'])
+            ->whereHas('assignment', fn($q) => $q->where('guru_id', $guruId))
+            ->whereNotNull('score')
+            ->where(function($q) use ($filters) {
+                $q->whereBetween('submitted_at', [
+                        $filters['start_date'] . ' 00:00:00',
+                        $filters['end_date']   . ' 23:59:59',
+                    ])
+                  ->orWhere(function($q2) use ($filters) {
+                      $q2->whereNull('submitted_at')
+                         ->whereBetween('created_at', [
+                             $filters['start_date'] . ' 00:00:00',
+                             $filters['end_date']   . ' 23:59:59',
+                         ]);
+                  });
+            });
+
+        if ($siswaUcIds) {
+            $nilaiTugasQuery->whereIn('siswa_id', $siswaUcIds);
+        }
+        $nilaiTugas = $nilaiTugasQuery->latest()->get();
+
+        // Nilai Praktik
+        $nilaiPraktikQuery = NilaiPraktik::with(['siswa', 'practical.subject'])
+            ->whereHas('practical', fn($q) => $q->where('guru_id', $guruId))
+            ->whereNotNull('score')
+            ->where(function($q) use ($filters) {
+                $q->whereBetween('graded_at', [
+                        $filters['start_date'] . ' 00:00:00',
+                        $filters['end_date']   . ' 23:59:59',
+                    ])
+                  ->orWhere(function($q2) use ($filters) {
+                      $q2->whereNull('graded_at')
+                         ->whereBetween('created_at', [
+                             $filters['start_date'] . ' 00:00:00',
+                             $filters['end_date']   . ' 23:59:59',
+                         ]);
+                  });
+            });
+
+        if ($siswaUcIds) {
+            $nilaiPraktikQuery->whereIn('siswa_id', $siswaUcIds);
+        }
+
+        $allNilaiPraktik = $nilaiPraktikQuery->latest('graded_at')->get();
+
+        // Deduplikasi: prioritas criteria_id = null (nilai total)
+        $nilaiPraktik = $allNilaiPraktik
+            ->groupBy(fn($n) => $n->siswa_id . '_' . $n->practical_id)
+            ->map(function ($group) {
+                $total = $group->whereNull('criteria_id')->first();
+                if ($total) return $total;
+                $avg   = $group->avg('score');
+                $first = $group->first();
+                $first->score = round($avg, 1);
+                return $first;
+            })
+            ->values();
+
+        return [$nilaiTugas, $nilaiPraktik];
+    }
+
+    /**
      * Generate report (for guru.reports.generate route).
      */
     public function generate(Request $request)

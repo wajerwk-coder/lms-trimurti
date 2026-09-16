@@ -317,6 +317,8 @@ Route::prefix('guru')->name('guru.')->middleware(['auth', 'guru'])->group(functi
     Route::get('laporan/nilai',          [GuruReportController::class, 'nilai'])->name('laporan.nilai');
     Route::get('laporan/nilai/mid',      [GuruReportController::class, 'nilai'])->name('laporan.nilai.mid');
     Route::get('laporan/nilai/semester', [GuruReportController::class, 'nilai'])->name('laporan.nilai.semester');
+    Route::get('laporan/nilai/export-pdf', [GuruReportController::class, 'exportNilaiPdf'])->name('laporan.nilai.export-pdf');
+    Route::get('laporan/nilai/export-csv', [GuruReportController::class, 'exportNilaiCsv'])->name('laporan.nilai.export-csv');
     
     // Siswa (Student) Reports
     Route::get('laporan/siswa',          [GuruReportController::class, 'siswa'])->name('laporan.siswa');

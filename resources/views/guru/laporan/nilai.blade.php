@@ -82,22 +82,48 @@
 </div>
 
 {{-- Tabs --}}
-<ul class="nav nav-tabs mb-3" id="nilaiTabs">
-    <li class="nav-item">
-        <button class="nav-link active fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-tugas-nilai">
-            <i class="fas fa-tasks me-1"></i>Nilai Tugas
-            <span class="badge bg-primary ms-1">{{ $nilaiTugas->count() }}</span>
-        </button>
-    </li>
-    <li class="nav-item">
-        <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-praktik-nilai">
-            <i class="fas fa-flask me-1"></i>Nilai Praktikum
-            <span class="badge bg-purple ms-1" style="background:#7c3aed!important;">{{ $nilaiPraktik->count() }}</span>
-        </button>
-    </li>
-</ul>
+<div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <ul class="nav nav-tabs mb-0" id="nilaiTabs">
+        <li class="nav-item">
+            <button class="nav-link active fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-tugas-nilai">
+                <i class="fas fa-tasks me-1"></i>Nilai Tugas
+                <span class="badge bg-primary ms-1">{{ $nilaiTugas->count() }}</span>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-praktik-nilai">
+                <i class="fas fa-flask me-1"></i>Nilai Praktikum
+                <span class="badge bg-purple ms-1" style="background:#7c3aed!important;">{{ $nilaiPraktik->count() }}</span>
+            </button>
+        </li>
+    </ul>
 
-<div class="tab-content">
+    {{-- Tombol Download --}}
+    <div class="d-flex gap-2">
+        {{-- Download PDF --}}
+        <a href="{{ route('guru.laporan.nilai.export-pdf', array_filter([
+                'start_date' => $filters['start_date'],
+                'end_date'   => $filters['end_date'],
+                'kelas_id'   => $filters['kelas_id'] ?? '',
+            ])) }}"
+           class="btn btn-danger btn-sm"
+           style="border-radius:8px;">
+            <i class="fas fa-file-pdf me-1"></i>Unduh PDF
+        </a>
+        {{-- Download CSV --}}
+        <a href="{{ route('guru.laporan.nilai.export-csv', array_filter([
+                'start_date' => $filters['start_date'],
+                'end_date'   => $filters['end_date'],
+                'kelas_id'   => $filters['kelas_id'] ?? '',
+            ])) }}"
+           class="btn btn-success btn-sm"
+           style="border-radius:8px;">
+            <i class="fas fa-file-csv me-1"></i>Unduh CSV
+        </a>
+    </div>
+</div>
+
+<div class="tab-content mt-3">
     {{-- Tab Nilai Tugas --}}
     <div class="tab-pane fade show active" id="tab-tugas-nilai">
         <div class="card border-0 shadow-sm" style="border-radius:14px;">
