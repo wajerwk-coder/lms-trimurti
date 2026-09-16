@@ -427,13 +427,28 @@ class PenilaianController extends Controller
                     : collect();
 
                 // Ambil kriteria berdasarkan mata pelajaran praktikum
-                $mataPraktik   = $practical->subject?->name ?? '';
-                $kriteriaByCat = KriteriaPenilaian::active()
-                    ->where('mata_praktik', $mataPraktik)
-                    ->orderBy('kategori')
-                    ->orderBy('name')
-                    ->get()
-                    ->groupBy('kategori');
+                // $mataPraktik harus non-empty agar tidak query semua kriteria
+                $mataPraktik   = trim($practical->subject?->name ?? '');
+                $kriteriaByCat = collect();
+
+                if ($mataPraktik !== '') {
+                    $kriteriaByCat = KriteriaPenilaian::active()
+                        ->where('mata_praktik', $mataPraktik)
+                        ->orderBy('kategori')
+                        ->orderBy('name')
+                        ->get()
+                        ->groupBy('kategori');
+                }
+
+                // Jika tidak ada kriteria cocok, coba match via subject_id sebagai fallback
+                if ($kriteriaByCat->isEmpty() && $practical->subject_id) {
+                    $kriteriaByCat = KriteriaPenilaian::active()
+                        ->where('subject_id', $practical->subject_id)
+                        ->orderBy('kategori')
+                        ->orderBy('name')
+                        ->get()
+                        ->groupBy('kategori');
+                }
 
                 // Preload nilai yang sudah ada untuk semua siswa di praktikum ini
                 // key: "{practical_id}_{siswa_id(uc)}_{criteria_id|null}"
@@ -452,6 +467,7 @@ class PenilaianController extends Controller
             'siswaList',
             'kriteriaByCat',
             'existingNilai',
+            'mataPraktik',
         ));
     }
 

@@ -4,6 +4,8 @@
 @section('page-title', 'Penilaian Praktikum')
 @section('page-subtitle', 'Pilih praktikum — semua siswa di kelas langsung muncul untuk dinilai.')
 
+@php $mataPraktik ??= ''; @endphp
+
 @section('page-actions')
     <a href="{{ route('guru.penilaian.index') }}" class="btn btn-outline-secondary btn-sm">
         <i class="fas fa-arrow-left me-1"></i>Kembali
@@ -128,9 +130,24 @@
             <i class="fas fa-clipboard-list fa-3x text-muted opacity-25 mb-3 d-block"></i>
             <h6 class="text-muted">Belum ada kriteria penilaian</h6>
             <p class="text-muted small mb-3">
-                Admin belum menambahkan kriteria untuk mata praktik
-                <strong>{{ $practical->subject?->name ?? '—' }}</strong>.
+                Admin belum menambahkan kriteria SOP untuk mata praktik
+                <strong>{{ $mataPraktik ?: ($practical->subject?->name ?? '—') }}</strong>.
             </p>
+            @if(empty($mataPraktik))
+            <div class="alert alert-warning small text-start d-inline-block" style="max-width:480px;">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                Praktikum ini belum memiliki <strong>Mata Pelajaran</strong> yang terhubung.
+                Hubungi admin untuk menautkan mata pelajaran ke praktikum ini,
+                lalu admin dapat menambahkan kriteria penilaian SOP yang sesuai.
+            </div>
+            @else
+            <div class="alert alert-info small text-start d-inline-block" style="max-width:480px;">
+                <i class="fas fa-info-circle me-1"></i>
+                Nama kriteria yang terdaftar di sistem mungkin berbeda dari nama mata pelajaran praktikum.
+                Hubungi admin untuk menambahkan kriteria SOP dengan
+                <strong>Mata Praktik = "{{ $mataPraktik }}"</strong>.
+            </div>
+            @endif
         </div>
     </div>
 
