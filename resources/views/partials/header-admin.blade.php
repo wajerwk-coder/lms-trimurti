@@ -242,20 +242,40 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Mark all as read
+    const CSRF       = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const markAllUrl = '{{ route("notifications.mark-all-read") }}';
+
+    function markAllRead() {
+        fetch(markAllUrl, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF }
+        }).then(() => {
+            document.querySelectorAll('.notif-unread').forEach(el => el.classList.remove('notif-unread'));
+            document.querySelectorAll('.notif-dot').forEach(el => el.remove());
+            document.querySelectorAll('.notif-unread-dot').forEach(el => el.remove());
+            const badge = document.querySelector('#notifToggle .badge');
+            if (badge) badge.remove();
+            const markBtn = document.getElementById('adminMarkAllRead');
+            if (markBtn) markBtn.textContent = 'Semua sudah dibaca';
+        }).catch(() => {});
+    }
+
+    // ── Auto mark-as-read saat dropdown bell dibuka ──────────────────────
+    const bellBtn = document.getElementById('notifToggle');
+    if (bellBtn) {
+        bellBtn.addEventListener('click', function () {
+            if (document.querySelector('.notif-dot, .notif-unread')) {
+                setTimeout(markAllRead, 400);
+            }
+        });
+    }
+
+    // ── Tombol manual "Tandai semua dibaca" ───────────────────────────────
     const markAllBtn = document.getElementById('adminMarkAllRead');
     if (markAllBtn) {
         markAllBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            fetch('{{ route("notifications.mark-all-read") }}', {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' }
-            }).then(() => {
-                document.querySelectorAll('.notif-unread').forEach(el => el.classList.remove('notif-unread'));
-                document.querySelector('.notif-dot')?.remove();
-                document.querySelector('#notifToggle .badge')?.remove();
-                markAllBtn.textContent = 'Semua sudah dibaca';
-            }).catch(() => {});
+            markAllRead();
         });
     }
 });

@@ -245,17 +245,45 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const CSRF   = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const markAllUrl = '{{ route("notifications.mark-all-read") }}';
+
+    function markAllRead() {
+        fetch(markAllUrl, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': CSRF }
+        }).then(() => {
+            document.querySelectorAll('.notif-unread').forEach(el => el.classList.remove('notif-unread'));
+            document.querySelectorAll('.notif-dot').forEach(el => el.remove());
+            document.querySelectorAll('.notif-unread-dot').forEach(el => el.remove());
+        }).catch(() => {});
+    }
+
+    // ── Auto mark-as-read saat dropdown bell dibuka ──────────────────────
+    const bellBtn = document.querySelector('[aria-label="Notifikasi"]');
+    if (bellBtn) {
+        bellBtn.addEventListener('click', function () {
+            // Hanya kirim jika ada notif belum dibaca
+            if (document.querySelector('.notif-dot, .notif-unread')) {
+                setTimeout(markAllRead, 400); // delay kecil agar dropdown sudah tampil
+            }
+        });
+    }
+
+    // ── Tombol manual "Tandai dibaca" ─────────────────────────────────────
     const markAllBtn = document.querySelector('.guru-mark-all');
     if (markAllBtn) {
         markAllBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            fetch('{{ route("notifications.mark-all-read") }}', {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' }
-            }).then(() => {
-                document.querySelectorAll('.notif-unread').forEach(el => el.classList.remove('notif-unread'));
-                document.querySelector('.notif-dot')?.remove();
-            }).catch(() => {});
+            markAllRead();
+        });
+    }
+
+    // Search suggestions (simple)
+    const searchInput = document.getElementById('globalSearch');
+    if (searchInput) {
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') this.blur();
         });
     }
 });
