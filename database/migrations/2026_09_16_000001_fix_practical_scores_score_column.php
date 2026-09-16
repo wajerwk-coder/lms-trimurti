@@ -26,9 +26,13 @@ return new class extends Migration
             DB::statement("UPDATE practical_scores SET score = 0   WHERE score < 0");
 
             Schema::table('practical_scores', function (Blueprint $table) {
-                // DECIMAL(8,2) → bisa simpan 0.00 – 999999.99 (lebih dari cukup untuk 0–100)
-                $table->decimal('score',     8, 2)->nullable()->change();
-                $table->decimal('max_score', 8, 2)->default(100.00)->change();
+                // Hanya alter kolom yang memang ada di DB Railway
+                if (Schema::hasColumn('practical_scores', 'score')) {
+                    $table->decimal('score', 8, 2)->nullable()->change();
+                }
+                if (Schema::hasColumn('practical_scores', 'max_score')) {
+                    $table->decimal('max_score', 8, 2)->default(100.00)->change();
+                }
             });
         }
 
