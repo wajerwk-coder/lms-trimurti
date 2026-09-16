@@ -410,7 +410,8 @@ class PenilaianController extends Controller
         $practical     = null;
         $siswaList     = collect();
         $kriteriaByCat = collect();
-        $existingNilai = collect(); // key: siswa_id (users_central.id)
+        $existingNilai = collect();
+        $mataPraktik   = '';
 
         if ($selectedPractical) {
             $practical = Practical::with(['subject', 'kelas.siswa.user'])
