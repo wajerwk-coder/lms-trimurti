@@ -163,6 +163,15 @@
         <input type="hidden" name="siswa_ids[]" value="{{ $s->id }}">
     @endforeach
 
+    {{-- $globalKi: counter index kriteria GLOBAL (lintas kategori) agar tidak ada
+         tabrakan nama field form. Kriteria [0..N-1] konsisten untuk semua siswa. --}}
+    @php
+        $globalKi = 0;
+        // Buat flat list semua kriteria dengan index global yang konsisten
+        // sehingga kriteria[0..N] sama untuk setiap siswa
+        $flatKriteriaList = $kriteriaByCat->flatten()->values(); // Collection flat, indexed 0..N-1
+    @endphp
+
     {{-- Tab navigasi siswa --}}
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white border-bottom py-3">
@@ -208,7 +217,10 @@
 
     {{-- Panel per siswa --}}
     @foreach($siswaList as $idx => $s)
-    @php $ucId = $s->user_id; @endphp
+    @php
+        $ucId     = $s->user_id;
+        $globalKi = 0; // reset per siswa agar index kriteria konsisten untuk semua siswa
+    @endphp
     <div class="tab-pane-siswa {{ $idx === 0 ? 'active' : '' }}" id="pane-{{ $s->id }}">
 
         {{-- Sticky score bar untuk siswa ini --}}
@@ -268,8 +280,9 @@
                 </div>
             </div>
             <div class="card-body p-0">
-                @foreach($kriteriaList as $ki => $kriteria)
+                @foreach($kriteriaList as $kriteria)
                 @php
+                    $ki          = $globalKi; // pakai counter global agar unik lintas kategori
                     $sopList     = is_array($kriteria->sop_checklist) ? $kriteria->sop_checklist : [];
                     $keyExist    = $ucId . '_' . $kriteria->id;
                     $existRec    = $existingNilai[$keyExist] ?? collect();
@@ -277,6 +290,7 @@
                     $checkedSop  = $existFb['checked_sop'] ?? [];
                     // Indeks unik untuk SOP dalam form: kombinasi siswa_id + kriteria_indeks
                     $formKi      = $s->id . '_' . $ki;
+                    $globalKi++;   // increment SETELAH assign agar semua siswa dapat index yang sama
                 @endphp
                 <div class="border-bottom p-3 kriteria-block"
                      data-siswa="{{ $s->id }}"
@@ -435,9 +449,13 @@ document.addEventListener('DOMContentLoaded', function () {
             cbs.forEach(c => { if (c.checked) checked++; });
             totalChecked += checked;
 
-            const nilaiKriteria = totalSop > 0 ? (checked / totalSop) * 100 : 100;
-            totalBobot    += weight;
-            totalWeighted += nilaiKriteria * weight;
+            if (totalSop > 0) {
+                // Kriteria punya SOP → hitung dari checklist, masukkan ke bobot
+                const nilaiKriteria = Math.min(100, (checked / totalSop) * 100);
+                totalBobot    += weight;
+                totalWeighted += nilaiKriteria * weight;
+            }
+            // totalSop === 0 → skip dari perhitungan (jangan fallback ke 100)
 
             // Update progress per kriteria
             if (ki !== undefined) {
